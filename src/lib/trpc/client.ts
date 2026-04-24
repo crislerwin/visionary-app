@@ -1,13 +1,11 @@
-import { httpBatchLink } from "@trpc/client";
-import superjson from "superjson";
+import { httpBatchLink } from "@trpc/client"
 
-import { trpc } from "./react";
+import { trpc } from "./react"
 
 export const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
       url: "/api/trpc",
-      transformer: superjson,
     }),
   ],
-});
+})

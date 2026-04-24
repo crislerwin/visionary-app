@@ -1,9 +1,11 @@
-import { createCallerFactory, createTRPCContext, router } from "@/lib/trpc/trpc";
+import { createCallerFactory, router } from "@/lib/trpc/trpc";
 import { authRouter } from "./auth";
 import { tenantRouter } from "./tenant";
 import { teamRouter } from "./team";
 import { postRouter } from "./post";
 import { userRouter } from "./user";
+import { auth } from "@/auth";
+import { cookies } from "next/headers";
 
 export const appRouter = router({
   auth: authRouter,
