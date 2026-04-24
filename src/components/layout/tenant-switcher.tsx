@@ -60,11 +60,11 @@ export function TenantSwitcher() {
             size="sm"
             aria-expanded={open}
             aria-label="Select a tenant"
-            className={cn("w-[200px] justify-between", !currentTenant && "text-muted-foreground")}
+            className={cn("w-full justify-between h-8 px-2 text-xs", !currentTenant && "text-muted-foreground")}
           >
-            <Building2 className="mr-2 h-4 w-4" />
-            {currentTenant?.name || "Select tenant..."}
-            <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+            <Building2 className="mr-1.5 h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{currentTenant?.name || "Select tenant..."}</span>
+            <ChevronsUpDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-[200px]" align="start">

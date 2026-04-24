@@ -5,16 +5,13 @@ import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
 import { z } from "zod";
 
-import { prisma } from "@/lib/db";
-import { PrismaAdapter } from "@auth/prisma-adapter";
-
 const credentialsSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
 });
 
+// Configuração que funciona no Edge Runtime (middleware)
 export const authConfig: NextAuthConfig = {
-  adapter: PrismaAdapter(prisma),
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -49,6 +46,9 @@ export const authConfig: NextAuthConfig = {
         }
 
         const { email, password } = parsed.data;
+
+        // Import prisma dinamicamente para evitar edge runtime issues
+        const { prisma } = await import("@/lib/db");
 
         const user = await prisma.user.findUnique({
           where: { email },
