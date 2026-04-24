@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { api, type RouterOutputs } from "@/lib/trpc/index";
+import { api } from "@/lib/trpc/react";
+import type { AppRouter } from "@/server/routers/_app";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,7 +30,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type Category = RouterOutputs["category"]["list"][number];
+// Types based on router output (with serialized dates as strings)
+interface Category {
+  id: string;
+  name: string;
+  description: string | null;
+  slug: string;
+  _count: { products: number };
+}
 
 export default function CategoriesPage() {
   const { currentTenant } = useCurrentTenant();
