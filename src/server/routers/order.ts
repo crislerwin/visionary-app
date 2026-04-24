@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "@/lib/trpc/trpc";
+import { publicProcedure, router } from "@/lib/trpc/trpc";
 import { OrderStatus, OrderType, PaymentMethod, PaymentStatus } from "@prisma/client";
 
 const orderItemInputSchema = z.object({
@@ -26,6 +26,7 @@ const addressInputSchema = z.object({
 });
 
 const createOrderInputSchema = z.object({
+  tenantId: z.string(),
   type: z.nativeEnum(OrderType),
   customer: z.object({
     name: z.string().min(1, "Nome é obrigatório"),
@@ -44,20 +45,14 @@ const createOrderInputSchema = z.object({
 
 const getOrderByIdInputSchema = z.object({
   id: z.string(),
+  tenantId: z.string(),
 });
 
 export const orderRouter = router({
-  createOrder: protectedProcedure
+  createOrder: publicProcedure
     .input(createOrderInputSchema)
-    .mutation(async ({ ctx, input }) => {
-      const tenantId = ctx.session?.user?.tenantId;
-
-      if (!tenantId) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Tenant não encontrado",
-        });
-      }
+    .mutation(async ({ input }) => {
+      const { tenantId } = input;
 
       // Buscar ou criar cliente
       let customer = await prisma.customer.findUnique({
@@ -140,17 +135,10 @@ export const orderRouter = router({
       return order;
     }),
 
-  getOrderById: protectedProcedure
+  getOrderById: publicProcedure
     .input(getOrderByIdInputSchema)
-    .query(async ({ ctx, input }) => {
-      const tenantId = ctx.session?.user?.tenantId;
-
-      if (!tenantId) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Tenant não encontrado",
-        });
-      }
+    .query(async ({ input }) => {
+      const { tenantId } = input;
 
       const order = await prisma.order.findFirst({
         where: {
