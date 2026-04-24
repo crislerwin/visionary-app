@@ -3,32 +3,47 @@ import { execSync } from "child_process";
 
 const prisma = new PrismaClient();
 
+// Generate unique email for test isolation
+function getUniqueEmail(prefix: string) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}@test.com`;
+}
+
 // Helper to reset database before tests
 export async function resetDatabase() {
-  // Clean up all tables
-  const tablenames = await prisma.$queryRaw`
-    SELECT tablename FROM pg_tables WHERE schemaname='public'
-  `;
+  // Clean up tables in correct order to avoid FK constraints
+  const tables = [
+    "OrderItem",
+    "Order",
+    "ProductVariant",
+    "Product",
+    "Category",
+    "Membership",
+    "TenantInvitation",
+    "Session",
+    "Account",
+    "User",
+    "Tenant",
+  ];
 
-  for (const { tablename } of tablenames as { tablename: string }[]) {
-    if (tablename !== "_prisma_migrations") {
-      await prisma.$executeRawUnsafe(
-        `TRUNCATE TABLE "${tablename}" CASCADE;`
-      );
+  for (const table of tables) {
+    try {
+      await prisma.$executeRawUnsafe(`TRUNCATE TABLE "${table}" CASCADE;`);
+    } catch (e) {
+      // Table might not exist, ignore
     }
   }
 }
 
 // Helper to setup test data
 export async function setupTestData() {
-  // Create test tenant
+  // Create test tenant with unique email
   const tenant = await prisma.tenant.create({
     data: {
       name: "Test Restaurant",
-      slug: "test-restaurant",
+      slug: `test-restaurant-${Date.now()}`,
       owner: {
         create: {
-          email: "owner@test.com",
+          email: getUniqueEmail("owner"),
           name: "Test Owner",
         },
       },
@@ -41,7 +56,7 @@ export async function setupTestData() {
   // Create test user with membership
   const user = await prisma.user.create({
     data: {
-      email: "user@test.com",
+      email: getUniqueEmail("user"),
       name: "Test User",
       memberships: {
         create: {

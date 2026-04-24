@@ -14,7 +14,7 @@ describe("Category Router", () => {
     // Setup fresh test data
     testData = await setupTestData();
 
-    // Create authenticated caller
+    // Create authenticated caller with tenant context
     caller = appRouter.createCaller({
       session: {
         user: {
@@ -25,6 +25,7 @@ describe("Category Router", () => {
         },
         expires: new Date(Date.now() + 86400000).toISOString(),
       },
+      tenantId: testData.tenant.id,
       headers: new Headers(),
     });
   });
@@ -190,7 +191,7 @@ describe("Category Router", () => {
           id: category.id,
           tenantId: testData.tenant.id,
         })
-      ).rejects.toThrow("cannot delete");
+      ).rejects.toThrow("Cannot delete category with products");
     });
   });
 });
