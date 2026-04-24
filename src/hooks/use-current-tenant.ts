@@ -2,7 +2,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import { api } from "@/lib/trpc/react"
+import { trpc } from "@/lib/trpc/react"
 
 interface Tenant {
   id: string
@@ -35,9 +35,9 @@ export function useCurrentTenant(): {
   isLoading: boolean
 } {
   const { currentTenantId, setCurrentTenant } = useTenantStore()
-  const { data: tenants, isLoading } = api.tenant.list.useQuery()
-  
-  const currentTenant = tenants?.find((t) => t.id === currentTenantId) || tenants?.[0] || null
+  const { data: tenants, isLoading } = trpc.tenant.list.useQuery()
+
+  const currentTenant = tenants?.find((t: Tenant) => t.id === currentTenantId) || tenants?.[0] || null
 
   return {
     currentTenant,

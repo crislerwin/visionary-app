@@ -7,7 +7,6 @@ import { useState } from "react"
 import type { AppRouter } from "@/server/routers/_app"
 
 const trpc = createTRPCReact<AppRouter>()
-const TrpcProvider = trpc.Provider
 
 export function TRPCProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient())
@@ -22,10 +21,11 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
   )
 
   return (
-    <TrpcProvider client={trpcClient} queryClient={queryClient}>
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </TrpcProvider>
+    </trpc.Provider>
   )
 }
 
+export { trpc as api }
 export { trpc }

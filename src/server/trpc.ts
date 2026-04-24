@@ -1,21 +1,20 @@
-import { z } from "zod"
 import { initTRPC, TRPCError } from "@trpc/server"
-import { getTenantContext } from "@/server/tenant-context/tenant"
-import { auth } from "@/auth"
+import type { Session } from "next-auth"
 
-export const createTRPCContext = async (opts: { headers: Headers }) => {
-  const session = await auth()
-  const tenant = await getTenantContext()
+interface CreateContextOptions {
+  session: Session | null
+  tenantId: string | null
+}
 
+export const createTRPCContext = (opts: CreateContextOptions) => {
   return {
-    session,
-    tenant,
-    user: session?.user,
-    ...opts,
+    session: opts.session,
+    tenantId: opts.tenantId,
+    user: opts.session?.user ?? null,
   }
 }
 
-export type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>
+type TRPCContext = ReturnType<typeof createTRPCContext>
 
 const t = initTRPC.context<TRPCContext>().create()
 
@@ -40,7 +39,7 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
 })
 
 export const tenantProcedure = protectedProcedure.use(async ({ ctx, next }) => {
-  if (!ctx.tenant) {
+  if (!ctx.tenantId) {
     throw new TRPCError({
       code: "BAD_REQUEST",
       message: "No tenant selected",
@@ -50,7 +49,7 @@ export const tenantProcedure = protectedProcedure.use(async ({ ctx, next }) => {
   return next({
     ctx: {
       ...ctx,
-      tenant: ctx.tenant,
+      tenantId: ctx.tenantId,
     },
   })
 })
