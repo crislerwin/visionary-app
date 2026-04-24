@@ -19,16 +19,19 @@ export async function resetDatabase() {
   }
 }
 
-// Helper to setup test data
+// Helper to setup test data - uses unique emails to avoid conflicts
 export async function setupTestData() {
+  // Generate unique identifier for this test run
+  const uniqueId = Date.now() + Math.random().toString(36).substring(2, 11);
+  
   // Create test tenant
   const tenant = await prisma.tenant.create({
     data: {
       name: "Test Restaurant",
-      slug: "test-restaurant",
+      slug: `test-restaurant-${uniqueId}`,
       owner: {
         create: {
-          email: "owner@test.com",
+          email: `owner-${uniqueId}@test.com`,
           name: "Test Owner",
         },
       },
@@ -41,7 +44,7 @@ export async function setupTestData() {
   // Create test user with membership
   const user = await prisma.user.create({
     data: {
-      email: "user@test.com",
+      email: `user-${uniqueId}@test.com`,
       name: "Test User",
       memberships: {
         create: {

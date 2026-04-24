@@ -14,7 +14,7 @@ describe("Category Router", () => {
     // Setup fresh test data
     testData = await setupTestData();
 
-    // Create authenticated caller
+    // Create authenticated caller WITH tenantId in context
     caller = appRouter.createCaller({
       session: {
         user: {
@@ -25,8 +25,8 @@ describe("Category Router", () => {
         },
         expires: new Date(Date.now() + 86400000).toISOString(),
       },
-      tenantId: testData.tenant.id,
-      user: null,
+      tenantId: testData.tenant.id, // Include tenantId
+      headers: new Headers(),
     });
   });
 
@@ -70,7 +70,7 @@ describe("Category Router", () => {
 
   describe("list", () => {
     beforeEach(async () => {
-      // Create test categories
+      // Create test categories directly via prisma
       await prisma.category.create({
         data: {
           name: "Category A",
@@ -191,7 +191,7 @@ describe("Category Router", () => {
           id: category.id,
           tenantId: testData.tenant.id,
         })
-      ).rejects.toThrow("cannot delete");
+      ).rejects.toThrow("Cannot delete category with products");
     });
   });
 });
