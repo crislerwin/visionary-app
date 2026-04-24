@@ -292,10 +292,10 @@ export default function CategoriesPage() {
             <AlertDialogTitle>Confirmar exclusão?</AlertDialogTitle>
             <AlertDialogDescription>
               A categoria &quot;{selectedCategory?.name}&quot; será excluída.
-              {selectedCategory?._count.products > 0 && (
+              {(selectedCategory?._count?.products ?? 0) > 0 && (
                 <span className="text-destructive font-medium">
                   {" "}
-                  Esta categoria tem {selectedCategory?._count.products} produto(s).
+                  Esta categoria tem {selectedCategory?._count?.products} produto(s).
                   Mova ou delete os produtos primeiro.
                 </span>
               )}

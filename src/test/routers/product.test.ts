@@ -36,6 +36,8 @@ describe("Product Router", () => {
         },
         expires: new Date(Date.now() + 86400000).toISOString(),
       },
+      tenantId: testData.tenant.id,
+      user: null,
     });
   });
 
