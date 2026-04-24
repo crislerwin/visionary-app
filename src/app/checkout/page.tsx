@@ -148,7 +148,11 @@ export default function CheckoutPage() {
       productName: item.productName,
     }));
 
+    // TODO: Get tenantId from URL, subdomain, or context
+    const tenantId = "dummy-tenant-id";
+
     createOrderMutation.mutate({
+      tenantId,
       type: values.orderType,
       customer: {
         name: values.customerName,
