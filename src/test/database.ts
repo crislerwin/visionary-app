@@ -1,11 +1,12 @@
 import { PrismaClient } from "@prisma/client";
-import { execSync } from "child_process";
 
 const prisma = new PrismaClient();
 
+let testCounter = 0;
+
 // Generate unique email for test isolation
 function getUniqueEmail(prefix: string) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}@test.com`;
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}@test.com`;
 }
 
 // Helper to reset database before tests
@@ -36,11 +37,14 @@ export async function resetDatabase() {
 
 // Helper to setup test data
 export async function setupTestData() {
+  testCounter++;
+  const uniqueId = `${Date.now()}-${testCounter}-${Math.random().toString(36).slice(2, 8)}`;
+
   // Create test tenant with unique email
   const tenant = await prisma.tenant.create({
     data: {
       name: "Test Restaurant",
-      slug: `test-restaurant-${Date.now()}`,
+      slug: `test-restaurant-${uniqueId}`,
       owner: {
         create: {
           email: getUniqueEmail("owner"),

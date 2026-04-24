@@ -227,10 +227,10 @@ describe("Order Router", () => {
       const otherTenant = await prisma.tenant.create({
         data: {
           name: "Other Restaurant",
-          slug: "other-restaurant",
+          slug: `other-restaurant-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           owner: {
             create: {
-              email: "other@example.com",
+              email: `other-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`,
               name: "Other Owner",
             },
           },
