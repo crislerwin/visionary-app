@@ -18,8 +18,10 @@
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
     "dev:setup": "npm run docker:up && sleep 3 && npm run db:push && npm run db:seed",
-    "test": "vitest",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
@@ -66,19 +68,20 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@tailwindcss/postcss": "^4.0.0",
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.2.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.12.0",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
-    "@vitest/ui": "^3.0.4",
-    "jsdom": "^26.0.0",
+    "@vitest/ui": "^3.2.4",
+    "jsdom": "^26.1.0",
     "postcss": "^8.5.1",
     "prisma": "^6.3.0",
     "tailwindcss": "^4.0.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
-    "vitest": "^3.0.4"
+    "vitest": "^3.2.4"
   }
 }
