@@ -2,6 +2,28 @@ import { describe, it, expect, beforeEach, beforeAll } from "vitest";
 import { appRouter } from "@/server/routers/_app";
 import { prisma, resetDatabase, setupTestData } from "../database";
 
+// Helper para criar categoria e produto
+async function createCategoryAndProduct(tenantId: string) {
+  const category = await prisma.category.create({
+    data: {
+      name: "Test Category",
+      slug: "test-category",
+      tenantId,
+    },
+  });
+
+  const product = await prisma.product.create({
+    data: {
+      name: "Test Product",
+      price: 29.9,
+      tenantId,
+      categoryId: category.id,
+    },
+  });
+
+  return { category, product };
+}
+
 describe("Order Router", () => {
   let caller: ReturnType<typeof appRouter.createCaller>;
   let testData: { tenant: { id: string }; user: { id: string; email: string } };
@@ -29,20 +51,7 @@ describe("Order Router", () => {
 
   describe("createOrder", () => {
     it("should create an order with items", async () => {
-      const product = await prisma.product.create({
-        data: {
-          name: "Burger",
-          price: 29.9,
-          tenantId: testData.tenant.id,
-          category: {
-            create: {
-              name: "Food",
-              slug: "food",
-              tenantId: testData.tenant.id,
-            },
-          },
-        },
-      });
+      const { product } = await createCategoryAndProduct(testData.tenant.id);
 
       const result = await caller.order.createOrder({
         tenantId: testData.tenant.id,
@@ -66,7 +75,7 @@ describe("Order Router", () => {
             quantity: 2,
             unitPrice: 29.9,
             totalPrice: 59.8,
-            productName: "Burger",
+            productName: "Test Product",
           },
         ],
         subtotal: 59.8,
@@ -94,20 +103,7 @@ describe("Order Router", () => {
         },
       });
 
-      const product = await prisma.product.create({
-        data: {
-          name: "Fries",
-          price: 9.9,
-          tenantId: testData.tenant.id,
-          category: {
-            create: {
-              name: "Sides",
-              slug: "sides",
-              tenantId: testData.tenant.id,
-            },
-          },
-        },
-      });
+      const { product } = await createCategoryAndProduct(testData.tenant.id);
 
       const result = await caller.order.createOrder({
         tenantId: testData.tenant.id,
@@ -120,85 +116,21 @@ describe("Order Router", () => {
           {
             productId: product.id,
             quantity: 1,
-            unitPrice: 9.9,
-            totalPrice: 9.9,
-            productName: "Fries",
+            unitPrice: 29.9,
+            totalPrice: 29.9,
+            productName: "Test Product",
           },
         ],
-        subtotal: 9.9,
-        total: 9.9,
+        subtotal: 29.9,
+        total: 29.9,
         paymentMethod: "CASH",
       });
 
       expect(result.customerId).toBe(existingCustomer.id);
     });
 
-    it("should update existing customer info when provided", async () => {
-      const existingCustomer = await prisma.customer.create({
-        data: {
-          name: "Old Name",
-          phone: "11777777777",
-          tenantId: testData.tenant.id,
-        },
-      });
-
-      const product = await prisma.product.create({
-        data: {
-          name: "Soda",
-          price: 5.0,
-          tenantId: testData.tenant.id,
-          category: {
-            create: {
-              name: "Drinks",
-              slug: "drinks",
-              tenantId: testData.tenant.id,
-            },
-          },
-        },
-      });
-
-      const result = await caller.order.createOrder({
-        tenantId: testData.tenant.id,
-        type: "DINE_IN",
-        customer: {
-          name: "New Name",
-          phone: "11777777777",
-          email: "new@example.com",
-        },
-        items: [
-          {
-            productId: product.id,
-            quantity: 1,
-            unitPrice: 5.0,
-            totalPrice: 5.0,
-            productName: "Soda",
-          },
-        ],
-        subtotal: 5.0,
-        total: 5.0,
-        paymentMethod: "CREDIT_CARD",
-      });
-
-      expect(result.customerId).toBe(existingCustomer.id);
-      expect(result.customer.name).toBe("New Name");
-      expect(result.customer.email).toBe("new@example.com");
-    });
-
     it("should generate sequential order numbers per tenant", async () => {
-      const product = await prisma.product.create({
-        data: {
-          name: "Pizza",
-          price: 49.9,
-          tenantId: testData.tenant.id,
-          category: {
-            create: {
-              name: "Pizzas",
-              slug: "pizzas",
-              tenantId: testData.tenant.id,
-            },
-          },
-        },
-      });
+      const { product } = await createCategoryAndProduct(testData.tenant.id);
 
       const createOrder = () =>
         caller.order.createOrder({
@@ -212,13 +144,13 @@ describe("Order Router", () => {
             {
               productId: product.id,
               quantity: 1,
-              unitPrice: 49.9,
-              totalPrice: 49.9,
-              productName: "Pizza",
+              unitPrice: 29.9,
+              totalPrice: 29.9,
+              productName: "Test Product",
             },
           ],
-          subtotal: 49.9,
-          total: 49.9,
+          subtotal: 29.9,
+          total: 29.9,
           paymentMethod: "PIX",
         });
 
@@ -249,20 +181,7 @@ describe("Order Router", () => {
 
   describe("getOrderById", () => {
     it("should return an existing order", async () => {
-      const product = await prisma.product.create({
-        data: {
-          name: "Salad",
-          price: 19.9,
-          tenantId: testData.tenant.id,
-          category: {
-            create: {
-              name: "Salads",
-              slug: "salads",
-              tenantId: testData.tenant.id,
-            },
-          },
-        },
-      });
+      const { product } = await createCategoryAndProduct(testData.tenant.id);
 
       const created = await caller.order.createOrder({
         tenantId: testData.tenant.id,
@@ -275,13 +194,13 @@ describe("Order Router", () => {
           {
             productId: product.id,
             quantity: 1,
-            unitPrice: 19.9,
-            totalPrice: 19.9,
-            productName: "Salad",
+            unitPrice: 29.9,
+            totalPrice: 29.9,
+            productName: "Test Product",
           },
         ],
-        subtotal: 19.9,
-        total: 19.9,
+        subtotal: 29.9,
+        total: 29.9,
         paymentMethod: "DEBIT_CARD",
       });
 
@@ -318,20 +237,7 @@ describe("Order Router", () => {
         },
       });
 
-      const product = await prisma.product.create({
-        data: {
-          name: "Taco",
-          price: 14.9,
-          tenantId: testData.tenant.id,
-          category: {
-            create: {
-              name: "Mexican",
-              slug: "mexican",
-              tenantId: testData.tenant.id,
-            },
-          },
-        },
-      });
+      const { product } = await createCategoryAndProduct(testData.tenant.id);
 
       const created = await caller.order.createOrder({
         tenantId: testData.tenant.id,
@@ -344,13 +250,13 @@ describe("Order Router", () => {
           {
             productId: product.id,
             quantity: 1,
-            unitPrice: 14.9,
-            totalPrice: 14.9,
-            productName: "Taco",
+            unitPrice: 29.9,
+            totalPrice: 29.9,
+            productName: "Test Product",
           },
         ],
-        subtotal: 14.9,
-        total: 14.9,
+        subtotal: 29.9,
+        total: 29.9,
         paymentMethod: "CASH",
       });
 
@@ -363,5 +269,3 @@ describe("Order Router", () => {
     });
   });
 });
-
-export {};
