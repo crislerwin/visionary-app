@@ -9,13 +9,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
-    exclude: [
-      "node_modules",
-      ".next",
-      "dist",
-      ".worktrees/**",
-      "**/node_modules/**",
-    ],
+    exclude: ["node_modules", ".next", "dist", ".opencode", ".git", ".worktrees"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
@@ -26,15 +20,7 @@ export default defineConfig({
         "**/*.config.*",
         "**/test/**",
         "src/test/**",
-        ".worktrees/**",
       ],
-    },
-    // Run tests sequentially to avoid database conflicts
-    pool: "forks",
-    poolOptions: {
-      forks: {
-        singleFork: true,
-      },
     },
   },
   resolve: {
