@@ -31,7 +31,7 @@ describe("Menu Router", () => {
     it("should throw NOT_FOUND for non-existent slug", async () => {
       await expect(
         caller.menu.getTenantBySlug({ slug: "non-existent-slug" })
-      ).rejects.toThrow("NOT_FOUND");
+      ).rejects.toThrow("Tenant not found");
     });
 
     it("should throw NOT_FOUND for inactive tenant", async () => {
@@ -42,7 +42,7 @@ describe("Menu Router", () => {
 
       await expect(
         caller.menu.getTenantBySlug({ slug: testData.tenant.slug })
-      ).rejects.toThrow("NOT_FOUND");
+      ).rejects.toThrow("Tenant not found");
     });
   });
 
@@ -157,7 +157,7 @@ describe("Menu Router", () => {
     it("should throw NOT_FOUND for non-existent tenant", async () => {
       await expect(
         caller.menu.getCategoriesWithProducts({ tenantSlug: "non-existent" })
-      ).rejects.toThrow("NOT_FOUND");
+      ).rejects.toThrow("Tenant not found");
     });
 
     it("should not include deleted categories", async () => {
