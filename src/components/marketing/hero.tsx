@@ -1,7 +1,7 @@
-import Link from "next/link"
+import Link from "next/link";
 
-import { Icons } from "@/components/ui/icons"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
+import { Icons } from "@/components/ui/icons";
 
 export function MarketingHero() {
   return (
@@ -11,8 +11,8 @@ export function MarketingHero() {
           The Ultimate SaaS Boilerplate
         </h1>
         <p className="max-w-[750px] text-lg text-muted-foreground sm:text-xl">
-          Built with Next.js 15, TypeScript, Tailwind CSS, Prisma, tRPC, and NextAuth.js.
-          Everything you need to build a multi-tenant SaaS application.
+          Built with Next.js 15, TypeScript, Tailwind CSS, Prisma, tRPC, and NextAuth.js. Everything
+          you need to build a multi-tenant SaaS application.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link href="/sign-in">
@@ -27,5 +27,5 @@ export function MarketingHero() {
         </div>
       </div>
     </section>
-  )
+  );
 }

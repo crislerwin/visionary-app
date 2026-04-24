@@ -1,33 +1,33 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
-import { signIn } from "next-auth/react"
+import { signIn } from "next-auth/react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Icons } from "@/components/ui/icons"
+import { Button } from "@/components/ui/button";
+import { Icons } from "@/components/ui/icons";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 interface LoginFormProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function LoginForm({ className, ...props }: LoginFormProps) {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
-  const [isLoading, setIsLoading] = React.useState<boolean>(false)
-  const [error, setError] = React.useState<string | null>(null)
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   async function onSubmit(event: React.FormEvent) {
-    event.preventDefault()
-    setIsLoading(true)
-    setError(null)
+    event.preventDefault();
+    setIsLoading(true);
+    setError(null);
 
-    const formData = new FormData(event.currentTarget as HTMLFormElement)
-    const email = formData.get("email") as string
-    const password = formData.get("password") as string
+    const formData = new FormData(event.currentTarget as HTMLFormElement);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
     try {
       const result = await signIn("credentials", {
@@ -35,18 +35,18 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
         password,
         redirect: false,
         callbackUrl,
-      })
+      });
 
       if (result?.error) {
-        setError("Invalid credentials")
-        return
+        setError("Invalid credentials");
+        return;
       }
 
-      router.push(callbackUrl)
-    } catch (error) {
-      setError("Something went wrong")
+      router.push(callbackUrl);
+    } catch (_error) {
+      setError("Something went wrong");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
@@ -79,13 +79,9 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
               required
             />
           </div>
-          {error && (
-            <p className="text-sm text-red-500">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-500">{error}</p>}
           <Button disabled={isLoading}>
-            {isLoading && (
-              <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-            )}
+            {isLoading && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
             Sign In
           </Button>
         </div>
@@ -95,17 +91,23 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
           <span className="w-full border-t" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">
-            Or continue with
-          </span>
+          <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <Button variant="outline" disabled={isLoading} onClick={() => signIn("google", { callbackUrl })}>
+        <Button
+          variant="outline"
+          disabled={isLoading}
+          onClick={() => signIn("google", { callbackUrl })}
+        >
           <Icons.google className="mr-2 h-4 w-4" />
           Google
         </Button>
-        <Button variant="outline" disabled={isLoading} onClick={() => signIn("github", { callbackUrl })}>
+        <Button
+          variant="outline"
+          disabled={isLoading}
+          onClick={() => signIn("github", { callbackUrl })}
+        >
           <Icons.gitHub className="mr-2 h-4 w-4" />
           GitHub
         </Button>
@@ -116,5 +118,5 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
         </Link>
       </p>
     </div>
-  )
+  );
 }

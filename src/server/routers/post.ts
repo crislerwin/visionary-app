@@ -1,7 +1,7 @@
-import { z } from "zod";
-import { TRPCError } from "@trpc/server";
-import { tenantProcedure, router } from "@/lib/trpc/trpc";
 import { prisma } from "@/lib/db";
+import { router, tenantProcedure } from "@/lib/trpc/trpc";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
 
 const postFilterSchema = z.object({
   tenantId: z.string(),
@@ -31,7 +31,7 @@ const deletePostSchema = z.object({
 });
 
 export const postRouter = router({
-  list: tenantProcedure.input(postFilterSchema).query(async ({ ctx, input }) => {
+  list: tenantProcedure.input(postFilterSchema).query(async ({ input }) => {
     const where = {
       tenantId: input.tenantId,
       ...(input.published !== undefined && { published: input.published }),
@@ -66,40 +66,42 @@ export const postRouter = router({
     };
   }),
 
-  byId: tenantProcedure.input(z.object({ id: z.string(), tenantId: z.string() })).query(async ({ input }) => {
-    const post = await prisma.post.findFirst({
-      where: {
-        id: input.id,
-        tenantId: input.tenantId,
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
+  byId: tenantProcedure
+    .input(z.object({ id: z.string(), tenantId: z.string() }))
+    .query(async ({ input }) => {
+      const post = await prisma.post.findFirst({
+        where: {
+          id: input.id,
+          tenantId: input.tenantId,
+        },
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+            },
+          },
+          tenant: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
           },
         },
-        tenant: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-      },
-    });
-
-    if (!post) {
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: "Post not found",
       });
-    }
 
-    return post;
-  }),
+      if (!post) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Post not found",
+        });
+      }
+
+      return post;
+    }),
 
   create: tenantProcedure.input(createPostSchema).mutation(async ({ ctx, input }) => {
     const post = await prisma.post.create({
@@ -107,7 +109,7 @@ export const postRouter = router({
         title: input.title,
         content: input.content,
         published: input.published,
-        authorId: ctx.user.id,
+        authorId: ctx.user.id!,
         tenantId: input.tenantId,
       },
       include: {
@@ -146,7 +148,7 @@ export const postRouter = router({
       const membership = await prisma.membership.findUnique({
         where: {
           userId_tenantId: {
-            userId: ctx.user.id,
+            userId: ctx.user.id!,
             tenantId: input.tenantId,
           },
         },
@@ -202,7 +204,7 @@ export const postRouter = router({
       const membership = await prisma.membership.findUnique({
         where: {
           userId_tenantId: {
-            userId: ctx.user.id,
+            userId: ctx.user.id!,
             tenantId: input.tenantId,
           },
         },

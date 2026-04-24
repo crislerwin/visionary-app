@@ -1,12 +1,12 @@
+import bcrypt from "bcryptjs";
 import type { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import Google from "next-auth/providers/google";
 import GitHub from "next-auth/providers/github";
-import bcrypt from "bcryptjs";
+import Google from "next-auth/providers/google";
 import { z } from "zod";
 
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/db";
+import { PrismaAdapter } from "@auth/prisma-adapter";
 
 const credentialsSchema = z.object({
   email: z.string().email(),

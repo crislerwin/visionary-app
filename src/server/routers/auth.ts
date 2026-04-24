@@ -1,8 +1,8 @@
-import { z } from "zod";
-import bcrypt from "bcryptjs";
-import { TRPCError } from "@trpc/server";
-import { protectedProcedure, publicProcedure, router } from "@/lib/trpc/trpc";
 import { prisma } from "@/lib/db";
+import { protectedProcedure, publicProcedure, router } from "@/lib/trpc/trpc";
+import { TRPCError } from "@trpc/server";
+import bcrypt from "bcryptjs";
+import { z } from "zod";
 
 export const authRouter = router({
   getSession: publicProcedure.query(({ ctx }) => {

@@ -1,8 +1,8 @@
-import { z } from "zod";
-import { TRPCError } from "@trpc/server";
-import { protectedProcedure, tenantProcedure, router } from "@/lib/trpc/trpc";
 import { prisma } from "@/lib/db";
+import { protectedProcedure, router, tenantProcedure } from "@/lib/trpc/trpc";
 import { MemberRole } from "@prisma/client";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
 
 const createTenantSchema = z.object({
   name: z.string().min(1).max(100),
@@ -29,14 +29,14 @@ export const tenantRouter = router({
       where: {
         memberships: {
           some: {
-            userId: ctx.user.id,
+            userId: ctx.user.id!,
           },
         },
       },
       include: {
         memberships: {
           where: {
-            userId: ctx.user.id,
+            userId: ctx.user.id!,
           },
           select: {
             role: true,
@@ -89,9 +89,7 @@ export const tenantRouter = router({
     return tenant;
   }),
 
-  create: protectedProcedure
-    .input(createTenantSchema)
-    .mutation(async ({ ctx, input }) => {
+  create: protectedProcedure.input(createTenantSchema).mutation(async ({ ctx, input }) => {
     // Check if slug is already taken
     const existing = await prisma.tenant.findUnique({
       where: { slug: input.slug },
@@ -109,10 +107,10 @@ export const tenantRouter = router({
         name: input.name,
         slug: input.slug,
         description: input.description,
-        ownerId: ctx.user.id,
+        ownerId: ctx.user.id!,
         memberships: {
           create: {
-            userId: ctx.user.id,
+            userId: ctx.user.id!,
             role: MemberRole.OWNER,
             joinedAt: new Date(),
           },
@@ -127,13 +125,16 @@ export const tenantRouter = router({
     const membership = await prisma.membership.findUnique({
       where: {
         userId_tenantId: {
-          userId: ctx.user.id,
+          userId: ctx.user.id!,
           tenantId: input.id,
         },
       },
     });
 
-    if (!membership || ![MemberRole.OWNER, MemberRole.ADMIN].includes(membership.role)) {
+    if (
+      !membership ||
+      (membership.role !== MemberRole.OWNER && membership.role !== MemberRole.ADMIN)
+    ) {
       throw new TRPCError({
         code: "FORBIDDEN",
         message: "You do not have permission to update this tenant",
@@ -152,23 +153,25 @@ export const tenantRouter = router({
     return tenant;
   }),
 
-  switch: protectedProcedure.input(z.object({ slug: z.string() })).mutation(async ({ ctx, input }) => {
-    const tenant = await prisma.tenant.findUnique({
-      where: { slug: input.slug },
-      include: {
-        memberships: {
-          where: { userId: ctx.user.id },
+  switch: protectedProcedure
+    .input(z.object({ slug: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const tenant = await prisma.tenant.findUnique({
+        where: { slug: input.slug },
+        include: {
+          memberships: {
+            where: { userId: ctx.user.id },
+          },
         },
-      },
-    });
-
-    if (!tenant || tenant.memberships.length === 0) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "You are not a member of this tenant",
       });
-    }
 
-    return { success: true, tenant };
-  }),
+      if (!tenant || tenant.memberships.length === 0) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You are not a member of this tenant",
+        });
+      }
+
+      return { success: true, tenant };
+    }),
 });

@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { SessionProvider } from "next-auth/react"
-import { TRPCProvider } from "@/lib/trpc/react"
-import { ThemeProvider as NextThemesProvider } from "next-themes"
+import { TRPCProvider } from "@/lib/trpc/react";
+import { SessionProvider } from "next-auth/react";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+import type * as React from "react";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -14,5 +14,5 @@ export function Providers({ children }: { children: React.ReactNode }) {
         </NextThemesProvider>
       </TRPCProvider>
     </SessionProvider>
-  )
+  );
 }

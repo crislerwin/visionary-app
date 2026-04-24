@@ -13,6 +13,9 @@
       },
       "suspicious": {
         "noArrayIndexKey": "warn"
+      },
+      "style": {
+        "noNonNullAssertion": "off"
       }
     }
   },

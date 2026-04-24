@@ -1,53 +1,43 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { PanelLeft, Menu } from "lucide-react"
+import { Menu } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { MainNav } from "./main-nav"
-import { UserNav } from "./user-nav"
-import { TenantSwitcher } from "./tenant-switcher"
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
+import { MainNav } from "./main-nav";
+import { TenantSwitcher } from "./tenant-switcher";
+import { UserNav } from "./user-nav";
 
 interface HeaderProps {
-  className?: string
+  className?: string;
 }
 
 export function Header({ className }: HeaderProps) {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   return (
     <div className={cn("border-b", className)}>
       <div className="flex h-16 items-center px-4">
         <Sheet>
           <SheetTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              className="shrink-0 md:hidden"
-            >
+            <Button variant="outline" size="icon" className="shrink-0 md:hidden">
               <Menu className="h-5 w-5" />
               <span className="sr-only">Toggle navigation menu</span>
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="flex flex-col">
             <nav className="grid gap-2 text-lg font-medium">
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-2 text-lg font-semibold"
-              >
+              <Link href="/dashboard" className="flex items-center gap-2 text-lg font-semibold">
                 <span className="sr-only">SaaS Boilerplate</span>
               </Link>
               <Link
                 href="/dashboard"
                 className={cn(
                   "mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 hover:text-foreground",
-                  pathname === "/dashboard"
-                    ? "bg-muted text-foreground"
-                    : "text-muted-foreground"
+                  pathname === "/dashboard" ? "bg-muted text-foreground" : "text-muted-foreground",
                 )}
               >
                 Dashboard
@@ -58,7 +48,7 @@ export function Header({ className }: HeaderProps) {
                   "mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 hover:text-foreground",
                   pathname?.startsWith("/dashboard/posts")
                     ? "bg-muted text-foreground"
-                    : "text-muted-foreground"
+                    : "text-muted-foreground",
                 )}
               >
                 Posts
@@ -69,7 +59,7 @@ export function Header({ className }: HeaderProps) {
                   "mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 hover:text-foreground",
                   pathname?.startsWith("/dashboard/team")
                     ? "bg-muted text-foreground"
-                    : "text-muted-foreground"
+                    : "text-muted-foreground",
                 )}
               >
                 Team
@@ -80,7 +70,7 @@ export function Header({ className }: HeaderProps) {
                   "mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 hover:text-foreground",
                   pathname?.startsWith("/dashboard/settings")
                     ? "bg-muted text-foreground"
-                    : "text-muted-foreground"
+                    : "text-muted-foreground",
                 )}
               >
                 Settings
@@ -102,5 +92,5 @@ export function Header({ className }: HeaderProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

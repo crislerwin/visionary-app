@@ -1,8 +1,8 @@
-import { z } from "zod";
-import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "@/lib/trpc/trpc";
 import { prisma } from "@/lib/db";
+import { protectedProcedure, router } from "@/lib/trpc/trpc";
+import { TRPCError } from "@trpc/server";
 import bcrypt from "bcryptjs";
+import { z } from "zod";
 
 const updateProfileSchema = z.object({
   name: z.string().min(1).max(100).optional(),

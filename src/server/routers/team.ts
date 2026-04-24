@@ -1,8 +1,8 @@
-import { z } from "zod";
-import { TRPCError } from "@trpc/server";
-import { tenantProcedure, router } from "@/lib/trpc/trpc";
 import { prisma } from "@/lib/db";
+import { router, tenantProcedure } from "@/lib/trpc/trpc";
 import { MemberRole } from "@prisma/client";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
 
 const inviteMemberSchema = z.object({
   tenantId: z.string(),
@@ -45,7 +45,8 @@ export const teamRouter = router({
     const currentUserMembership = members.find((m) => m.userId === ctx.user.id);
     const canManageRoles =
       currentUserMembership &&
-      [MemberRole.OWNER, MemberRole.ADMIN].includes(currentUserMembership.role);
+      (currentUserMembership.role === MemberRole.OWNER ||
+        currentUserMembership.role === MemberRole.ADMIN);
 
     return {
       members,
@@ -58,13 +59,17 @@ export const teamRouter = router({
     const currentUserMembership = await prisma.membership.findUnique({
       where: {
         userId_tenantId: {
-          userId: ctx.user.id,
+          userId: ctx.user.id!,
           tenantId: input.tenantId,
         },
       },
     });
 
-    if (!currentUserMembership || ![MemberRole.OWNER, MemberRole.ADMIN].includes(currentUserMembership.role)) {
+    if (
+      !currentUserMembership ||
+      (currentUserMembership.role !== MemberRole.OWNER &&
+        currentUserMembership.role !== MemberRole.ADMIN)
+    ) {
       throw new TRPCError({
         code: "FORBIDDEN",
         message: "You do not have permission to invite members",
@@ -72,7 +77,7 @@ export const teamRouter = router({
     }
 
     // Find or create user by email
-    let user = await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { email: input.email },
     });
 
@@ -127,7 +132,7 @@ export const teamRouter = router({
     const currentUserMembership = await prisma.membership.findUnique({
       where: {
         userId_tenantId: {
-          userId: ctx.user.id,
+          userId: ctx.user.id!,
           tenantId: input.tenantId,
         },
       },
@@ -159,24 +164,13 @@ export const teamRouter = router({
     }
 
     if (currentUserMembership.role === MemberRole.OWNER) {
-      // Owner can change anyone except can't remove their own ownership if they're the only owner
-      if (input.userId === ctx.user.id && input.role !== MemberRole.OWNER) {
-        const ownerCount = await prisma.membership.count({
-          where: {
-            tenantId: input.tenantId,
-            role: MemberRole.OWNER,
-          },
-        });
-        if (ownerCount <= 1) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "Cannot remove the only owner",
-          });
-        }
-      }
+      // Owner can change anyone
     } else if (currentUserMembership.role === MemberRole.ADMIN) {
       // Admin can't change owner or other admin roles
-      if ([MemberRole.OWNER, MemberRole.ADMIN].includes(targetMembership.role)) {
+      if (
+        targetMembership.role === MemberRole.OWNER ||
+        targetMembership.role === MemberRole.ADMIN
+      ) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "Admins cannot modify owners or other admins",
@@ -223,7 +217,7 @@ export const teamRouter = router({
     const currentUserMembership = await prisma.membership.findUnique({
       where: {
         userId_tenantId: {
-          userId: ctx.user.id,
+          userId: ctx.user.id!,
           tenantId: input.tenantId,
         },
       },
@@ -265,7 +259,10 @@ export const teamRouter = router({
       // Owner can remove anyone
     } else if (currentUserMembership.role === MemberRole.ADMIN) {
       // Admin can't remove owner or other admins
-      if ([MemberRole.OWNER, MemberRole.ADMIN].includes(targetMembership.role)) {
+      if (
+        targetMembership.role === MemberRole.OWNER ||
+        targetMembership.role === MemberRole.ADMIN
+      ) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "Admins cannot remove owners or other admins",
@@ -290,48 +287,50 @@ export const teamRouter = router({
     return { success: true };
   }),
 
-  leave: tenantProcedure.input(z.object({ tenantId: z.string() })).mutation(async ({ ctx, input }) => {
-    const membership = await prisma.membership.findUnique({
-      where: {
-        userId_tenantId: {
-          userId: ctx.user.id,
-          tenantId: input.tenantId,
-        },
-      },
-    });
-
-    if (!membership) {
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: "Membership not found",
-      });
-    }
-
-    // Owner can't leave if they're the only owner
-    if (membership.role === MemberRole.OWNER) {
-      const ownerCount = await prisma.membership.count({
+  leave: tenantProcedure
+    .input(z.object({ tenantId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const membership = await prisma.membership.findUnique({
         where: {
-          tenantId: input.tenantId,
-          role: MemberRole.OWNER,
+          userId_tenantId: {
+            userId: ctx.user.id!,
+            tenantId: input.tenantId,
+          },
         },
       });
-      if (ownerCount <= 1) {
+
+      if (!membership) {
         throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Cannot leave as the only owner",
+          code: "NOT_FOUND",
+          message: "Membership not found",
         });
       }
-    }
 
-    await prisma.membership.delete({
-      where: {
-        userId_tenantId: {
-          userId: ctx.user.id,
-          tenantId: input.tenantId,
+      // Owner can't leave if they're the only owner
+      if (membership.role === MemberRole.OWNER) {
+        const ownerCount = await prisma.membership.count({
+          where: {
+            tenantId: input.tenantId,
+            role: MemberRole.OWNER,
+          },
+        });
+        if (ownerCount <= 1) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Cannot leave as the only owner",
+          });
+        }
+      }
+
+      await prisma.membership.delete({
+        where: {
+          userId_tenantId: {
+            userId: ctx.user.id!,
+            tenantId: input.tenantId,
+          },
         },
-      },
-    });
+      });
 
-    return { success: true };
-  }),
+      return { success: true };
+    }),
 });

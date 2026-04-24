@@ -1,6 +1,6 @@
-import { httpBatchLink } from "@trpc/client"
+import { httpBatchLink } from "@trpc/client";
 
-import { trpc } from "./react"
+import { trpc } from "./react";
 
 export const trpcClient = trpc.createClient({
   links: [
@@ -8,4 +8,4 @@ export const trpcClient = trpc.createClient({
       url: "/api/trpc",
     }),
   ],
-})
+});
