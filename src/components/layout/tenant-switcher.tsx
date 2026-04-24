@@ -12,7 +12,6 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -22,12 +21,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useCurrentTenant } from "@/hooks/use-current-tenant"
-import { api } from "@/lib/trpc/react"
+import { trpc } from "@/lib/trpc/react"
 
 export function TenantSwitcher() {
   const router = useRouter()
@@ -37,7 +35,7 @@ export function TenantSwitcher() {
   const [newTenantName, setNewTenantName] = React.useState("")
   const [newTenantSlug, setNewTenantSlug] = React.useState("")
 
-  const createTenant = api.tenant.create.useMutation({
+  const createTenant = trpc.tenant.create.useMutation({
     onSuccess: (data) => {
       setCurrentTenant(data.id)
       setShowNewTenantDialog(false)
@@ -95,17 +93,15 @@ export function TenantSwitcher() {
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />
-          <DialogTrigger asChild>
-            <DropdownMenuItem
-              onSelect={() => {
-                setOpen(false)
-                setShowNewTenantDialog(true)
-              }}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Create Tenant
-            </DropdownMenuItem>
-          </DialogTrigger>
+          <DropdownMenuItem
+            onSelect={() => {
+              setOpen(false)
+              setShowNewTenantDialog(true)
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Create Tenant
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <DialogContent>

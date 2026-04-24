@@ -89,7 +89,9 @@ export const tenantRouter = router({
     return tenant;
   }),
 
-  create: protectedProcedure input(createTenantSchema).mutation(async ({ ctx, input }) => {
+  create: protectedProcedure
+    .input(createTenantSchema)
+    .mutation(async ({ ctx, input }) => {
     // Check if slug is already taken
     const existing = await prisma.tenant.findUnique({
       where: { slug: input.slug },

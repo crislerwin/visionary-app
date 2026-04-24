@@ -1,58 +1,57 @@
-import { initTRPC, TRPCError } from "@trpc/server";
-import { cache } from "react";
-import superjson from "superjson";
-import { auth } from "@/auth";
-import { getTenantContext } from "@/server/tenant-context/tenant";
+import { z } from "zod"
+import { initTRPC, TRPCError } from "@trpc/server"
+import { getTenantContext } from "@/server/tenant-context/tenant"
+import { auth } from "@/auth"
 
-export const createTRPCContext = cache(async () => {
-  const session = await auth();
-  const tenant = await getTenantContext();
+export const createTRPCContext = async (opts: { headers: Headers }) => {
+  const session = await auth()
+  const tenant = await getTenantContext()
 
   return {
     session,
     tenant,
-    user: session?.user ?? null,
-  };
-});
+    user: session?.user,
+    ...opts,
+  }
+}
 
-export type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>;
+export type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>
 
 const t = initTRPC.context<TRPCContext>().create({
-  transformer: superjson,
-});
+  transformer: undefined,
+})
 
-export const createCallerFactory = t.createCallerFactory;
-export const router = t.router;
-export const publicProcedure = t.procedure;
+export const router = t.router
+export const publicProcedure = t.procedure
 
-const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
-  if (!ctx.session || !ctx.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED" });
+export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
+  if (!ctx.session) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "You must be logged in to access this resource",
+    })
   }
+
   return next({
     ctx: {
-      session: ctx.session,
-      user: ctx.user,
-      tenant: ctx.tenant,
+      ...ctx,
+      user: ctx.session.user,
     },
-  });
-});
+  })
+})
 
-export const protectedProcedure = t.procedure.use(enforceUserIsAuthed);
-
-const enforceTenantContext = t.middleware(({ ctx, next }) => {
+export const tenantProcedure = protectedProcedure.use(async ({ ctx, next }) => {
   if (!ctx.tenant) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: "Tenant context required",
-    });
+      message: "No tenant selected",
+    })
   }
+
   return next({
     ctx: {
       ...ctx,
       tenant: ctx.tenant,
-    } as { session: typeof ctx.session; user: typeof ctx.user; tenant: NonNullable<typeof ctx.tenant> },
-  });
-});
-
-export const tenantProcedure = protectedProcedure.use(enforceTenantContext);
+    },
+  })
+})
