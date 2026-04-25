@@ -41,6 +41,7 @@ export function CartSheet() {
         <ShoppingCart className="size-5" />
         {totalItems > 0 && (
           <Badge
+            data-testid="cart-badge"
             variant="destructive"
             className="absolute -top-2 -right-2 size-5 flex items-center justify-center p-0 text-xs"
           >
