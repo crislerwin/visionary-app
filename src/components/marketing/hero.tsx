@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { Icons } from "@/components/ui/icons";
 
 export function MarketingHero() {
   return (
@@ -11,7 +10,8 @@ export function MarketingHero() {
           Food Service — Digital Menu & POS
         </h1>
         <p className="max-w-[750px] text-lg text-muted-foreground sm:text-xl">
-          The modern platform to manage your restaurant menus, tenants, and point-of-sale operations.
+          The modern platform to manage your restaurant menus, tenants, and point-of-sale
+          operations.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link href="/sign-in">

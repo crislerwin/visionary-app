@@ -16,9 +16,12 @@ export default async function HomePage() {
 
         <section className="container grid items-center gap-6 py-8 md:py-12 lg:py-24">
           <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center">
-            <h2 className="text-3xl font-bold leading-[1.1] sm:text-3xl md:text-5xl">Welcome to Food Service</h2>
+            <h2 className="text-3xl font-bold leading-[1.1] sm:text-3xl md:text-5xl">
+              Welcome to Food Service
+            </h2>
             <p className="max-w-[85%] leading-normal text-muted-foreground sm:text-lg sm:leading-7">
-              Your digital menu and point-of-sale platform. Manage tenants, orders, and menus with ease.
+              Your digital menu and point-of-sale platform. Manage tenants, orders, and menus with
+              ease.
             </p>
           </div>
         </section>

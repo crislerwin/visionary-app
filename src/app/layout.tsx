@@ -5,8 +5,7 @@ import "@/app/globals.css";
 
 export const metadata: Metadata = {
   title: "Food Service - Digital Menu & POS",
-  description:
-    "A digital menu and point-of-sale platform for restaurants and food services.",
+  description: "A digital menu and point-of-sale platform for restaurants and food services.",
 };
 
 export default function RootLayout({

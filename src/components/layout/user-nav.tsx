@@ -1,16 +1,14 @@
 "use client";
 
-import { LogOut, Settings, User } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -19,7 +17,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function UserNav() {
-  const router = useRouter();
   const { data: session } = useSession();
 
   if (!session?.user) {
