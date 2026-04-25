@@ -36,15 +36,20 @@ interface MenuClientProps {
 }
 
 export function MenuClient({ tenant, categories }: MenuClientProps) {
-  const cart = useCartStore();
+  const setTenant = useCartStore((state) => state.setTenant);
+  const tenantSlug = useCartStore((state) => state.tenantSlug);
 
-  // Set tenant when component mounts
+  // Set tenant when component mounts (only when slug actually changes)
   useEffect(() => {
-    cart.setTenant(tenant.slug, tenant.name);
-  }, [tenant, cart]);
+    if (tenantSlug !== tenant.slug) {
+      setTenant(tenant.slug, tenant.name);
+    }
+  }, [tenant.slug, tenant.name, tenantSlug, setTenant]);
 
-  const totalItems = cart.getTotalItems();
-  const totalPrice = cart.getTotalPrice();
+  const totalItems = useCartStore((state) => state.getTotalItems());
+  const totalPrice = useCartStore((state) => state.getTotalPrice());
+  const openCart = useCartStore((state) => state.openCart);
+
 
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-8">
@@ -127,7 +132,7 @@ export function MenuClient({ tenant, categories }: MenuClientProps) {
       {totalItems > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 md:hidden z-50">
           <button
-            onClick={cart.openCart}
+            onClick={openCart}
             className="w-full bg-primary text-primary-foreground rounded-lg py-3 px-4 flex items-center justify-between"
           >
             <div className="flex items-center gap-2">
