@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Icons } from "@/components/ui/icons";
 import { useCurrentTenant } from "@/hooks/use-current-tenant";
 import {
@@ -130,7 +129,7 @@ export default function CategoriesPage() {
   };
 
   return (
-    <DashboardShell>
+    
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Categorias</h1>
@@ -314,6 +313,6 @@ export default function CategoriesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </DashboardShell>
+    
   );
 }
