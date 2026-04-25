@@ -3,7 +3,7 @@ import { router, tenantProcedure } from "@/lib/trpc/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-const currencyRegex = /^(\d+\.\d{2})$/;
+const _currencyRegex = /^(\d+\.\d{2})$/;
 
 const variantSchema = z.object({
   name: z.string().min(1).max(50),

@@ -29,7 +29,7 @@ export async function resetDatabase() {
   for (const table of tables) {
     try {
       await prisma.$executeRawUnsafe(`TRUNCATE TABLE "${table}" CASCADE;`);
-    } catch (e) {
+    } catch (_e) {
       // Table might not exist, ignore
     }
   }

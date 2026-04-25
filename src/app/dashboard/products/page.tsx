@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { api } from "@/lib/trpc/react";
-import type { AppRouter } from "@/server/routers/_app";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -93,16 +92,27 @@ export default function ProductsPage() {
     const [trackStock, setTrackStock] = useState(false);
     const [variants, setVariants] = useState<VariantInput[]>([]);
     const [variantsOpen, setVariantsOpen] = useState(false);
+    
+    // Category creation form state
+    const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState("");
+    const [newCategoryDescription, setNewCategoryDescription] = useState("");
 
     const { data: productsData, refetch } = api.product.list.useQuery(
         { tenantId: currentTenant?.id ?? "", limit: 50 },
         { enabled: !!currentTenant?.id },
     );
 
-    const { data: categories } = api.category.list.useQuery(
+    const { data: categories, refetch: refetchCategories } = api.category.list.useQuery(
         { tenantId: currentTenant?.id ?? "", includeDeleted: false },
         { enabled: !!currentTenant?.id },
     );
+
+    const createCategoryMutation = api.category.create.useMutation({
+        onSuccess: () => {
+            void refetchCategories();
+        },
+    });
 
     const createMutation = api.product.create.useMutation({
         onSuccess: () => {
@@ -138,6 +148,27 @@ export default function ProductsPage() {
         setTrackStock(false);
         setVariants([]);
         setVariantsOpen(false);
+    };
+
+    const handleCreateCategory = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!currentTenant?.id || !newCategoryName.trim()) return;
+        
+        createCategoryMutation.mutate(
+            {
+                tenantId: currentTenant.id,
+                name: newCategoryName.trim(),
+                description: newCategoryDescription.trim() || undefined,
+            },
+            {
+                onSuccess: (newCategory) => {
+                    setSelectedCategoryId(newCategory.id);
+                    setIsCreateCategoryOpen(false);
+                    setNewCategoryName("");
+                    setNewCategoryDescription("");
+                },
+            }
+        );
     };
 
     const openEdit = (product: Product) => {
@@ -189,9 +220,9 @@ export default function ProductsPage() {
             tenantId: currentTenant.id,
             name: productName,
             description: productDescription || undefined,
-            price: parseFloat(productPrice) || 0,
+            price: Number.parseFloat(productPrice) || 0,
             categoryId: selectedCategoryId,
-            stock: parseInt(productStock) || 0,
+            stock: Number.parseInt(productStock) || 0,
             trackStock,
             variants: variants.length > 0 ? variants : undefined,
         });
@@ -206,9 +237,9 @@ export default function ProductsPage() {
             tenantId: currentTenant.id,
             name: productName,
             description: productDescription || null,
-            price: parseFloat(productPrice) || 0,
+            price: Number.parseFloat(productPrice) || 0,
             categoryId: selectedCategoryId,
-            stock: parseInt(productStock) || 0,
+            stock: Number.parseInt(productStock) || 0,
             trackStock,
             isActive: true,
         });
@@ -309,9 +340,21 @@ export default function ProductsPage() {
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="category">
-                                            Categoria
-                                        </Label>
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="category">
+                                                Categoria
+                                            </Label>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setIsCreateCategoryOpen(true)}
+                                                className="h-auto px-2 py-1 text-xs"
+                                            >
+                                                <Icons.plus className="mr-1 h-3 w-3" />
+                                                Nova
+                                            </Button>
+                                        </div>
                                         <Select
                                             value={selectedCategoryId}
                                             onValueChange={
@@ -435,7 +478,7 @@ export default function ProductsPage() {
                                                             updateVariant(
                                                                 index,
                                                                 "price",
-                                                                parseFloat(
+                                                                Number.parseFloat(
                                                                     e.target
                                                                         .value,
                                                                 ) || 0,
@@ -459,7 +502,7 @@ export default function ProductsPage() {
                                                             updateVariant(
                                                                 index,
                                                                 "stock",
-                                                                parseInt(
+                                                                Number.parseInt(
                                                                     e.target
                                                                         .value,
                                                                 ) || 0,
@@ -788,7 +831,7 @@ export default function ProductsPage() {
                                                         updateVariant(
                                                             index,
                                                             "price",
-                                                            parseFloat(
+                                                            Number.parseFloat(
                                                                 e.target.value,
                                                             ) || 0,
                                                         )
@@ -809,7 +852,7 @@ export default function ProductsPage() {
                                                         updateVariant(
                                                             index,
                                                             "stock",
-                                                            parseInt(
+                                                            Number.parseInt(
                                                                 e.target.value,
                                                             ) || 0,
                                                         )
@@ -894,6 +937,59 @@ export default function ProductsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Create Category Dialog */}
+            <Dialog open={isCreateCategoryOpen} onOpenChange={setIsCreateCategoryOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Nova Categoria</DialogTitle>
+                        <DialogDescription>
+                            Crie uma nova categoria para organizar seus produtos
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleCreateCategory}>
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="new-cat-name">Nome *</Label>
+                                <Input
+                                    id="new-cat-name"
+                                    value={newCategoryName}
+                                    onChange={(e) => setNewCategoryName(e.target.value)}
+                                    placeholder="Ex: Lanches, Bebidas..."
+                                    required
+                                    maxLength={50}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="new-cat-desc">Descrição (opcional)</Label>
+                                <Input
+                                    id="new-cat-desc"
+                                    value={newCategoryDescription}
+                                    onChange={(e) => setNewCategoryDescription(e.target.value)}
+                                    placeholder="Descrição da categoria"
+                                    maxLength={500}
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsCreateCategoryOpen(false)}
+                                disabled={createCategoryMutation.isPending}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button type="submit" disabled={createCategoryMutation.isPending}>
+                                {createCategoryMutation.isPending && (
+                                    <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                                )}
+                                Criar
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }

@@ -1,11 +1,8 @@
 import {
   LayoutDashboard,
-  FileText,
-  Users,
-  Settings,
-  UtensilsCrossed,
   Package,
   Store,
+  FolderOpen,
   type LucideIcon,
 } from "lucide-react";
 
@@ -40,34 +37,14 @@ export const sidebarNavigation: NavSection[] = [
         icon: Package,
       },
       {
+        title: "Categorias",
+        href: "/dashboard/categories",
+        icon: FolderOpen,
+      },
+      {
         title: "Ver Cardápio",
         href: "/menu",
         icon: Store,
-      },
-    ],
-  },
-  {
-    title: "Content",
-    items: [
-      {
-        title: "Posts",
-        href: "/dashboard/posts",
-        icon: FileText,
-      },
-    ],
-  },
-  {
-    title: "Management",
-    items: [
-      {
-        title: "Team",
-        href: "/dashboard/team",
-        icon: Users,
-      },
-      {
-        title: "Settings",
-        href: "/dashboard/settings",
-        icon: Settings,
       },
     ],
   },

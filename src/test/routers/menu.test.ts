@@ -187,5 +187,3 @@ describe("Menu Router", () => {
     });
   });
 });
-
-export {};

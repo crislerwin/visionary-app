@@ -344,5 +344,3 @@ describe("Product Router", () => {
     });
   });
 });
-
-export {};

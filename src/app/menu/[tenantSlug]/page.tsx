@@ -26,13 +26,13 @@ export async function generateMetadata({ params }: MenuPageProps): Promise<Metad
 export default async function MenuPage({ params }: MenuPageProps) {
   const { tenantSlug } = await params;
 
-  let tenant;
-  let categories;
+  let tenant: Awaited<ReturnType<typeof api.menu.getTenantBySlug>> | undefined;
+  let categories: Awaited<ReturnType<typeof api.menu.getCategoriesWithProducts>> | undefined;
 
   try {
     tenant = await api.menu.getTenantBySlug({ slug: tenantSlug });
     categories = await api.menu.getCategoriesWithProducts({ tenantSlug });
-  } catch (error) {
+  } catch (_error) {
     return notFound();
   }
 
