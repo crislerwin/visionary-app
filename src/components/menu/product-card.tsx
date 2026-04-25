@@ -51,7 +51,7 @@ export function ProductCard({ product, tenantSlug, tenantName }: ProductCardProp
     product.variants.length > 0 ? product.variants[0] : null,
   );
   const [added, setAdded] = useState(false);
-  const { addItem, setTenant, openCart } = useCartStore();
+  const { addItem, setTenant, getItemCount } = useCartStore();
 
   const displayPrice = selectedVariant?.price ?? product.price;
   const isOutOfStock = product.trackStock && product.stock <= 0;

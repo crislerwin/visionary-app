@@ -155,7 +155,7 @@ export const productRouter = router({
     }),
 
   // Criar produto
-  create: tenantProcedure.input(createProductSchema).mutation(async ({ ctx, input }) => {
+  create: tenantProcedure.input(createProductSchema).mutation(async ({ input }) => {
     // Verificar se categoria existe
     const category = await prisma.category.findFirst({
       where: {
