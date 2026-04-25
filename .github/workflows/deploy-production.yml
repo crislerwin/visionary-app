@@ -24,18 +24,53 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const { data: runs } = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'ci.yml',
-              branch: 'main',
-              per_page: 1
-            });
+            // Skip this run to avoid race condition
+            const currentRunId = context.runId;
             
-            const latestRun = runs.workflow_runs[0];
-            if (latestRun.conclusion !== 'success') {
-              core.setFailed(`Latest CI run was not successful: ${latestRun.conclusion}`);
+            async function waitForCI(maxAttempts = 30, delay = 10000) {
+              for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                const { data: runs } = await github.rest.actions.listWorkflowRuns({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: 'ci.yml',
+                  branch: 'main',
+                  per_page: 5
+                });
+                
+                // Find the latest CI run for this commit (excluding running ones)
+                const currentRun = runs.workflow_runs.find(r => r.id === currentRunId);
+                const ciRuns = runs.workflow_runs.filter(r => 
+                  r.id !== currentRunId && 
+                  r.head_sha === currentRun?.head_sha || context.sha
+                );
+                
+                const latestCI = ciRuns[0];
+                
+                if (!latestCI) {
+                  console.log(`Attempt ${attempt + 1}: No CI run found yet, waiting...`);
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                  continue;
+                }
+                
+                console.log(`Attempt ${attempt + 1}: CI run status = ${latestCI.status}, conclusion = ${latestCI.conclusion}`);
+                
+                if (latestCI.status === 'completed') {
+                  if (latestCI.conclusion === 'success') {
+                    console.log('CI passed! Proceeding with deploy.');
+                    return;
+                  } else {
+                    core.setFailed(`Latest CI run was not successful: ${latestCI.conclusion}`);
+                    return;
+                  }
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, delay));
+              }
+              
+              core.setFailed('Timeout waiting for CI to complete');
             }
+            
+            await waitForCI();
 
   deploy:
     name: Deploy Production
