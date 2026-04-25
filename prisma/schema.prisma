@@ -91,7 +91,6 @@ model Tenant {
   products    Product[]
   customers   Customer[]
   orders      Order[]
-  cashRegisters CashRegister[]
 
   @@map("tenants")
 }
@@ -332,61 +331,3 @@ model OrderItem {
 
 // Relations adicionais para Tenant
 // Relations adicionais para Tenant adicionadas diretamente no model Tenant acima
-
-// ===============================
-// FOOD SERVICE - CASH REGISTER (Controle de Caixa)
-// ===============================
-
-enum CashRegisterStatus {
-  OPEN
-  CLOSED
-}
-
-enum TransactionType {
-  SALE        // Entrada de venda
-  EXPENSE     // Saída de despesa
-  WITHDRAWAL  // Sangria
-  INITIAL     // Valor de abertura
-}
-
-model CashRegister {
-  id            String   @id @default(cuid())
-  tenantId      String   @map("tenant_id")
-  openedAt      DateTime @default(now()) @map("opened_at")
-  closedAt      DateTime? @map("closed_at")
-  openedBy      String   @map("opened_by") // userId
-  closedBy      String?  @map("closed_by") // userId
-  initialAmount Decimal @db.Decimal(10, 2) @map("initial_amount")
-  finalAmount   Decimal? @db.Decimal(10, 2) @map("final_amount")
-  difference    Decimal? @db.Decimal(10, 2)
-  status        CashRegisterStatus @default(OPEN)
-  notes         String? @db.Text
-  
-  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  transactions  CashRegisterTransaction[]
-  
-  @@index([tenantId])
-  @@index([status])
-  @@index([openedAt])
-  @@map("cash_registers")
-}
-
-model CashRegisterTransaction {
-  id              String   @id @default(cuid())
-  cashRegisterId  String   @map("cash_register_id")
-  type            TransactionType
-  amount          Decimal  @db.Decimal(10, 2)
-  description     String?
-  category        String?  // Para despesas: "suprimentos", "manutenção", etc.
-  paymentMethod   PaymentMethod? @map("payment_method") // Para entradas
-  orderId         String?  @map("order_id") // Referência ao pedido, se aplicável
-  createdBy       String   @map("created_by")
-  createdAt       DateTime @default(now()) @map("created_at")
-  
-  cashRegister    CashRegister @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
-  
-  @@index([cashRegisterId])
-  @@index([type])
-  @@index([createdAt])
-  @@map("cash_register_transactions")
-}

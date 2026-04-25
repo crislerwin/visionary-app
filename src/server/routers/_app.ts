@@ -1,6 +1,5 @@
 import { createCallerFactory, createTRPCContext, router } from "@/lib/trpc/trpc";
 import { authRouter } from "./auth";
-import { cashRegisterRouter } from "./cash-register";
 import { categoryRouter } from "./category";
 import { menuRouter } from "./menu";
 import { orderRouter } from "./order";
@@ -18,7 +17,6 @@ export const appRouter = router({
   product: productRouter,
   menu: menuRouter,
   order: orderRouter,
-  cashRegister: cashRegisterRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -50,12 +50,3 @@ export function truncate(str: string, length: number): string {
   if (str.length <= length) return str;
   return `${str.slice(0, length)}...`;
 }
-
-export function formatCurrency(value: number | string): string {
-  const num = typeof value === "string" ? Number.parseFloat(value) : value;
-  if (Number.isNaN(num)) return "R$ 0,00";
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(num);
-}
