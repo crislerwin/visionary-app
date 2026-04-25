@@ -76,6 +76,17 @@ export const menuRouter = router({
         (cat) => cat.products.length > 0
       );
 
-      return categoriesWithProducts;
+      // Convert Decimal prices to numbers
+      return categoriesWithProducts.map((category) => ({
+        ...category,
+        products: category.products.map((product) => ({
+          ...product,
+          price: Number(product.price),
+          variants: product.variants.map((variant) => ({
+            ...variant,
+            price: Number(variant.price),
+          })),
+        })),
+      }));
     }),
 });
