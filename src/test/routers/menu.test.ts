@@ -4,7 +4,7 @@ import { prisma, resetDatabase, setupTestData } from "../database";
 
 describe("Menu Router", () => {
   let caller: ReturnType<typeof appRouter.createCaller>;
-  let testData: { tenant: { id: string }; user: { id: string; email: string } };
+  let testData: { tenant: { id: string; name: string; slug: string }; user: { id: string; email: string } };
 
   beforeEach(async () => {
     await resetDatabase();
@@ -13,7 +13,8 @@ describe("Menu Router", () => {
     // Create public caller (no session required)
     caller = appRouter.createCaller({
       session: null,
-      headers: new Headers(),
+      tenantId: null,
+      user: null,
     });
   });
 

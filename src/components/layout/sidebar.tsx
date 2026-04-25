@@ -82,7 +82,7 @@ function MobileMenu({
               className="flex items-center gap-2 font-semibold"
               onClick={() => setOpen(false)}
             >
-              <span className="text-lg">SaaS Boilerplate</span>
+              <span className="text-lg">Food Service</span>
             </Link>
           </div>
           <div className="flex-1 overflow-y-auto py-4">
@@ -174,7 +174,7 @@ export function MobileSidebarTrigger() {
         <div className="flex h-full flex-col">
           <div className="flex h-14 items-center border-b px-4">
             <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-              <span className="text-lg">SaaS Boilerplate</span>
+              <span className="text-lg">Food Service</span>
             </Link>
           </div>
           <div className="flex-1 overflow-y-auto py-4">

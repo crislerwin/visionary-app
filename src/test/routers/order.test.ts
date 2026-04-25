@@ -46,6 +46,12 @@ describe("Order Router", () => {
         expires: new Date(Date.now() + 86400000).toISOString(),
       },
       tenantId: testData.tenant.id,
+      user: {
+        id: testData.user.id,
+        email: testData.user.email,
+        name: "Test User",
+        image: null,
+      }
     });
   });
 

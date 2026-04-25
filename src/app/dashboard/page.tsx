@@ -24,7 +24,7 @@ export default async function DashboardPage() {
   if (tenants.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <h1 className="text-2xl font-bold">Welcome to SaaS Boilerplate</h1>
+        <h1 className="text-2xl font-bold">Bem-vindo ao Food Service</h1>
         <p className="text-muted-foreground">
           You don&apos;t have any tenants yet. Create one to get started.
         </p>
