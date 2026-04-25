@@ -3,7 +3,7 @@ import { router, tenantProcedure } from "@/lib/trpc/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-const currencyRegex = /^(\d+\.\d{2})$/;
+const _currencyRegex = /^(\d+\.\d{2})$/;
 
 const variantSchema = z.object({
   name: z.string().min(1).max(50),
@@ -57,7 +57,7 @@ export const productRouter = router({
         search: z.string().optional(),
         limit: z.number().min(1).max(100).default(50),
         cursor: z.string().optional(),
-      })
+      }),
     )
     .query(async ({ input }) => {
       const where: Record<string, unknown> = {
@@ -133,7 +133,7 @@ export const productRouter = router({
         categoryId: z.string(),
         tenantId: z.string(),
         includeInactive: z.boolean().optional(),
-      })
+      }),
     )
     .query(async ({ input }) => {
       const products = await prisma.product.findMany({
@@ -155,10 +155,70 @@ export const productRouter = router({
     }),
 
   // Criar produto
-  create: tenantProcedure
-    .input(createProductSchema)
-    .mutation(async ({ ctx, input }) => {
-      // Verificar se categoria existe
+  create: tenantProcedure.input(createProductSchema).mutation(async ({ input }) => {
+    // Verificar se categoria existe
+    const category = await prisma.category.findFirst({
+      where: {
+        id: input.categoryId,
+        tenantId: input.tenantId,
+      },
+    });
+
+    if (!category) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Category not found",
+      });
+    }
+
+    const product = await prisma.product.create({
+      data: {
+        name: input.name,
+        description: input.description,
+        image: input.image,
+        price: input.price,
+        stock: input.stock,
+        trackStock: input.trackStock,
+        categoryId: input.categoryId,
+        tenantId: input.tenantId,
+        variants: {
+          create:
+            input.variants?.map((v) => ({
+              name: v.name,
+              price: v.price,
+              stock: v.stock ?? 0,
+            })) || [],
+        },
+      },
+      include: {
+        category: {
+          select: { id: true, name: true },
+        },
+        variants: true,
+      },
+    });
+
+    return product;
+  }),
+
+  // Atualizar produto
+  update: tenantProcedure.input(updateProductSchema).mutation(async ({ input }) => {
+    const existing = await prisma.product.findFirst({
+      where: {
+        id: input.id,
+        tenantId: input.tenantId,
+      },
+    });
+
+    if (!existing) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Product not found",
+      });
+    }
+
+    // Se mudou de categoria, verificar se nova existe
+    if (input.categoryId && input.categoryId !== existing.categoryId) {
       const category = await prisma.category.findFirst({
         where: {
           id: input.categoryId,
@@ -172,122 +232,57 @@ export const productRouter = router({
           message: "Category not found",
         });
       }
+    }
 
-      const product = await prisma.product.create({
-        data: {
-          name: input.name,
-          description: input.description,
-          image: input.image,
-          price: input.price,
-          stock: input.stock,
-          trackStock: input.trackStock,
-          categoryId: input.categoryId,
-          tenantId: input.tenantId,
-          variants: {
-            create: input.variants?.map((v) => ({
-              name: v.name,
-              price: v.price,
-              stock: v.stock ?? 0,
-            })) || [],
-          },
+    const product = await prisma.product.update({
+      where: { id: input.id },
+      data: {
+        ...(input.name !== undefined && { name: input.name }),
+        ...(input.description !== undefined && { description: input.description }),
+        ...(input.image !== undefined && { image: input.image }),
+        ...(input.price !== undefined && { price: input.price }),
+        ...(input.categoryId !== undefined && { categoryId: input.categoryId }),
+        ...(input.stock !== undefined && { stock: input.stock }),
+        ...(input.trackStock !== undefined && { trackStock: input.trackStock }),
+        ...(input.isActive !== undefined && { isActive: input.isActive }),
+      },
+      include: {
+        category: {
+          select: { id: true, name: true },
         },
-        include: {
-          category: {
-            select: { id: true, name: true },
-          },
-          variants: true,
-        },
-      });
+        variants: true,
+      },
+    });
 
-      return product;
-    }),
-
-  // Atualizar produto
-  update: tenantProcedure
-    .input(updateProductSchema)
-    .mutation(async ({ input }) => {
-      const existing = await prisma.product.findFirst({
-        where: {
-          id: input.id,
-          tenantId: input.tenantId,
-        },
-      });
-
-      if (!existing) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Product not found",
-        });
-      }
-
-      // Se mudou de categoria, verificar se nova existe
-      if (input.categoryId && input.categoryId !== existing.categoryId) {
-        const category = await prisma.category.findFirst({
-          where: {
-            id: input.categoryId,
-            tenantId: input.tenantId,
-          },
-        });
-
-        if (!category) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Category not found",
-          });
-        }
-      }
-
-      const product = await prisma.product.update({
-        where: { id: input.id },
-        data: {
-          ...(input.name !== undefined && { name: input.name }),
-          ...(input.description !== undefined && { description: input.description }),
-          ...(input.image !== undefined && { image: input.image }),
-          ...(input.price !== undefined && { price: input.price }),
-          ...(input.categoryId !== undefined && { categoryId: input.categoryId }),
-          ...(input.stock !== undefined && { stock: input.stock }),
-          ...(input.trackStock !== undefined && { trackStock: input.trackStock }),
-          ...(input.isActive !== undefined && { isActive: input.isActive }),
-        },
-        include: {
-          category: {
-            select: { id: true, name: true },
-          },
-          variants: true,
-        },
-      });
-
-      return product;
-    }),
+    return product;
+  }),
 
   // Deletar produto (soft delete)
-  delete: tenantProcedure
-    .input(deleteProductSchema)
-    .mutation(async ({ input }) => {
-      const product = await prisma.product.findFirst({
-        where: {
-          id: input.id,
-          tenantId: input.tenantId,
-        },
+  delete: tenantProcedure.input(deleteProductSchema).mutation(async ({ input }) => {
+    const product = await prisma.product.findFirst({
+      where: {
+        id: input.id,
+        tenantId: input.tenantId,
+      },
+    });
+
+    if (!product) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Product not found",
       });
+    }
 
-      if (!product) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Product not found",
-        });
-      }
+    await prisma.product.update({
+      where: { id: input.id },
+      data: {
+        isDeleted: true,
+        isActive: false,
+      },
+    });
 
-      await prisma.product.update({
-        where: { id: input.id },
-        data: {
-          isDeleted: true,
-          isActive: false,
-        },
-      });
-
-      return { success: true };
-    }),
+    return { success: true };
+  }),
 
   // Add variant to product
   addVariant: tenantProcedure
@@ -296,7 +291,7 @@ export const productRouter = router({
         tenantId: z.string(),
         productId: z.string(),
         variant: variantSchema,
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const product = await prisma.product.findFirst({
@@ -335,7 +330,7 @@ export const productRouter = router({
         price: z.number().min(0).max(99999).optional(),
         stock: z.number().int().min(0).optional(),
         isActive: z.boolean().optional(),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const variant = await prisma.productVariant.findFirst({
@@ -369,7 +364,7 @@ export const productRouter = router({
       z.object({
         tenantId: z.string(),
         variantId: z.string(),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const variant = await prisma.productVariant.findFirst({

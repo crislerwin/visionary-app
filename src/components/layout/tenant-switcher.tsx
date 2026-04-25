@@ -60,7 +60,10 @@ export function TenantSwitcher() {
             size="sm"
             aria-expanded={open}
             aria-label="Select a tenant"
-            className={cn("w-full justify-between h-8 px-2 text-xs", !currentTenant && "text-muted-foreground")}
+            className={cn(
+              "w-full justify-between h-8 px-2 text-xs",
+              !currentTenant && "text-muted-foreground",
+            )}
           >
             <Building2 className="mr-1.5 h-3.5 w-3.5 shrink-0" />
             <span className="truncate">{currentTenant?.name || "Select tenant..."}</span>

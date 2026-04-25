@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { protectedProcedure, router, tenantProcedure } from "@/lib/trpc/trpc";
+import { protectedProcedure, publicProcedure, router, tenantProcedure } from "@/lib/trpc/trpc";
 import { MemberRole } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -54,7 +54,7 @@ export const tenantRouter = router({
     }));
   }),
 
-  bySlug: protectedProcedure.input(z.object({ slug: z.string() })).query(async ({ input }) => {
+  bySlug: publicProcedure.input(z.object({ slug: z.string() })).query(async ({ input }) => {
     const tenant = await prisma.tenant.findUnique({
       where: { slug: input.slug },
       include: {

@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, beforeAll } from "vitest";
 import { appRouter } from "@/server/routers/_app";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { prisma, resetDatabase, setupTestData } from "../database";
 
 describe("Category Router", () => {
@@ -14,7 +14,7 @@ describe("Category Router", () => {
     // Setup fresh test data
     testData = await setupTestData();
 
-    // Create authenticated caller
+    // Create authenticated caller with tenant context
     caller = appRouter.createCaller({
       session: {
         user: {
@@ -25,7 +25,13 @@ describe("Category Router", () => {
         },
         expires: new Date(Date.now() + 86400000).toISOString(),
       },
-      headers: new Headers(),
+      tenantId: testData.tenant.id,
+      user: {
+        id: testData.user.id,
+        email: testData.user.email,
+        name: "Test User",
+        image: null,
+      },
     });
   });
 
@@ -62,7 +68,7 @@ describe("Category Router", () => {
         caller.category.create({
           tenantId: testData.tenant.id,
           name: "Drinks", // Same name
-        })
+        }),
       ).rejects.toThrow("already exists");
     });
   });
@@ -189,10 +195,8 @@ describe("Category Router", () => {
         caller.category.delete({
           id: category.id,
           tenantId: testData.tenant.id,
-        })
-      ).rejects.toThrow("cannot delete");
+        }),
+      ).rejects.toThrow("Cannot delete category with products");
     });
   });
 });
-
-export {};

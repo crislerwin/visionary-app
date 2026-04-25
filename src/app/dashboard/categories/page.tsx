@@ -1,23 +1,8 @@
 "use client";
 
+import { api } from "@/lib/trpc/react";
 import { useState } from "react";
-import { api, type RouterOutputs } from "@/lib/trpc/index";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { Icons } from "@/components/ui/icons";
-import { useCurrentTenant } from "@/hooks/use-current-tenant";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,8 +13,28 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Icons } from "@/components/ui/icons";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useCurrentTenant } from "@/hooks/use-current-tenant";
 
-type Category = RouterOutputs["category"]["list"][number];
+interface Category {
+  id: string;
+  name: string;
+  description: string | null;
+  _count?: { products: number };
+}
 
 export default function CategoriesPage() {
   const { currentTenant } = useCurrentTenant();
@@ -37,14 +42,13 @@ export default function CategoriesPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  
-  // Form state
+
   const [categoryName, setCategoryName] = useState("");
   const [categoryDescription, setCategoryDescription] = useState("");
 
   const { data: categories, refetch } = api.category.list.useQuery(
     { tenantId: currentTenant?.id ?? "", includeDeleted: false },
-    { enabled: !!currentTenant?.id }
+    { enabled: !!currentTenant?.id },
   );
 
   const createMutation = api.category.create.useMutation({
@@ -92,7 +96,7 @@ export default function CategoriesPage() {
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentTenant?.id) return;
-    
+
     createMutation.mutate({
       tenantId: currentTenant.id,
       name: categoryName,
@@ -103,7 +107,7 @@ export default function CategoriesPage() {
   const handleUpdate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCategory || !currentTenant?.id) return;
-    
+
     updateMutation.mutate({
       id: selectedCategory.id,
       tenantId: currentTenant.id,
@@ -114,7 +118,7 @@ export default function CategoriesPage() {
 
   const confirmDelete = () => {
     if (!selectedCategory || !currentTenant?.id) return;
-    
+
     deleteMutation.mutate({
       id: selectedCategory.id,
       tenantId: currentTenant.id,
@@ -122,13 +126,11 @@ export default function CategoriesPage() {
   };
 
   return (
-    <DashboardShell>
+    <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Categorias</h1>
-          <p className="text-muted-foreground">
-            Gerencie as categorias do seu cardápio
-          </p>
+          <p className="text-muted-foreground">Gerencie as categorias do seu cardápio</p>
         </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
@@ -193,22 +195,12 @@ export default function CategoriesPage() {
         {categories?.map((category) => (
           <Card key={category.id}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {category.name}
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">{category.name}</CardTitle>
               <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => openEdit(category)}
-                >
+                <Button variant="ghost" size="icon" onClick={() => openEdit(category)}>
                   <Icons.edit className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => openDelete(category)}
-                >
+                <Button variant="ghost" size="icon" onClick={() => openDelete(category)}>
                   <Icons.trash className="h-4 w-4 text-destructive" />
                 </Button>
               </div>
@@ -219,21 +211,18 @@ export default function CategoriesPage() {
               </p>
               <div className="mt-4 flex items-center text-xs text-muted-foreground">
                 <Icons.list className="mr-1 h-3 w-3" />
-                {category._count.products} produtos
+                {category._count?.products ?? 0} produtos
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar Categoria</DialogTitle>
-            <DialogDescription>
-              Atualize as informações da categoria
-            </DialogDescription>
+            <DialogDescription>Atualize as informações da categoria</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUpdate}>
             <div className="space-y-4 py-4">
@@ -277,35 +266,26 @@ export default function CategoriesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Dialog */}
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão?</AlertDialogTitle>
             <AlertDialogDescription>
               A categoria &quot;{selectedCategory?.name}&quot; será excluída.
-              {selectedCategory?._count.products > 0 && (
+              {(selectedCategory?._count?.products ?? 0) > 0 && (
                 <span className="text-destructive font-medium">
-                  {" "}
-                  Esta categoria tem {selectedCategory?._count.products} produto(s).
-                  Mova ou delete os produtos primeiro.
+                  Esta categoria tem {selectedCategory?._count?.products} produto(s). Mova ou delete
+                  os produtos primeiro.
                 </span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel >Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              >
-              {/* {deleteMutation.isPending && (
-                <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-              )} */}
-              Deletar
-            </AlertDialogAction>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Deletar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </DashboardShell>
+    </div>
   );
 }

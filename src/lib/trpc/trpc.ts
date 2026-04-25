@@ -20,7 +20,7 @@ type TRPCContext = ReturnType<typeof createTRPCContext>;
 type ContextWithUser = TRPCContext & {
   session: Session;
   user: NonNullable<Session["user"]>;
-}
+};
 
 const t = initTRPC.context<TRPCContext>().create();
 

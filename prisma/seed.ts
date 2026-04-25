@@ -1,4 +1,4 @@
-import { PrismaClient, MemberRole } from "@prisma/client";
+import { MemberRole, PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -80,8 +80,7 @@ async function main() {
       },
       {
         title: "Getting Started Guide",
-        content:
-          "1. Create an account\n2. Join or create a tenant\n3. Start managing your content",
+        content: "1. Create an account\n2. Join or create a tenant\n3. Start managing your content",
         published: true,
         authorId: admin.id,
         tenantId: tenant.id,
