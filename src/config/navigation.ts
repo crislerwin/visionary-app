@@ -3,6 +3,9 @@ import {
   FileText,
   Users,
   Settings,
+  UtensilsCrossed,
+  Package,
+  Store,
   type LucideIcon,
 } from "lucide-react";
 
@@ -25,6 +28,21 @@ export const sidebarNavigation: NavSection[] = [
         title: "Dashboard",
         href: "/dashboard",
         icon: LayoutDashboard,
+      },
+    ],
+  },
+  {
+    title: "Cardápio",
+    items: [
+      {
+        title: "Produtos",
+        href: "/dashboard/products",
+        icon: Package,
+      },
+      {
+        title: "Ver Cardápio",
+        href: "/menu",
+        icon: Store,
       },
     ],
   },

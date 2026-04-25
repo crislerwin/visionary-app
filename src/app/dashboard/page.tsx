@@ -66,33 +66,6 @@ export default async function DashboardPage() {
         <h3 className="font-semibold mb-4">Quick Links</h3>
         <div className="grid gap-2">
           <a
-            href="/dashboard/categories"
-            className="flex items-center p-3 rounded-md hover:bg-muted transition-colors"
-          >
-            <span className="font-medium">Categorias</span>
-            <span className="ml-auto text-muted-foreground">
-              Gerenciar categorias do cardápio
-            </span>
-          </a>
-          <a
-            href="/dashboard/products"
-            className="flex items-center p-3 rounded-md hover:bg-muted transition-colors"
-          >
-            <span className="font-medium">Produtos</span>
-            <span className="ml-auto text-muted-foreground">
-              Gerenciar produtos e variantes
-            </span>
-          </a>
-          <a
-            href={`/menu/${tenants[0]?.slug}`}
-            className="flex items-center p-3 rounded-md hover:bg-muted transition-colors"
-          >
-            <span className="font-medium">Ver Cardápio Público</span>
-            <span className="ml-auto text-muted-foreground">
-              Visualizar como cliente
-            </span>
-          </a>
-          <a
             href="/dashboard/posts"
             className="flex items-center p-3 rounded-md hover:bg-muted transition-colors"
           >
