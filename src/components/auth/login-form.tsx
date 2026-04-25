@@ -94,7 +94,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
           <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4">
         <Button
           variant="outline"
           disabled={isLoading}
@@ -102,14 +102,6 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
         >
           <Icons.google className="mr-2 h-4 w-4" />
           Google
-        </Button>
-        <Button
-          variant="outline"
-          disabled={isLoading}
-          onClick={() => signIn("github", { callbackUrl })}
-        >
-          <Icons.gitHub className="mr-2 h-4 w-4" />
-          GitHub
         </Button>
       </div>
       <p className="text-center text-sm text-muted-foreground">

@@ -4,9 +4,9 @@ import { Providers } from "./providers";
 import "@/app/globals.css";
 
 export const metadata: Metadata = {
-  title: "SaaS Boilerplate - Multi-tenant Next.js Starter",
+  title: "Food Service - Digital Menu & POS",
   description:
-    "A complete SaaS boilerplate with Next.js, TypeScript, Prisma, tRPC, and NextAuth.js",
+    "A digital menu and point-of-sale platform for restaurants and food services.",
 };
 
 export default function RootLayout({

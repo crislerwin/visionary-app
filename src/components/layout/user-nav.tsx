@@ -30,9 +30,6 @@ export function UserNav() {
             Sign In
           </Button>
         </Link>
-        <Link href="/register">
-          <Button size="sm">Get Started</Button>
-        </Link>
       </div>
     );
   }
@@ -54,19 +51,6 @@ export function UserNav() {
             <p className="text-muted-foreground text-xs leading-none">{session.user.email}</p>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
-            <User className="mr-2 h-4 w-4" />
-            Profile
-            <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
-            <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/" })}>
           <LogOut className="mr-2 h-4 w-4" />

@@ -12,24 +12,6 @@ export function MainNav({ className }: MainNavProps) {
       <Link href="/dashboard" className="text-sm font-medium transition-colors hover:text-primary">
         Dashboard
       </Link>
-      <Link
-        href="/dashboard/posts"
-        className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-      >
-        Posts
-      </Link>
-      <Link
-        href="/dashboard/team"
-        className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-      >
-        Team
-      </Link>
-      <Link
-        href="/dashboard/settings"
-        className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-      >
-        Settings
-      </Link>
     </div>
   );
 }

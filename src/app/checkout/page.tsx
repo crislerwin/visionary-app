@@ -147,7 +147,7 @@ export default function CheckoutPage() {
       productName: item.productName,
     }));
 
-    // TODO: Get tenantId from URL, subdomain, or context
+    // Placeholder: tenantId should be resolved from URL params, subdomain, or cart context
     const tenantId = "dummy-tenant-id";
 
     createOrderMutation.mutate({

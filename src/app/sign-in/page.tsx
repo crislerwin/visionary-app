@@ -16,13 +16,9 @@ export default async function SignInPage() {
         <div className="absolute inset-0 bg-zinc-900" />
         <div className="relative z-20 flex items-center text-lg font-medium">Food Service</div>
         <div className="relative z-20 mt-auto">
-          <blockquote className="space-y-2">
-            <p className="text-lg">
-              &ldquo;This boilerplate has saved me countless hours of development time. It has
-              everything I need to get started.&rdquo;
-            </p>
-            <footer className="text-sm">Sofia Davis</footer>
-          </blockquote>
+          <p className="text-lg text-muted-foreground">
+            Manage menus, orders, and point-of-sale — all in one place.
+          </p>
         </div>
       </div>
       <div className="lg:p-8">

@@ -35,7 +35,7 @@ function SuccessContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
 
-  // TODO: Get tenantId from URL, subdomain, or context
+  // Placeholder: tenantId should be resolved from URL params, subdomain, or cart context
   const tenantId = "dummy-tenant-id";
 
   const { data: order, isLoading } = api.order.getOrderById.useQuery(

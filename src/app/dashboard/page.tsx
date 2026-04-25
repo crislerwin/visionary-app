@@ -57,33 +57,6 @@ export default async function DashboardPage() {
           <p className="text-lg font-medium mt-2 capitalize">{tenants[0]?.role?.toLowerCase()}</p>
         </div>
       </div>
-
-      <div className="rounded-lg border bg-card p-6">
-        <h3 className="font-semibold mb-4">Quick Links</h3>
-        <div className="grid gap-2">
-          <a
-            href="/dashboard/posts"
-            className="flex items-center p-3 rounded-md hover:bg-muted transition-colors"
-          >
-            <span className="font-medium">Posts</span>
-            <span className="ml-auto text-muted-foreground">Manage your posts</span>
-          </a>
-          <a
-            href="/dashboard/team"
-            className="flex items-center p-3 rounded-md hover:bg-muted transition-colors"
-          >
-            <span className="font-medium">Team</span>
-            <span className="ml-auto text-muted-foreground">Manage team members</span>
-          </a>
-          <a
-            href="/dashboard/settings"
-            className="flex items-center p-3 rounded-md hover:bg-muted transition-colors"
-          >
-            <span className="font-medium">Settings</span>
-            <span className="ml-auto text-muted-foreground">Tenant settings</span>
-          </a>
-        </div>
-      </div>
     </div>
   );
 }

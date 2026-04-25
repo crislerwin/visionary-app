@@ -32,7 +32,6 @@ export const userRouter = router({
         _count: {
           select: {
             memberships: true,
-            posts: true,
             ownedTenants: true,
           },
         },

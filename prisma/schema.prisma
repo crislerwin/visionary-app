@@ -58,7 +58,6 @@ model User {
   sessions      Session[]
   memberships   Membership[]
   ownedTenants  Tenant[]     @relation("TenantOwner")
-  posts         Post[]
 
   @@map("users")
 }
@@ -86,7 +85,6 @@ model Tenant {
   owner       User         @relation("TenantOwner", fields: [ownerId], references: [id])
   memberships Membership[]
   sessions    Session[]
-  posts       Post[]
   
   // Food Service relations
   categories  Category[]
@@ -119,24 +117,6 @@ model Membership {
 
   @@unique([userId, tenantId])
   @@map("memberships")
-}
-
-model Post {
-  id        String   @id @default(cuid())
-  title     String
-  content   String?  @db.Text
-  published Boolean  @default(false)
-  authorId  String   @map("author_id")
-  tenantId  String   @map("tenant_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  author User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([authorId])
-  @@map("posts")
 }
 
 // ===============================
