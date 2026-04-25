@@ -87,6 +87,9 @@ e2e/results/
 .env*.local
 out
 
+# Local uploads
+public/uploads/
+
 # Nuxt.js build / generate output
 .nuxt
 dist

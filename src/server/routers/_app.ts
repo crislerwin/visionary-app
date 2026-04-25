@@ -5,6 +5,7 @@ import { categoryRouter } from "./category";
 import { menuRouter } from "./menu";
 import { orderRouter } from "./order";
 import { productRouter } from "./product";
+import { productImageRouter } from "./product-image";
 import { teamRouter } from "./team";
 import { tenantRouter } from "./tenant";
 import { userRouter } from "./user";
@@ -16,6 +17,7 @@ export const appRouter = router({
   user: userRouter,
   category: categoryRouter,
   product: productRouter,
+  productImage: productImageRouter,
   menu: menuRouter,
   order: orderRouter,
   cashRegister: cashRegisterRouter,

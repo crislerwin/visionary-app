@@ -24,6 +24,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Icons } from "@/components/ui/icons";
+import { ImageCropperDialog } from "@/components/ui/image-cropper-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -87,6 +88,15 @@ export default function ProductsPage() {
   const [variants, setVariants] = useState<VariantInput[]>([]);
   const [variantsOpen, setVariantsOpen] = useState(false);
 
+  // Image state
+  const [productImage, setProductImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  // Cropper state
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [cropperImageSrc, setCropperImageSrc] = useState("");
+
   // Category creation form state
   const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -142,6 +152,51 @@ export default function ProductsPage() {
     setTrackStock(false);
     setVariants([]);
     setVariantsOpen(false);
+    setProductImage(null);
+    setImageFile(null);
+  };
+
+  const uploadImage = async (file: File): Promise<string> => {
+    setIsUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to upload image");
+      }
+
+      const data = await response.json();
+      return data.url as string;
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropperImageSrc(reader.result as string);
+      setCropperOpen(true);
+    };
+    reader.readAsDataURL(file);
+
+    // Reset input so the same file can be selected again
+    e.target.value = "";
+  };
+
+  const handleCropComplete = (croppedFile: File) => {
+    setImageFile(croppedFile);
+    setProductImage(null);
   };
 
   const handleCreateCategory = (e: React.FormEvent) => {
@@ -173,6 +228,8 @@ export default function ProductsPage() {
     setProductStock(product.stock.toString());
     setSelectedCategoryId(product.categoryId);
     setTrackStock(product.trackStock);
+    setProductImage(product.image);
+    setImageFile(null);
     setVariants(
       product.variants.map((v) => ({
         name: v.name,
@@ -202,14 +259,26 @@ export default function ProductsPage() {
     setVariants(newVariants);
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentTenant?.id || !selectedCategoryId) return;
+
+    let imageUrl: string | undefined;
+
+    if (imageFile) {
+      try {
+        imageUrl = await uploadImage(imageFile);
+      } catch (error) {
+        console.error("Image upload failed:", error);
+        return;
+      }
+    }
 
     createMutation.mutate({
       tenantId: currentTenant.id,
       name: productName,
       description: productDescription || undefined,
+      image: imageUrl,
       price: Number.parseFloat(productPrice) || 0,
       categoryId: selectedCategoryId,
       stock: Number.parseInt(productStock) || 0,
@@ -218,15 +287,30 @@ export default function ProductsPage() {
     });
   };
 
-  const handleUpdate = (e: React.FormEvent) => {
+  const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProduct || !currentTenant?.id) return;
+
+    let imageUrl: string | null | undefined = undefined;
+
+    if (imageFile) {
+      try {
+        imageUrl = await uploadImage(imageFile);
+      } catch (error) {
+        console.error("Image upload failed:", error);
+        return;
+      }
+    } else if (productImage === null && selectedProduct.image !== null) {
+      // Image was explicitly removed
+      imageUrl = null;
+    }
 
     updateMutation.mutate({
       id: selectedProduct.id,
       tenantId: currentTenant.id,
       name: productName,
       description: productDescription || null,
+      image: imageUrl,
       price: Number.parseFloat(productPrice) || 0,
       categoryId: selectedCategoryId,
       stock: Number.parseInt(productStock) || 0,
@@ -282,6 +366,45 @@ export default function ProductsPage() {
                     required
                     maxLength={100}
                   />
+                </div>
+                {/* Image Upload */}
+                <div className="space-y-2">
+                  <Label>Imagem do Produto</Label>
+                  <div className="flex items-center gap-4">
+                    {(productImage || imageFile) && (
+                      <div className="relative h-20 w-20 overflow-hidden rounded-lg border">
+                        <img
+                          src={
+                            imageFile ? URL.createObjectURL(imageFile) : (productImage ?? undefined)
+                          }
+                          alt="Preview"
+                          className="h-full w-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProductImage(null);
+                            setImageFile(null);
+                          }}
+                          className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs text-white"
+                        >
+                          <Icons.close className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                    <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-4 py-6 text-sm text-muted-foreground hover:bg-muted">
+                      <Icons.image className="h-4 w-4" />
+                      <span>
+                        {productImage || imageFile ? "Trocar imagem" : "Adicionar imagem"}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={handleFileSelect}
+                      />
+                    </label>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="description">Descrição (opcional)</Label>
@@ -458,12 +581,12 @@ export default function ProductsPage() {
                   type="button"
                   variant="outline"
                   onClick={() => setIsCreateOpen(false)}
-                  disabled={createMutation.isPending}
+                  disabled={createMutation.isPending || isUploadingImage}
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending && (
+                <Button type="submit" disabled={createMutation.isPending || isUploadingImage}>
+                  {(createMutation.isPending || isUploadingImage) && (
                     <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
                   )}
                   Criar
@@ -494,6 +617,15 @@ export default function ProductsPage() {
               </div>
             </CardHeader>
             <CardContent>
+              {product.image && (
+                <div className="mb-3 h-32 w-full overflow-hidden rounded-md">
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              )}
               <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
                 {product.description || "Sem descrição"}
               </p>
@@ -558,6 +690,43 @@ export default function ProductsPage() {
                   required
                   maxLength={100}
                 />
+              </div>
+              {/* Image Upload Edit */}
+              <div className="space-y-2">
+                <Label>Imagem do Produto</Label>
+                <div className="flex items-center gap-4">
+                  {(productImage || imageFile) && (
+                    <div className="relative h-20 w-20 overflow-hidden rounded-lg border">
+                      <img
+                        src={
+                          imageFile ? URL.createObjectURL(imageFile) : (productImage ?? undefined)
+                        }
+                        alt="Preview"
+                        className="h-full w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProductImage(null);
+                          setImageFile(null);
+                        }}
+                        className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs text-white"
+                      >
+                        <Icons.close className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+                  <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-4 py-6 text-sm text-muted-foreground hover:bg-muted">
+                    <Icons.image className="h-4 w-4" />
+                    <span>{productImage || imageFile ? "Trocar imagem" : "Adicionar imagem"}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={handleFileSelect}
+                    />
+                  </label>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-description">Descrição</Label>
@@ -711,12 +880,12 @@ export default function ProductsPage() {
                 type="button"
                 variant="outline"
                 onClick={() => setIsEditOpen(false)}
-                disabled={updateMutation.isPending}
+                disabled={updateMutation.isPending || isUploadingImage}
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending && (
+              <Button type="submit" disabled={updateMutation.isPending || isUploadingImage}>
+                {(updateMutation.isPending || isUploadingImage) && (
                   <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
                 )}
                 Salvar
@@ -801,6 +970,14 @@ export default function ProductsPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ImageCropperDialog
+        open={cropperOpen}
+        onOpenChange={setCropperOpen}
+        imageSrc={cropperImageSrc}
+        onCrop={handleCropComplete}
+        aspectRatio={4 / 3}
+      />
     </>
   );
 }
