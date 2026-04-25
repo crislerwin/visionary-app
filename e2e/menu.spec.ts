@@ -1,5 +1,5 @@
-import { test, expect } from "@playwright/test";
-import { getCartBadgeCount, waitForMenuLoad, SELECTORS } from "./utils/helpers";
+import { expect, test } from "@playwright/test";
+import { SELECTORS, getCartBadgeCount, waitForMenuLoad } from "./utils/helpers";
 
 test.describe("Cardápio Público / Menu", () => {
   test.beforeEach(async ({ page }) => {
@@ -68,7 +68,11 @@ test.describe("Cardápio Público / Menu", () => {
     await expect(page.locator(SELECTORS.cartBadge)).toHaveCount(0);
 
     // Abre o carrinho clicando no header button que tem ícone
-    await page.locator("header button").filter({ has: page.locator("svg") }).first().click();
+    await page
+      .locator("header button")
+      .filter({ has: page.locator("svg") })
+      .first()
+      .click();
     await expect(page.locator("text=Carrinho vazio")).toBeVisible();
   });
 });
