@@ -2,6 +2,12 @@
   "name": "food-service",
   "version": "0.1.0",
   "private": true,
+  "husky": {
+    "hooks": {
+      "pre-commit": "biome check --apply . --error-on-warnings && biome format --write .",
+      "pre-push": "npm run lint && npm run type-check && npm test -- --run && npm run build"
+    }
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
