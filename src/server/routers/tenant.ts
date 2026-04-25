@@ -73,7 +73,6 @@ export const tenantRouter = router({
         _count: {
           select: {
             memberships: true,
-            posts: true,
           },
         },
       },
