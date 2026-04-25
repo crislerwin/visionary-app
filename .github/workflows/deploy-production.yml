@@ -8,6 +8,10 @@ on:
 env:
   NODE_ENV: production
 
+permissions:
+  actions: read
+  contents: read
+
 jobs:
   verify:
     name: Verify Release
