@@ -72,9 +72,7 @@ export const menuRouter = router({
       });
 
       // Filter out categories with no products
-      const categoriesWithProducts = categories.filter(
-        (cat) => cat.products.length > 0
-      );
+      const categoriesWithProducts = categories.filter((cat) => cat.products.length > 0);
 
       // Convert Decimal prices to numbers
       return categoriesWithProducts.map((category) => ({

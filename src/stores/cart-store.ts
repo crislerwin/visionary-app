@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 export interface CartItem {
   id: string;
@@ -35,10 +35,7 @@ interface CartActions {
   getItemCount: (productId: string, variantId?: string | null) => number;
 }
 
-const generateCartItemId = (
-  productId: string,
-  variantId?: string | null
-): string => {
+const generateCartItemId = (productId: string, variantId?: string | null): string => {
   return variantId ? `${productId}:${variantId}` : productId;
 };
 
@@ -62,14 +59,12 @@ export const useCartStore = create<CartState & CartActions>()(
         }
 
         const existingItem = items.find(
-          (i) => i.productId === item.productId && i.variantId === item.variantId
+          (i) => i.productId === item.productId && i.variantId === item.variantId,
         );
 
         if (existingItem) {
           newItems = items.map((i) =>
-            i.id === existingItem.id
-              ? { ...i, quantity: i.quantity + item.quantity }
-              : i
+            i.id === existingItem.id ? { ...i, quantity: i.quantity + item.quantity } : i,
           );
         } else {
           newItems = [
@@ -96,17 +91,13 @@ export const useCartStore = create<CartState & CartActions>()(
           return;
         }
         set((state) => ({
-          items: state.items.map((item) =>
-            item.id === id ? { ...item, quantity } : item
-          ),
+          items: state.items.map((item) => (item.id === id ? { ...item, quantity } : item)),
         }));
       },
 
       updateNotes: (id, notes) => {
         set((state) => ({
-          items: state.items.map((item) =>
-            item.id === id ? { ...item, notes } : item
-          ),
+          items: state.items.map((item) => (item.id === id ? { ...item, notes } : item)),
         }));
       },
 
@@ -133,15 +124,12 @@ export const useCartStore = create<CartState & CartActions>()(
       },
 
       getTotalPrice: () => {
-        return get().items.reduce(
-          (sum, item) => sum + item.price * item.quantity,
-          0
-        );
+        return get().items.reduce((sum, item) => sum + item.price * item.quantity, 0);
       },
 
       getItemCount: (productId, variantId) => {
         const item = get().items.find(
-          (i) => i.productId === productId && i.variantId === variantId
+          (i) => i.productId === productId && i.variantId === variantId,
         );
         return item?.quantity ?? 0;
       },
@@ -154,6 +142,6 @@ export const useCartStore = create<CartState & CartActions>()(
         tenantSlug: state.tenantSlug,
         tenantName: state.tenantName,
       }),
-    }
-  )
+    },
+  ),
 );

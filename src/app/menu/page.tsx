@@ -3,22 +3,22 @@ import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 
 export default async function MenuRedirectPage() {
-    const session = await auth();
+  const session = await auth();
 
-    if (!session?.user?.id) {
-        redirect("/sign-in");
-    }
+  if (!session?.user?.id) {
+    redirect("/sign-in");
+  }
 
-    // Get user's tenant
-    const membership = await prisma.membership.findFirst({
-        where: { userId: session.user.id },
-        include: { tenant: true },
-        orderBy: { joinedAt: "desc" },
-    });
+  // Get user's tenant
+  const membership = await prisma.membership.findFirst({
+    where: { userId: session.user.id },
+    include: { tenant: true },
+    orderBy: { joinedAt: "desc" },
+  });
 
-    if (!membership) {
-        redirect("/dashboard");
-    }
+  if (!membership) {
+    redirect("/dashboard");
+  }
 
-    redirect(`/menu/${membership.tenant.slug}`);
+  redirect(`/menu/${membership.tenant.slug}`);
 }

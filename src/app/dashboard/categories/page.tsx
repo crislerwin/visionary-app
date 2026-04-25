@@ -1,23 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { api } from "@/lib/trpc/react";
+import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Icons } from "@/components/ui/icons";
-import { useCurrentTenant } from "@/hooks/use-current-tenant";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +13,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Icons } from "@/components/ui/icons";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useCurrentTenant } from "@/hooks/use-current-tenant";
 
 interface Category {
   id: string;
@@ -48,7 +48,7 @@ export default function CategoriesPage() {
 
   const { data: categories, refetch } = api.category.list.useQuery(
     { tenantId: currentTenant?.id ?? "", includeDeleted: false },
-    { enabled: !!currentTenant?.id }
+    { enabled: !!currentTenant?.id },
   );
 
   const createMutation = api.category.create.useMutation({
@@ -130,9 +130,7 @@ export default function CategoriesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Categorias</h1>
-          <p className="text-muted-foreground">
-            Gerencie as categorias do seu cardápio
-          </p>
+          <p className="text-muted-foreground">Gerencie as categorias do seu cardápio</p>
         </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
@@ -197,22 +195,12 @@ export default function CategoriesPage() {
         {categories?.map((category) => (
           <Card key={category.id}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {category.name}
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">{category.name}</CardTitle>
               <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => openEdit(category)}
-                >
+                <Button variant="ghost" size="icon" onClick={() => openEdit(category)}>
                   <Icons.edit className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => openDelete(category)}
-                >
+                <Button variant="ghost" size="icon" onClick={() => openDelete(category)}>
                   <Icons.trash className="h-4 w-4 text-destructive" />
                 </Button>
               </div>
@@ -234,9 +222,7 @@ export default function CategoriesPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar Categoria</DialogTitle>
-            <DialogDescription>
-              Atualize as informações da categoria
-            </DialogDescription>
+            <DialogDescription>Atualize as informações da categoria</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUpdate}>
             <div className="space-y-4 py-4">
@@ -288,17 +274,15 @@ export default function CategoriesPage() {
               A categoria &quot;{selectedCategory?.name}&quot; será excluída.
               {(selectedCategory?._count?.products ?? 0) > 0 && (
                 <span className="text-destructive font-medium">
-                  Esta categoria tem {selectedCategory?._count?.products} produto(s).
-                  Mova ou delete os produtos primeiro.
+                  Esta categoria tem {selectedCategory?._count?.products} produto(s). Mova ou delete
+                  os produtos primeiro.
                 </span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>
-              Deletar
-            </AlertDialogAction>
+            <AlertDialogAction onClick={confirmDelete}>Deletar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

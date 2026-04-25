@@ -1,8 +1,8 @@
-import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { TRPCError } from "@trpc/server";
 import { publicProcedure, router } from "@/lib/trpc/trpc";
 import { OrderStatus, OrderType, PaymentMethod, PaymentStatus } from "@prisma/client";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
 
 const orderItemInputSchema = z.object({
   productId: z.string(),
@@ -49,120 +49,116 @@ const getOrderByIdInputSchema = z.object({
 });
 
 export const orderRouter = router({
-  createOrder: publicProcedure
-    .input(createOrderInputSchema)
-    .mutation(async ({ input }) => {
-      const { tenantId } = input;
+  createOrder: publicProcedure.input(createOrderInputSchema).mutation(async ({ input }) => {
+    const { tenantId } = input;
 
-      // Buscar ou criar cliente
-      let customer = await prisma.customer.findUnique({
-        where: {
-          tenantId_phone: {
-            tenantId,
-            phone: input.customer.phone,
-          },
+    // Buscar ou criar cliente
+    let customer = await prisma.customer.findUnique({
+      where: {
+        tenantId_phone: {
+          tenantId,
+          phone: input.customer.phone,
         },
-      });
+      },
+    });
 
-      if (!customer) {
-        customer = await prisma.customer.create({
-          data: {
-            name: input.customer.name,
-            phone: input.customer.phone,
-            email: input.customer.email,
-            tenantId,
-          },
-        });
-      } else {
-        // Atualizar informações do cliente se necessário
-        if (input.customer.name || input.customer.email) {
-          customer = await prisma.customer.update({
-            where: { id: customer.id },
-            data: {
-              name: input.customer.name || customer.name,
-              email: input.customer.email || customer.email,
-            },
-          });
-        }
-      }
-
-      // Gerar número do pedido sequencial por tenant
-      const lastOrder = await prisma.order.findFirst({
-        where: { tenantId },
-        orderBy: { orderNumber: "desc" },
-      });
-      const orderNumber = (lastOrder?.orderNumber ?? 0) + 1;
-
-      // Criar o pedido
-      const order = await prisma.order.create({
+    if (!customer) {
+      customer = await prisma.customer.create({
         data: {
-          orderNumber,
-          type: input.type,
-          status: OrderStatus.PENDING,
-          subtotal: input.subtotal,
-          deliveryFee: input.deliveryFee,
-          discount: input.discount,
-          total: input.total,
-          paymentMethod: input.paymentMethod,
-          paymentStatus: PaymentStatus.PENDING,
-          address: input.address,
-          customerNotes: input.customerNotes,
-          customerId: customer.id,
-          tenantId,
-          items: {
-            create: input.items.map((item) => ({
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              totalPrice: item.totalPrice,
-              notes: item.notes,
-              productName: item.productName,
-              productId: item.productId,
-              variantId: item.variantId,
-            })),
-          },
-        },
-        include: {
-          items: {
-            include: {
-              product: true,
-              variant: true,
-            },
-          },
-          customer: true,
-        },
-      });
-
-      return order;
-    }),
-
-  getOrderById: publicProcedure
-    .input(getOrderByIdInputSchema)
-    .query(async ({ input }) => {
-      const { tenantId } = input;
-
-      const order = await prisma.order.findFirst({
-        where: {
-          id: input.id,
+          name: input.customer.name,
+          phone: input.customer.phone,
+          email: input.customer.email,
           tenantId,
         },
-        include: {
-          items: {
-            include: {
-              product: true,
-              variant: true,
-            },
-          },
-          customer: true,
-        },
       });
-
-      if (!order) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Pedido não encontrado",
+    } else {
+      // Atualizar informações do cliente se necessário
+      if (input.customer.name || input.customer.email) {
+        customer = await prisma.customer.update({
+          where: { id: customer.id },
+          data: {
+            name: input.customer.name || customer.name,
+            email: input.customer.email || customer.email,
+          },
         });
       }
+    }
 
-      return order;
-    }),
+    // Gerar número do pedido sequencial por tenant
+    const lastOrder = await prisma.order.findFirst({
+      where: { tenantId },
+      orderBy: { orderNumber: "desc" },
+    });
+    const orderNumber = (lastOrder?.orderNumber ?? 0) + 1;
+
+    // Criar o pedido
+    const order = await prisma.order.create({
+      data: {
+        orderNumber,
+        type: input.type,
+        status: OrderStatus.PENDING,
+        subtotal: input.subtotal,
+        deliveryFee: input.deliveryFee,
+        discount: input.discount,
+        total: input.total,
+        paymentMethod: input.paymentMethod,
+        paymentStatus: PaymentStatus.PENDING,
+        address: input.address,
+        customerNotes: input.customerNotes,
+        customerId: customer.id,
+        tenantId,
+        items: {
+          create: input.items.map((item) => ({
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice,
+            notes: item.notes,
+            productName: item.productName,
+            productId: item.productId,
+            variantId: item.variantId,
+          })),
+        },
+      },
+      include: {
+        items: {
+          include: {
+            product: true,
+            variant: true,
+          },
+        },
+        customer: true,
+      },
+    });
+
+    return order;
+  }),
+
+  getOrderById: publicProcedure.input(getOrderByIdInputSchema).query(async ({ input }) => {
+    const { tenantId } = input;
+
+    const order = await prisma.order.findFirst({
+      where: {
+        id: input.id,
+        tenantId,
+      },
+      include: {
+        items: {
+          include: {
+            product: true,
+            variant: true,
+          },
+        },
+        customer: true,
+      },
+    });
+
+    if (!order) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Pedido não encontrado",
+      });
+    }
+
+    return order;
+  }),
 });

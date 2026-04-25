@@ -56,9 +56,7 @@ export function CartSheet() {
             <SheetTitle className="flex items-center gap-2">
               <ShoppingCart className="size-5" />
               Carrinho
-              {totalItems > 0 && (
-                <Badge variant="secondary">{totalItems} itens</Badge>
-              )}
+              {totalItems > 0 && <Badge variant="secondary">{totalItems} itens</Badge>}
             </SheetTitle>
             <SheetDescription>
               {tenantName ? `Pedido em ${tenantName}` : "Seu pedido"}
@@ -71,17 +69,12 @@ export function CartSheet() {
               <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
                 <ShoppingCart className="size-12 mb-4 opacity-50" />
                 <p className="text-lg font-medium">Carrinho vazio</p>
-                <p className="text-sm">
-                  Adicione produtos para começar seu pedido
-                </p>
+                <p className="text-sm">Adicione produtos para começar seu pedido</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex gap-3 p-3 rounded-lg border bg-card"
-                  >
+                  <div key={item.id} className="flex gap-3 p-3 rounded-lg border bg-card">
                     {/* Product Image */}
                     <div className="relative size-20 flex-shrink-0 rounded-md overflow-hidden bg-muted">
                       {item.productImage ? (
@@ -102,9 +95,7 @@ export function CartSheet() {
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium truncate">{item.productName}</h4>
                       {item.variantName && (
-                        <p className="text-sm text-muted-foreground">
-                          {item.variantName}
-                        </p>
+                        <p className="text-sm text-muted-foreground">{item.variantName}</p>
                       )}
                       <p className="text-sm font-medium text-primary mt-1">
                         R${" "}
@@ -119,22 +110,16 @@ export function CartSheet() {
                           variant="outline"
                           size="icon"
                           className="size-7"
-                          onClick={() =>
-                            updateQuantity(item.id, item.quantity - 1)
-                          }
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
                         >
                           <Minus className="size-3" />
                         </Button>
-                        <span className="w-8 text-center font-medium">
-                          {item.quantity}
-                        </span>
+                        <span className="w-8 text-center font-medium">{item.quantity}</span>
                         <Button
                           variant="outline"
                           size="icon"
                           className="size-7"
-                          onClick={() =>
-                            updateQuantity(item.id, item.quantity + 1)
-                          }
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
                         >
                           <Plus className="size-3" />
                         </Button>

@@ -48,20 +48,16 @@ interface ProductCardProps {
 
 export function ProductCard({ product, tenantSlug, tenantName }: ProductCardProps) {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
-    product.variants.length > 0 ? product.variants[0] : null
+    product.variants.length > 0 ? product.variants[0] : null,
   );
   const [added, setAdded] = useState(false);
-  const { addItem, setTenant, getItemCount, openCart } = useCartStore();
+  const { addItem, setTenant, openCart } = useCartStore();
 
   const displayPrice = selectedVariant?.price ?? product.price;
   const isOutOfStock = product.trackStock && product.stock <= 0;
-  const variantOutOfStock =
-    selectedVariant && product.trackStock && selectedVariant.stock <= 0;
+  const variantOutOfStock = selectedVariant && product.trackStock && selectedVariant.stock <= 0;
 
-  const currentQuantity = getItemCount(
-    product.id,
-    selectedVariant?.id ?? null
-  );
+  const currentQuantity = getItemCount(product.id, selectedVariant?.id ?? null);
 
   const handleAddToCart = () => {
     if (isOutOfStock || variantOutOfStock) return;
@@ -111,9 +107,7 @@ export function ProductCard({ product, tenantSlug, tenantName }: ProductCardProp
       <CardHeader className="pb-2">
         <CardTitle className="text-lg line-clamp-2">{product.name}</CardTitle>
         {product.description && (
-          <CardDescription className="line-clamp-2">
-            {product.description}
-          </CardDescription>
+          <CardDescription className="line-clamp-2">{product.description}</CardDescription>
         )}
       </CardHeader>
 
@@ -157,17 +151,13 @@ export function ProductCard({ product, tenantSlug, tenantName }: ProductCardProp
             })}
           </span>
           {product.variants.length === 0 && product.variants[0] && (
-            <span className="text-sm text-muted-foreground">
-              {product.variants[0].name}
-            </span>
+            <span className="text-sm text-muted-foreground">{product.variants[0].name}</span>
           )}
         </div>
 
         {/* Stock Warning */}
         {product.trackStock && product.stock <= 5 && product.stock > 0 && (
-          <p className="text-xs text-amber-600">
-            Apenas {product.stock} em estoque
-          </p>
+          <p className="text-xs text-amber-600">Apenas {product.stock} em estoque</p>
         )}
       </CardContent>
 

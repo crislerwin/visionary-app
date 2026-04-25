@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, beforeAll } from "vitest";
 import { appRouter } from "@/server/routers/_app";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { prisma, resetDatabase, setupTestData } from "../database";
 
 describe("Product Router", () => {
@@ -84,7 +84,7 @@ describe("Product Router", () => {
           name: "Test Product",
           price: 10,
           categoryId: "invalid-category-id",
-        })
+        }),
       ).rejects.toThrow("Category not found");
     });
   });
@@ -195,7 +195,7 @@ describe("Product Router", () => {
         caller.product.byId({
           id: "invalid-id",
           tenantId: testData.tenant.id,
-        })
+        }),
       ).rejects.toThrow("Product not found");
     });
   });

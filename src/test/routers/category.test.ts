@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, beforeAll } from "vitest";
 import { appRouter } from "@/server/routers/_app";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { prisma, resetDatabase, setupTestData } from "../database";
 
 describe("Category Router", () => {
@@ -31,7 +31,7 @@ describe("Category Router", () => {
         email: testData.user.email,
         name: "Test User",
         image: null,
-      }
+      },
     });
   });
 
@@ -68,7 +68,7 @@ describe("Category Router", () => {
         caller.category.create({
           tenantId: testData.tenant.id,
           name: "Drinks", // Same name
-        })
+        }),
       ).rejects.toThrow("already exists");
     });
   });
@@ -195,7 +195,7 @@ describe("Category Router", () => {
         caller.category.delete({
           id: category.id,
           tenantId: testData.tenant.id,
-        })
+        }),
       ).rejects.toThrow("Cannot delete category with products");
     });
   });

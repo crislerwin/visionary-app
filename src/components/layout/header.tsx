@@ -1,8 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { UserNav } from "./user-nav";
 import { MobileSidebarTrigger } from "./sidebar";
+import { UserNav } from "./user-nav";
 
 interface HeaderProps {
   className?: string;

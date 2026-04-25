@@ -31,10 +31,12 @@ const deleteCategorySchema = z.object({
 
 const reorderCategoriesSchema = z.object({
   tenantId: z.string(),
-  items: z.array(z.object({
-    id: z.string(),
-    sortOrder: z.number(),
-  })),
+  items: z.array(
+    z.object({
+      id: z.string(),
+      sortOrder: z.number(),
+    }),
+  ),
 });
 
 // Helper para gerar slug
@@ -124,164 +126,156 @@ export const categoryRouter = router({
     }),
 
   // Criar categoria
-  create: tenantProcedure
-    .input(createCategorySchema)
-    .mutation(async ({ ctx, input }) => {
-      const slug = generateSlug(input.name);
+  create: tenantProcedure.input(createCategorySchema).mutation(async ({ ctx, input }) => {
+    const slug = generateSlug(input.name);
 
-      // Verificar se slug já existe para este tenant
-      const existing = await prisma.category.findFirst({
+    // Verificar se slug já existe para este tenant
+    const existing = await prisma.category.findFirst({
+      where: {
+        slug,
+        tenantId: input.tenantId,
+      },
+    });
+
+    if (existing) {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "A category with this name already exists",
+      });
+    }
+
+    const category = await prisma.category.create({
+      data: {
+        name: input.name,
+        slug,
+        description: input.description,
+        image: input.image,
+        tenantId: input.tenantId,
+      },
+    });
+
+    return category;
+  }),
+
+  // Atualizar categoria
+  update: tenantProcedure.input(updateCategorySchema).mutation(async ({ input }) => {
+    const existing = await prisma.category.findFirst({
+      where: {
+        id: input.id,
+        tenantId: input.tenantId,
+      },
+    });
+
+    if (!existing) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Category not found",
+      });
+    }
+
+    let slug = existing.slug;
+    if (input.name && input.name !== existing.name) {
+      slug = generateSlug(input.name);
+
+      // Verificar duplicidade
+      const duplicate = await prisma.category.findFirst({
         where: {
           slug,
           tenantId: input.tenantId,
+          id: { not: input.id },
         },
       });
 
-      if (existing) {
+      if (duplicate) {
         throw new TRPCError({
           code: "CONFLICT",
           message: "A category with this name already exists",
         });
       }
+    }
 
-      const category = await prisma.category.create({
-        data: {
-          name: input.name,
-          slug,
-          description: input.description,
-          image: input.image,
-          tenantId: input.tenantId,
-        },
-      });
+    const category = await prisma.category.update({
+      where: { id: input.id },
+      data: {
+        ...(input.name && { name: input.name, slug }),
+        ...(input.description !== undefined && { description: input.description }),
+        ...(input.image !== undefined && { image: input.image }),
+        ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
+        ...(input.isActive !== undefined && { isActive: input.isActive }),
+      },
+    });
 
-      return category;
-    }),
-
-  // Atualizar categoria
-  update: tenantProcedure
-    .input(updateCategorySchema)
-    .mutation(async ({ input }) => {
-      const existing = await prisma.category.findFirst({
-        where: {
-          id: input.id,
-          tenantId: input.tenantId,
-        },
-      });
-
-      if (!existing) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Category not found",
-        });
-      }
-
-      let slug = existing.slug;
-      if (input.name && input.name !== existing.name) {
-        slug = generateSlug(input.name);
-        
-        // Verificar duplicidade
-        const duplicate = await prisma.category.findFirst({
-          where: {
-            slug,
-            tenantId: input.tenantId,
-            id: { not: input.id },
-          },
-        });
-
-        if (duplicate) {
-          throw new TRPCError({
-            code: "CONFLICT",
-            message: "A category with this name already exists",
-          });
-        }
-      }
-
-      const category = await prisma.category.update({
-        where: { id: input.id },
-        data: {
-          ...(input.name && { name: input.name, slug }),
-          ...(input.description !== undefined && { description: input.description }),
-          ...(input.image !== undefined && { image: input.image }),
-          ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
-          ...(input.isActive !== undefined && { isActive: input.isActive }),
-        },
-      });
-
-      return category;
-    }),
+    return category;
+  }),
 
   // Deletar categoria (soft delete)
-  delete: tenantProcedure
-    .input(deleteCategorySchema)
-    .mutation(async ({ input }) => {
-      const category = await prisma.category.findFirst({
-        where: {
-          id: input.id,
-          tenantId: input.tenantId,
+  delete: tenantProcedure.input(deleteCategorySchema).mutation(async ({ input }) => {
+    const category = await prisma.category.findFirst({
+      where: {
+        id: input.id,
+        tenantId: input.tenantId,
+      },
+      include: {
+        _count: {
+          select: { products: { where: { isDeleted: false } } },
         },
-        include: {
-          _count: {
-            select: { products: { where: { isDeleted: false } } },
-          },
-        },
+      },
+    });
+
+    if (!category) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Category not found",
       });
+    }
 
-      if (!category) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Category not found",
-        });
-      }
-
-      // Verificar se tem produtos
-      if (category._count.products > 0) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "Cannot delete category with products. Move or delete products first.",
-        });
-      }
-
-      await prisma.category.update({
-        where: { id: input.id },
-        data: {
-          isDeleted: true,
-          isActive: false,
-        },
+    // Verificar se tem produtos
+    if (category._count.products > 0) {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "Cannot delete category with products. Move or delete products first.",
       });
+    }
 
-      return { success: true };
-    }),
+    await prisma.category.update({
+      where: { id: input.id },
+      data: {
+        isDeleted: true,
+        isActive: false,
+      },
+    });
+
+    return { success: true };
+  }),
 
   // Reordenar categorias
-  reorder: tenantProcedure
-    .input(reorderCategoriesSchema)
-    .mutation(async ({ input }) => {
-      // Validar que todos IDs pertencem ao tenant
-      const categoryIds = input.items.map(item => item.id);
-      const categories = await prisma.category.findMany({
-        where: {
-          id: { in: categoryIds },
-          tenantId: input.tenantId,
-        },
+  reorder: tenantProcedure.input(reorderCategoriesSchema).mutation(async ({ input }) => {
+    // Validar que todos IDs pertencem ao tenant
+    const categoryIds = input.items.map((item) => item.id);
+    const categories = await prisma.category.findMany({
+      where: {
+        id: { in: categoryIds },
+        tenantId: input.tenantId,
+      },
+    });
+
+    if (categories.length !== categoryIds.length) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Some categories not found",
       });
+    }
 
-      if (categories.length !== categoryIds.length) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Some categories not found",
-        });
-      }
+    // Atualizar ordenação
+    const updates = input.items.map((item) =>
+      prisma.category.update({
+        where: { id: item.id },
+        data: { sortOrder: item.sortOrder },
+      }),
+    );
 
-      // Atualizar ordenação
-      const updates = input.items.map(item =>
-        prisma.category.update({
-          where: { id: item.id },
-          data: { sortOrder: item.sortOrder },
-        })
-      );
+    await prisma.$transaction(updates);
 
-      await prisma.$transaction(updates);
-
-      return { success: true };
-    }),
+    return { success: true };
+  }),
 });

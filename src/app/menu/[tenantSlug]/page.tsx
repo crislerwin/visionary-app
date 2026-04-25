@@ -1,6 +1,6 @@
+import { api } from "@/lib/trpc/server";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { api } from "@/lib/trpc/server";
 import { MenuClient } from "./menu-client";
 
 interface MenuPageProps {

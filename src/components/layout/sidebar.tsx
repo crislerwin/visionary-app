@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { sidebarNavigation, type NavSection } from "@/config/navigation";
-import { Menu, ChevronLeft, ChevronRight } from "lucide-react";
+import { type NavSection, sidebarNavigation } from "@/config/navigation";
+import { cn } from "@/lib/utils";
+import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { TenantSwitcher } from "./tenant-switcher";
 
@@ -46,7 +46,7 @@ function SidebarNavSection({
                 "hover:bg-accent hover:text-accent-foreground",
                 isActive && "bg-accent text-accent-foreground",
                 item.disabled && "pointer-events-none opacity-50",
-                collapsed && "justify-center"
+                collapsed && "justify-center",
               )}
               title={collapsed ? item.title : undefined}
             >
@@ -113,7 +113,7 @@ export function Sidebar({ collapsed, setCollapsed, className }: SidebarProps) {
         className={cn(
           "hidden lg:flex flex-col border-r bg-background transition-all duration-300",
           collapsed ? "w-16" : "w-64",
-          className
+          className,
         )}
       >
         {/* Header with Tenant Switcher and Collapse Button */}

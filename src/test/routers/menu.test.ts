@@ -1,10 +1,13 @@
-import { describe, it, expect, beforeEach } from "vitest";
 import { appRouter } from "@/server/routers/_app";
+import { beforeEach, describe, expect, it } from "vitest";
 import { prisma, resetDatabase, setupTestData } from "../database";
 
 describe("Menu Router", () => {
   let caller: ReturnType<typeof appRouter.createCaller>;
-  let testData: { tenant: { id: string; name: string; slug: string }; user: { id: string; email: string } };
+  let testData: {
+    tenant: { id: string; name: string; slug: string };
+    user: { id: string; email: string };
+  };
 
   beforeEach(async () => {
     await resetDatabase();
@@ -30,9 +33,9 @@ describe("Menu Router", () => {
     });
 
     it("should throw NOT_FOUND for non-existent slug", async () => {
-      await expect(
-        caller.menu.getTenantBySlug({ slug: "non-existent-slug" })
-      ).rejects.toThrow("Tenant not found");
+      await expect(caller.menu.getTenantBySlug({ slug: "non-existent-slug" })).rejects.toThrow(
+        "Tenant not found",
+      );
     });
 
     it("should throw NOT_FOUND for inactive tenant", async () => {
@@ -41,9 +44,9 @@ describe("Menu Router", () => {
         data: { isActive: false },
       });
 
-      await expect(
-        caller.menu.getTenantBySlug({ slug: testData.tenant.slug })
-      ).rejects.toThrow("Tenant not found");
+      await expect(caller.menu.getTenantBySlug({ slug: testData.tenant.slug })).rejects.toThrow(
+        "Tenant not found",
+      );
     });
   });
 
@@ -157,7 +160,7 @@ describe("Menu Router", () => {
 
     it("should throw NOT_FOUND for non-existent tenant", async () => {
       await expect(
-        caller.menu.getCategoriesWithProducts({ tenantSlug: "non-existent" })
+        caller.menu.getCategoriesWithProducts({ tenantSlug: "non-existent" }),
       ).rejects.toThrow("Tenant not found");
     });
 

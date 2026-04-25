@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
-import { Store, ShoppingCart } from "lucide-react";
-import { ProductCard } from "@/components/menu/product-card";
 import { CartSheet } from "@/components/menu/cart-sheet";
+import { ProductCard } from "@/components/menu/product-card";
 import { useCartStore } from "@/stores/cart-store";
+import { ShoppingCart, Store } from "lucide-react";
+import { useEffect } from "react";
 
 interface MenuClientProps {
   tenant: {
@@ -50,7 +50,6 @@ export function MenuClient({ tenant, categories }: MenuClientProps) {
   const totalPrice = useCartStore((state) => state.getTotalPrice());
   const openCart = useCartStore((state) => state.openCart);
 
-
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-8">
       {/* Header */}
@@ -89,9 +88,7 @@ export function MenuClient({ tenant, categories }: MenuClientProps) {
           <div className="text-center py-16 px-4">
             <Store className="w-16 h-16 mx-auto text-gray-300 mb-4" />
             <h2 className="text-lg font-semibold text-gray-600">Cardápio vazio</h2>
-            <p className="text-gray-500 mt-1">
-              Este estabelecimento ainda não adicionou produtos.
-            </p>
+            <p className="text-gray-500 mt-1">Este estabelecimento ainda não adicionou produtos.</p>
           </div>
         ) : (
           <div className="space-y-8">
@@ -132,6 +129,7 @@ export function MenuClient({ tenant, categories }: MenuClientProps) {
       {totalItems > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 md:hidden z-50">
           <button
+            type="button"
             onClick={openCart}
             className="w-full bg-primary text-primary-foreground rounded-lg py-3 px-4 flex items-center justify-between"
           >
@@ -140,7 +138,8 @@ export function MenuClient({ tenant, categories }: MenuClientProps) {
               <span>{totalItems} item(s)</span>
             </div>
             <span className="font-bold">
-              R$ {totalPrice.toLocaleString("pt-BR", {
+              R${" "}
+              {totalPrice.toLocaleString("pt-BR", {
                 minimumFractionDigits: 2,
               })}
             </span>

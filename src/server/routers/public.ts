@@ -72,9 +72,7 @@ export const publicRouter = router({
       });
 
       // Filter out categories with no products
-      const categoriesWithProducts = categories.filter(
-        (cat) => cat.products.length > 0
-      );
+      const categoriesWithProducts = categories.filter((cat) => cat.products.length > 0);
 
       return categoriesWithProducts;
     }),
@@ -85,7 +83,7 @@ export const publicRouter = router({
       z.object({
         tenantSlug: z.string(),
         categorySlug: z.string().optional(),
-      })
+      }),
     )
     .query(async ({ input }) => {
       const tenant = await prisma.tenant.findUnique({

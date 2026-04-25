@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, beforeAll } from "vitest";
 import { appRouter } from "@/server/routers/_app";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { prisma, resetDatabase, setupTestData } from "../database";
 
 // Helper para criar categoria e produto
@@ -51,7 +51,7 @@ describe("Order Router", () => {
         email: testData.user.email,
         name: "Test User",
         image: null,
-      }
+      },
     });
   });
 
@@ -180,7 +180,7 @@ describe("Order Router", () => {
           subtotal: 0,
           total: 0,
           paymentMethod: "CASH",
-        })
+        }),
       ).rejects.toThrow();
     });
   });
@@ -225,7 +225,7 @@ describe("Order Router", () => {
         caller.order.getOrderById({
           id: "non-existent-id",
           tenantId: testData.tenant.id,
-        })
+        }),
       ).rejects.toThrow("Pedido não encontrado");
     });
 
@@ -270,7 +270,7 @@ describe("Order Router", () => {
         caller.order.getOrderById({
           id: created.id,
           tenantId: otherTenant.id,
-        })
+        }),
       ).rejects.toThrow("Pedido não encontrado");
     });
   });

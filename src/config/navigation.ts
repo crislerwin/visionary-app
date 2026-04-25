@@ -1,10 +1,4 @@
-import {
-  LayoutDashboard,
-  Package,
-  Store,
-  FolderOpen,
-  type LucideIcon,
-} from "lucide-react";
+import { FolderOpen, LayoutDashboard, type LucideIcon, Package, Store } from "lucide-react";
 
 export interface NavItem {
   title: string;

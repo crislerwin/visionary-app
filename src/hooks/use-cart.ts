@@ -31,8 +31,7 @@ export const useCart = create<CartState>()(
       addItem: (item) => {
         const { items } = get();
         const existingItem = items.find(
-          (i) =>
-            i.productId === item.productId && i.variantId === item.variantId,
+          (i) => i.productId === item.productId && i.variantId === item.variantId,
         );
 
         if (existingItem) {
@@ -51,10 +50,7 @@ export const useCart = create<CartState>()(
       removeItem: (productId, variantId) => {
         const { items } = get();
         set({
-          items: items.filter(
-            (i) =>
-              !(i.productId === productId && i.variantId === variantId),
-          ),
+          items: items.filter((i) => !(i.productId === productId && i.variantId === variantId)),
         });
       },
 
@@ -62,17 +58,12 @@ export const useCart = create<CartState>()(
         const { items } = get();
         if (quantity <= 0) {
           set({
-            items: items.filter(
-              (i) =>
-                !(i.productId === productId && i.variantId === variantId),
-            ),
+            items: items.filter((i) => !(i.productId === productId && i.variantId === variantId)),
           });
         } else {
           set({
             items: items.map((i) =>
-              i.productId === productId && i.variantId === variantId
-                ? { ...i, quantity }
-                : i,
+              i.productId === productId && i.variantId === variantId ? { ...i, quantity } : i,
             ),
           });
         }
@@ -82,9 +73,7 @@ export const useCart = create<CartState>()(
         const { items } = get();
         set({
           items: items.map((i) =>
-            i.productId === productId && i.variantId === variantId
-              ? { ...i, notes }
-              : i,
+            i.productId === productId && i.variantId === variantId ? { ...i, notes } : i,
           ),
         });
       },
@@ -98,10 +87,7 @@ export const useCart = create<CartState>()(
 
       getTotalPrice: () => {
         const { items } = get();
-        return items.reduce(
-          (total, item) => total + item.price * item.quantity,
-          0,
-        );
+        return items.reduce((total, item) => total + item.price * item.quantity, 0);
       },
     }),
     {

@@ -1,21 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { OrderType, PaymentMethod } from "@prisma/client";
+import { Banknote, CreditCard, Loader2, MapPin, Minus, Plus, QrCode, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { PaymentMethod, OrderType } from "@prisma/client";
-import { Loader2, Minus, Plus, Trash2, MapPin, CreditCard, Banknote, QrCode } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
-import { useCart } from "@/hooks/use-cart";
-import { api } from "@/lib/trpc/react";
 import {
   Form,
   FormControl,
@@ -24,6 +18,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -31,6 +26,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { useCart } from "@/hooks/use-cart";
+import { useToast } from "@/hooks/use-toast";
+import { api } from "@/lib/trpc/react";
 
 const checkoutFormSchema = z.object({
   customerName: z.string().min(1, "Nome é obrigatório"),
@@ -184,9 +184,7 @@ export default function CheckoutPage() {
       <div className="container mx-auto max-w-4xl px-4 py-8">
         <Card className="text-center py-12">
           <CardContent>
-            <p className="text-muted-foreground mb-4">
-              Seu carrinho está vazio
-            </p>
+            <p className="text-muted-foreground mb-4">Seu carrinho está vazio</p>
             <Button onClick={() => router.push("/")}>Continuar Comprando</Button>
           </CardContent>
         </Card>
@@ -213,15 +211,9 @@ export default function CheckoutPage() {
                 <div className="flex-1">
                   <p className="font-medium">{item.productName}</p>
                   {item.variantName && (
-                    <p className="text-sm text-muted-foreground">
-                      {item.variantName}
-                    </p>
+                    <p className="text-sm text-muted-foreground">{item.variantName}</p>
                   )}
-                  {item.notes && (
-                    <p className="text-xs text-muted-foreground">
-                      Obs: {item.notes}
-                    </p>
-                  )}
+                  {item.notes && <p className="text-xs text-muted-foreground">Obs: {item.notes}</p>}
                   <p className="text-sm">
                     R$ {item.price.toFixed(2)} x {item.quantity}
                   </p>
@@ -288,10 +280,7 @@ export default function CheckoutPage() {
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4"
-              >
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 {/* Tipo de Pedido */}
                 <FormField
                   control={form.control}
@@ -299,10 +288,7 @@ export default function CheckoutPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tipo de Pedido</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione o tipo de pedido" />
@@ -323,9 +309,7 @@ export default function CheckoutPage() {
 
                 {/* Dados do Cliente */}
                 <div className="space-y-4">
-                  <h3 className="font-medium text-sm text-muted-foreground">
-                    Dados do Cliente
-                  </h3>
+                  <h3 className="font-medium text-sm text-muted-foreground">Dados do Cliente</h3>
                   <FormField
                     control={form.control}
                     name="customerName"
@@ -362,11 +346,7 @@ export default function CheckoutPage() {
                         <FormItem>
                           <FormLabel>Email (opcional)</FormLabel>
                           <FormControl>
-                            <Input
-                              type="email"
-                              placeholder="seu@email.com"
-                              {...field}
-                            />
+                            <Input type="email" placeholder="seu@email.com" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -438,10 +418,7 @@ export default function CheckoutPage() {
                         <FormItem>
                           <FormLabel>Complemento (opcional)</FormLabel>
                           <FormControl>
-                            <Input
-                              placeholder="Apto, sala, etc."
-                              {...field}
-                            />
+                            <Input placeholder="Apto, sala, etc." {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -467,7 +444,7 @@ export default function CheckoutPage() {
                         control={form.control}
                         name="addressCity"
                         render={({ field }) => (
-                        <FormItem>
+                          <FormItem>
                             <FormLabel>Cidade</FormLabel>
                             <FormControl>
                               <Input placeholder="Cidade" {...field} />
@@ -500,10 +477,7 @@ export default function CheckoutPage() {
                           <FormItem>
                             <FormLabel>Ponto de Referência (opcional)</FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder="Próximo a..."
-                                {...field}
-                              />
+                              <Input placeholder="Próximo a..." {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -520,10 +494,7 @@ export default function CheckoutPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Método de Pagamento</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione o método de pagamento" />
@@ -556,22 +527,14 @@ export default function CheckoutPage() {
                     <FormItem>
                       <FormLabel>Observações (opcional)</FormLabel>
                       <FormControl>
-                        <Textarea
-                          placeholder="Alguma observação sobre o pedido?"
-                          {...field}
-                        />
+                        <Textarea placeholder="Alguma observação sobre o pedido?" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isSubmitting}
-                  size="lg"
-                >
+                <Button type="submit" className="w-full" disabled={isSubmitting} size="lg">
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
