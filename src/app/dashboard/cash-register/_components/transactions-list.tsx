@@ -41,12 +41,14 @@ const TRANSACTION_LABELS = {
 export function TransactionsList({ transactions }: TransactionsListProps) {
   if (transactions.length === 0) {
     return (
-      <div className="text-center text-muted-foreground py-8">Nenhuma movimentação registrada</div>
+      <div className="text-center text-muted-foreground text-sm py-8 px-3">
+        Nenhuma movimentação registrada
+      </div>
     );
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 px-3 pb-3">
       {transactions.map((transaction) => {
         const Icon = TRANSACTION_ICONS[transaction.type];
         const isEntry = transaction.type === "SALE" || transaction.type === "INITIAL";
@@ -54,7 +56,7 @@ export function TransactionsList({ transactions }: TransactionsListProps) {
         return (
           <div
             key={transaction.id}
-            className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+            className="flex items-center justify-between p-2.5 rounded-lg border hover:bg-muted/50 transition-colors"
           >
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-full ${TRANSACTION_COLORS[transaction.type]}`}>

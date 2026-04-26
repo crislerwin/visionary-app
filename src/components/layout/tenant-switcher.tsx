@@ -34,14 +34,24 @@ export function TenantSwitcher() {
   const [showNewTenantDialog, setShowNewTenantDialog] = React.useState(false);
   const [newTenantName, setNewTenantName] = React.useState("");
   const [newTenantSlug, setNewTenantSlug] = React.useState("");
+  const utils = trpc.useUtils();
 
-  const createTenant = trpc.tenant.create.useMutation({
-    onSuccess: (data) => {
+  // biome-ignore lint/suspicious/noExplicitAny: tRPC RC type workaround
+  const createTenant = (trpc.tenant.create.useMutation as any)({
+    onSuccess: (data: { id: string }) => {
       setCurrentTenant(data.id);
       setShowNewTenantDialog(false);
       router.push("/dashboard");
     },
   });
+
+  const handleSwitchTenant = async (tenantId: string) => {
+    setCurrentTenant(tenantId);
+    // Invalidate all queries to force refetch with new tenant
+    await utils.invalidate();
+    router.refresh();
+    router.push("/dashboard");
+  };
 
   const handleCreateTenant = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,13 +84,7 @@ export function TenantSwitcher() {
           <DropdownMenuLabel>Tenants</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {tenants?.map((tenant) => (
-            <DropdownMenuItem
-              key={tenant.id}
-              onClick={() => {
-                setCurrentTenant(tenant.id);
-                router.push("/dashboard");
-              }}
-            >
+            <DropdownMenuItem key={tenant.id} onClick={() => handleSwitchTenant(tenant.id)}>
               <Building2 className="mr-2 h-4 w-4" />
               {tenant.name}
               <Check

@@ -1,20 +1,19 @@
 "use client";
 
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
 import { TRPCProvider } from "@/lib/trpc/react";
 import { SessionProvider } from "next-auth/react";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
 import type * as React from "react";
-
-import { Toaster } from "@/components/ui/toaster";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
       <TRPCProvider>
-        <NextThemesProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
           <Toaster />
-        </NextThemesProvider>
+        </ThemeProvider>
       </TRPCProvider>
     </SessionProvider>
   );

@@ -139,12 +139,12 @@ export function ImageCropperDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-2xl flex flex-col max-h-[90vh] p-0">
+        <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle>Recortar Imagem</DialogTitle>
           <DialogDescription>Ajuste a área da imagem que será usada no produto</DialogDescription>
         </DialogHeader>
-        <div className="max-h-[60vh] overflow-auto rounded-md">
+        <div className="flex-1 min-h-0 flex items-center justify-center bg-muted/30 px-6">
           {imageSrc && (
             <ReactCrop
               crop={crop}
@@ -152,18 +152,19 @@ export function ImageCropperDialog({
               onComplete={(c) => setCompletedCrop(c)}
               aspect={aspectRatio}
               keepSelection
+              className="max-h-full"
             >
               <img
                 ref={imgRef}
                 alt="Crop me"
                 src={imageSrc}
                 onLoad={onImageLoad}
-                style={{ maxHeight: "60vh", width: "100%", objectFit: "contain" }}
+                className="max-h-[55vh] w-auto object-contain"
               />
             </ReactCrop>
           )}
         </div>
-        <DialogFooter>
+        <DialogFooter className="px-6 py-4 border-t">
           <Button
             type="button"
             variant="outline"

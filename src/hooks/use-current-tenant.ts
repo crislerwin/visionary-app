@@ -35,10 +35,13 @@ export function useCurrentTenant(): {
   isLoading: boolean;
 } {
   const { currentTenantId, setCurrentTenant } = useTenantStore();
-  const { data: tenants, isLoading } = trpc.tenant.list.useQuery();
+  const { data, isLoading } = trpc.tenant.list.useQuery();
 
-  const currentTenant =
-    tenants?.find((t: Tenant) => t.id === currentTenantId) || tenants?.[0] || null;
+  // Cast to break deep type instantiation from zustand + tRPC interaction
+  const tenants = data as Tenant[] | undefined;
+
+  const currentTenant: Tenant | null =
+    tenants?.find((t) => t.id === currentTenantId) || tenants?.[0] || null;
 
   return {
     currentTenant,

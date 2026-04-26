@@ -196,85 +196,9 @@ export default function CheckoutPage() {
     <div className="container mx-auto max-w-4xl px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Finalizar Pedido</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Resumo do Pedido */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Resumo do Pedido</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {items.map((item) => (
-              <div
-                key={`${item.productId}-${item.variantId || "default"}`}
-                className="flex items-center gap-4 py-2"
-              >
-                <div className="flex-1">
-                  <p className="font-medium">{item.productName}</p>
-                  {item.variantName && (
-                    <p className="text-sm text-muted-foreground">{item.variantName}</p>
-                  )}
-                  {item.notes && <p className="text-xs text-muted-foreground">Obs: {item.notes}</p>}
-                  <p className="text-sm">
-                    R$ {item.price.toFixed(2)} x {item.quantity}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() =>
-                      updateQuantity(item.productId, item.quantity - 1, item.variantId)
-                    }
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <span className="w-8 text-center">{item.quantity}</span>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() =>
-                      updateQuantity(item.productId, item.quantity + 1, item.variantId)
-                    }
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive"
-                    onClick={() => removeItem(item.productId, item.variantId)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-
-            <Separator />
-
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Subtotal</span>
-                <span>R$ {subtotal.toFixed(2)}</span>
-              </div>
-              {isDelivery && (
-                <div className="flex justify-between text-sm">
-                  <span>Taxa de Entrega</span>
-                  <span>R$ {deliveryFee.toFixed(2)}</span>
-                </div>
-              )}
-              <div className="flex justify-between font-bold text-lg">
-                <span>Total</span>
-                <span>R$ {total.toFixed(2)}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Formulário de Checkout */}
-        <Card>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+        {/* Formulário de Checkout - Esquerda */}
+        <Card className="lg:order-1">
           <CardHeader>
             <CardTitle>Dados do Pedido</CardTitle>
           </CardHeader>
@@ -548,6 +472,86 @@ export default function CheckoutPage() {
             </Form>
           </CardContent>
         </Card>
+
+        {/* Sidebar Resumo do Pedido - Direita */}
+        <div className="lg:order-2 space-y-4">
+          <div className="lg:sticky lg:top-6 space-y-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Resumo do Pedido</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {items.map((item) => (
+                  <div
+                    key={`${item.productId}-${item.variantId || "default"}`}
+                    className="flex items-start gap-2 py-1.5"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{item.productName}</p>
+                      {item.variantName && (
+                        <p className="text-xs text-muted-foreground">{item.variantName}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        R$ {item.price.toFixed(2)} x {item.quantity}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() =>
+                          updateQuantity(item.productId, item.quantity - 1, item.variantId)
+                        }
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="w-5 text-center text-sm">{item.quantity}</span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() =>
+                          updateQuantity(item.productId, item.quantity + 1, item.variantId)
+                        }
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-destructive"
+                        onClick={() => removeItem(item.productId, item.variantId)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>R$ {subtotal.toFixed(2)}</span>
+                  </div>
+                  {isDelivery && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Entrega</span>
+                      <span>R$ {deliveryFee.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <Separator />
+                  <div className="flex justify-between font-bold text-lg">
+                    <span>Total</span>
+                    <span>R$ {total.toFixed(2)}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

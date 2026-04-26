@@ -22,7 +22,7 @@ export function DashboardShell({ children, className }: DashboardShellProps) {
         <div className="flex h-12 items-center justify-end border-b px-4">
           <UserNav />
         </div>
-        <main className={cn("flex-1 p-4 md:p-8", className)}>{children}</main>
+        <main className={cn("flex-1", className)}>{children}</main>
       </div>
     </div>
   );

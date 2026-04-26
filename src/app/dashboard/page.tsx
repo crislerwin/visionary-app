@@ -1,62 +1,80 @@
-import { auth } from "@/auth";
-import { prisma } from "@/lib/db";
-import { redirect } from "next/navigation";
+"use client";
 
-export default async function DashboardPage() {
-  const session = await auth();
+import { PageContainer, PageHeader } from "@/components/layout/page-layout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useCurrentTenant } from "@/hooks/use-current-tenant";
+import { Building, Shield, Store } from "lucide-react";
 
-  if (!session?.user?.id) {
-    redirect("/sign-in");
+export default function DashboardPage() {
+  const { currentTenant, tenants, isLoading } = useCurrentTenant();
+
+  if (isLoading) {
+    return (
+      <PageContainer>
+        <div className="space-y-6">
+          <div className="h-8 w-48 bg-muted animate-pulse rounded" />
+          <div className="grid gap-2 sm:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-20 bg-muted animate-pulse rounded" />
+            ))}
+          </div>
+        </div>
+      </PageContainer>
+    );
   }
 
-  // Get user's tenants directly from Prisma
-  const memberships = await prisma.membership.findMany({
-    where: { userId: session.user.id },
-    include: { tenant: true },
-    orderBy: { joinedAt: "desc" },
-  });
-
-  const tenants = memberships.map((m) => ({
-    ...m.tenant,
-    role: m.role,
-  }));
-
-  if (tenants.length === 0) {
+  if (!currentTenant || !tenants || tenants.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <h1 className="text-2xl font-bold">Bem-vindo ao Food Service</h1>
-        <p className="text-muted-foreground">
-          You don&apos;t have any tenants yet. Create one to get started.
-        </p>
-      </div>
+      <PageContainer>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+          <h1 className="text-2xl font-bold">Bem-vindo ao Food Service</h1>
+          <p className="text-muted-foreground">
+            Você ainda não tem nenhum estabelecimento. Crie um para começar.
+          </p>
+        </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Welcome back, {session.user?.name || session.user?.email}
-        </p>
+    <PageContainer>
+      <div className="space-y-6">
+        <PageHeader title="Dashboard" description={`Bem-vindo de volta, ${currentTenant.name}`} />
+
+        <div className="grid gap-2 sm:grid-cols-3">
+          <Card className="gap-0 p-0">
+            <CardHeader className="px-3 pt-3 pb-1 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-xs font-medium text-muted-foreground">
+                Estabelecimentos
+              </CardTitle>
+              <Building className="h-3.5 w-3.5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent className="px-3 pb-3 pt-0">
+              <p className="text-xl font-bold">{tenants.length}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="gap-0 p-0">
+            <CardHeader className="px-3 pt-3 pb-1 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-xs font-medium text-muted-foreground">Ativo</CardTitle>
+              <Store className="h-3.5 w-3.5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent className="px-3 pb-3 pt-0">
+              <p className="text-xl font-bold truncate">{currentTenant.name}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="gap-0 p-0">
+            <CardHeader className="px-3 pt-3 pb-1 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-xs font-medium text-muted-foreground">Slug</CardTitle>
+              <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent className="px-3 pb-3 pt-0">
+              <p className="text-xl font-bold">{currentTenant.slug}</p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-lg border bg-card p-6">
-          <h3 className="font-semibold">Your Tenants</h3>
-          <p className="text-2xl font-bold mt-2">{tenants.length}</p>
-        </div>
-
-        <div className="rounded-lg border bg-card p-6">
-          <h3 className="font-semibold">Active Tenant</h3>
-          <p className="text-lg font-medium mt-2 truncate">{tenants[0]?.name}</p>
-        </div>
-
-        <div className="rounded-lg border bg-card p-6">
-          <h3 className="font-semibold">Role</h3>
-          <p className="text-lg font-medium mt-2 capitalize">{tenants[0]?.role?.toLowerCase()}</p>
-        </div>
-      </div>
-    </div>
+    </PageContainer>
   );
 }

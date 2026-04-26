@@ -3,8 +3,9 @@
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { type NavSection, sidebarNavigation } from "@/config/navigation";
+import { useCurrentTenant } from "@/hooks/use-current-tenant";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
+import { ChevronLeft, ChevronRight, Menu, Store } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -14,6 +15,29 @@ interface SidebarProps {
   collapsed: boolean;
   setCollapsed: (value: boolean) => void;
   className?: string;
+}
+
+function MenuLink({ collapsed }: { collapsed: boolean }) {
+  const { currentTenant } = useCurrentTenant();
+  const pathname = usePathname();
+  const href = currentTenant?.slug ? `/menu/${currentTenant.slug}` : "/menu";
+  const isActive = pathname?.startsWith("/menu/");
+
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium transition-colors",
+        "hover:bg-accent hover:text-accent-foreground",
+        isActive && "bg-accent text-accent-foreground",
+        collapsed && "justify-center",
+      )}
+      title={collapsed ? "Ver Cardápio" : undefined}
+    >
+      <Store className="h-5 w-5 shrink-0" />
+      {!collapsed && <span>Ver Cardápio</span>}
+    </Link>
+  );
 }
 
 function SidebarNavSection({
@@ -93,6 +117,14 @@ function MobileMenu({
                 collapsed={false}
               />
             ))}
+            <div className="px-3 py-2">
+              <h3 className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Cardápio
+              </h3>
+              <div className="space-y-1">
+                <MenuLink collapsed={false} />
+              </div>
+            </div>
           </div>
         </div>
       </SheetContent>
@@ -156,6 +188,16 @@ export function Sidebar({ collapsed, setCollapsed, className }: SidebarProps) {
               collapsed={collapsed}
             />
           ))}
+          <div className="px-3 py-2">
+            {!collapsed && (
+              <h3 className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Cardápio
+              </h3>
+            )}
+            <div className="space-y-1">
+              <MenuLink collapsed={collapsed} />
+            </div>
+          </div>
         </div>
       </aside>
     </>
@@ -185,6 +227,14 @@ export function MobileSidebarTrigger() {
                 collapsed={false}
               />
             ))}
+            <div className="px-3 py-2">
+              <h3 className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Cardápio
+              </h3>
+              <div className="space-y-1">
+                <MenuLink collapsed={false} />
+              </div>
+            </div>
           </div>
         </div>
       </SheetContent>

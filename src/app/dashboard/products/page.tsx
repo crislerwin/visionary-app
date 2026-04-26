@@ -1,6 +1,13 @@
 "use client";
 
 import {
+  ContentGrid,
+  EmptyState,
+  PageContainer,
+  PageHeader,
+} from "@/components/layout/page-layout";
+import { ProductCard, type ProductCardProduct } from "@/components/product-card";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -12,7 +19,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Dialog,
@@ -23,6 +29,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Icons } from "@/components/ui/icons";
 import { ImageCropperDialog } from "@/components/ui/image-cropper-dialog";
 import { Input } from "@/components/ui/input";
@@ -31,6 +43,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -66,9 +79,14 @@ interface Category {
 }
 
 interface VariantInput {
+  id: string;
   name: string;
   price: number;
   stock: number;
+}
+
+function generateVariantId(): string {
+  return `variant-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
 export default function ProductsPage() {
@@ -101,6 +119,21 @@ export default function ProductsPage() {
   const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryDescription, setNewCategoryDescription] = useState("");
+
+  const handleCreateOpenChange = (open: boolean) => {
+    setIsCreateOpen(open);
+    if (!open) {
+      resetForm();
+    }
+  };
+
+  const handleEditOpenChange = (open: boolean) => {
+    setIsEditOpen(open);
+    if (!open) {
+      resetForm();
+      setSelectedProduct(null);
+    }
+  };
 
   const { data: productsData, refetch } = api.product.list.useQuery(
     { tenantId: currentTenant?.id ?? "", limit: 50 },
@@ -232,6 +265,7 @@ export default function ProductsPage() {
     setImageFile(null);
     setVariants(
       product.variants.map((v) => ({
+        id: generateVariantId(),
         name: v.name,
         price: Number(v.price),
         stock: v.stock,
@@ -246,7 +280,7 @@ export default function ProductsPage() {
   };
 
   const addVariant = () => {
-    setVariants([...variants, { name: "", price: 0, stock: 0 }]);
+    setVariants([...variants, { id: generateVariantId(), name: "", price: 0, stock: 0 }]);
   };
 
   const removeVariant = (index: number) => {
@@ -328,36 +362,42 @@ export default function ProductsPage() {
     });
   };
 
-  const formatPrice = (price: number | string) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(Number(price));
-  };
-
   return (
-    <>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Produtos</h1>
-          <p className="text-muted-foreground">Gerencie os produtos do seu cardápio</p>
-        </div>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Icons.plus className="mr-2 h-4 w-4" />
-              Novo Produto
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Adicionar Produto</DialogTitle>
-              <DialogDescription>Crie um novo produto para seu cardápio</DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleCreate}>
-              <div className="space-y-4 py-4">
+    <PageContainer>
+      <Dialog open={isCreateOpen} onOpenChange={handleCreateOpenChange}>
+        <PageHeader
+          title="Produtos"
+          description="Seu cardápio"
+          action={
+            <DialogTrigger asChild>
+              <Button size="sm" className="shrink-0">
+                <Icons.plus className="mr-1.5 h-4 w-4" />
+                <span className="sm:hidden">Novo</span>
+                <span className="hidden sm:inline">Novo Produto</span>
+              </Button>
+            </DialogTrigger>
+          }
+        />
+        <DialogContent className="max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-2">
+            <DialogTitle>Adicionar Produto</DialogTitle>
+            <DialogDescription>Crie um novo produto para seu cardápio</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreate} className="flex flex-col flex-1 min-h-0">
+            <div className="space-y-4 py-3 px-6 overflow-y-auto flex-1">
+              {/* Seção 1: Informações Básicas */}
+              <div className="rounded-lg border bg-card p-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Icons.clipboardList className="h-4 w-4 text-muted-foreground" />
+                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                    Informações Básicas
+                  </h4>
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nome</Label>
+                  <Label htmlFor="name">
+                    Nome <span className="text-destructive">*</span>
+                  </Label>
                   <Input
                     id="name"
                     value={productName}
@@ -367,12 +407,12 @@ export default function ProductsPage() {
                     maxLength={100}
                   />
                 </div>
-                {/* Image Upload */}
+
                 <div className="space-y-2">
                   <Label>Imagem do Produto</Label>
                   <div className="flex items-center gap-4">
                     {(productImage || imageFile) && (
-                      <div className="relative h-20 w-20 overflow-hidden rounded-lg border">
+                      <div className="relative h-20 w-20 overflow-hidden rounded-lg border shrink-0">
                         <img
                           src={
                             imageFile ? URL.createObjectURL(imageFile) : (productImage ?? undefined)
@@ -392,8 +432,8 @@ export default function ProductsPage() {
                         </button>
                       </div>
                     )}
-                    <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-4 py-6 text-sm text-muted-foreground hover:bg-muted">
-                      <Icons.image className="h-4 w-4" />
+                    <label className="flex cursor-pointer items-center gap-3 rounded-md border border-dashed px-6 py-10 text-sm text-muted-foreground hover:bg-muted flex-1 justify-center">
+                      <Icons.image className="h-6 w-6" />
                       <span>
                         {productImage || imageFile ? "Trocar imagem" : "Adicionar imagem"}
                       </span>
@@ -406,19 +446,25 @@ export default function ProductsPage() {
                     </label>
                   </div>
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="description">Descrição (opcional)</Label>
+                  <Label htmlFor="description">
+                    Descrição <span className="text-muted-foreground">(opcional)</span>
+                  </Label>
                   <Input
                     id="description"
                     value={productDescription}
                     onChange={(e) => setProductDescription(e.target.value)}
-                    placeholder="Descrição do produto"
+                    placeholder="Uma breve descrição do produto"
                     maxLength={2000}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="price">Preço</Label>
+                    <Label htmlFor="price">
+                      Preço <span className="text-destructive">*</span>
+                    </Label>
                     <div className="relative">
                       <Icons.dollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -435,25 +481,21 @@ export default function ProductsPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="category">Categoria</Label>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsCreateCategoryOpen(true)}
-                        className="h-auto px-2 py-1 text-xs"
-                      >
-                        <Icons.plus className="mr-1 h-3 w-3" />
-                        Nova
-                      </Button>
-                    </div>
+                    <Label htmlFor="category">
+                      Categoria <span className="text-destructive">*</span>
+                    </Label>
                     <Select
                       value={selectedCategoryId}
-                      onValueChange={setSelectedCategoryId}
+                      onValueChange={(val) => {
+                        if (val === "__create__") {
+                          setIsCreateCategoryOpen(true);
+                          return;
+                        }
+                        setSelectedCategoryId(val);
+                      }}
                       required
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Selecione..." />
                       </SelectTrigger>
                       <SelectContent>
@@ -462,24 +504,40 @@ export default function ProductsPage() {
                             {category.name}
                           </SelectItem>
                         ))}
+                        <SelectSeparator />
+                        <SelectItem
+                          value="__create__"
+                          className="text-primary font-medium cursor-pointer"
+                        >
+                          <Icons.plus className="mr-2 h-4 w-4" />
+                          Criar Categoria
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="stock">Estoque</Label>
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="trackStock"
-                        checked={trackStock}
-                        onCheckedChange={setTrackStock}
-                      />
-                      <Label htmlFor="trackStock" className="text-sm font-normal cursor-pointer">
-                        Controlar estoque
-                      </Label>
-                    </div>
+              </div>
+
+              {/* Seção 2: Estoque */}
+              <div className="rounded-lg border bg-card p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Icons.package className="h-4 w-4 text-muted-foreground" />
+                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                      Estoque
+                    </h4>
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch id="trackStock" checked={trackStock} onCheckedChange={setTrackStock} />
+                    <Label htmlFor="trackStock" className="text-sm font-normal cursor-pointer">
+                      Controlar estoque
+                    </Label>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="stock" className={!trackStock ? "text-muted-foreground" : ""}>
+                    Quantidade em Estoque
+                  </Label>
                   <Input
                     id="stock"
                     type="number"
@@ -487,35 +545,47 @@ export default function ProductsPage() {
                     value={productStock}
                     onChange={(e) => setProductStock(e.target.value)}
                     disabled={!trackStock}
+                    placeholder={trackStock ? "0" : "Desativado"}
                   />
                 </div>
+              </div>
 
-                {/* Variants Section */}
-                <Collapsible open={variantsOpen} onOpenChange={setVariantsOpen}>
+              {/* Seção 3: Variantes */}
+              <Collapsible open={variantsOpen} onOpenChange={setVariantsOpen}>
+                <div className="rounded-lg border bg-card p-3 space-y-3">
                   <CollapsibleTrigger asChild>
-                    <Button type="button" variant="outline" className="w-full justify-between">
-                      <div className="flex items-center">
-                        <Icons.layers className="mr-2 h-4 w-4" />
-                        <span>Variantes ({variants.length})</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full justify-between px-0 hover:bg-transparent"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Icons.layers className="h-4 w-4 text-muted-foreground" />
+                        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                          Variantes
+                        </h4>
                       </div>
-                      <Icons.chevronDown
-                        className={`h-4 w-4 transition-transform ${
-                          variantsOpen ? "rotate-180" : ""
-                        }`}
-                      />
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary">{variants.length}</Badge>
+                        <Icons.chevronDown
+                          className={`h-4 w-4 text-muted-foreground transition-transform ${
+                            variantsOpen ? "rotate-180" : ""
+                          }`}
+                        />
+                      </div>
                     </Button>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-3 pt-3">
+                  <CollapsibleContent className="space-y-3 pt-2">
                     <p className="text-sm text-muted-foreground">
-                      Adicione variantes como tamanhos (P, M, G) ou opções (com/sem queijo)
+                      Adicione opções como tamanhos (P, M, G) ou complementos (com/sem queijo)
                     </p>
                     {variants.map((variant, index) => (
                       <div
-                        key={`variant-new-${variant.name}-${index}`}
-                        className="grid grid-cols-12 gap-2 items-end rounded-md border p-3"
+                        key={variant.id}
+                        className="grid grid-cols-12 gap-2 items-end rounded-md border bg-background p-3"
                       >
                         <div className="col-span-5">
-                          <Label className="text-xs">Nome</Label>
+                          <Label className="text-xs text-muted-foreground">Nome</Label>
                           <Input
                             value={variant.name}
                             onChange={(e) => updateVariant(index, "name", e.target.value)}
@@ -524,7 +594,7 @@ export default function ProductsPage() {
                           />
                         </div>
                         <div className="col-span-3">
-                          <Label className="text-xs">Preço</Label>
+                          <Label className="text-xs text-muted-foreground">Preço</Label>
                           <Input
                             type="number"
                             step="0.01"
@@ -538,7 +608,7 @@ export default function ProductsPage() {
                           />
                         </div>
                         <div className="col-span-3">
-                          <Label className="text-xs">Estoque</Label>
+                          <Label className="text-xs text-muted-foreground">Estoque</Label>
                           <Input
                             type="number"
                             min="0"
@@ -556,7 +626,7 @@ export default function ProductsPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => removeVariant(index)}
-                            className="text-destructive"
+                            className="text-destructive h-9 w-9"
                           >
                             <Icons.trash className="h-4 w-4" />
                           </Button>
@@ -568,211 +638,247 @@ export default function ProductsPage() {
                       variant="outline"
                       size="sm"
                       onClick={addVariant}
-                      className="w-full"
+                      className="w-full mt-2"
                     >
                       <Icons.plus className="mr-2 h-4 w-4" />
                       Adicionar Variante
                     </Button>
                   </CollapsibleContent>
-                </Collapsible>
-              </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsCreateOpen(false)}
-                  disabled={createMutation.isPending || isUploadingImage}
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={createMutation.isPending || isUploadingImage}>
-                  {(createMutation.isPending || isUploadingImage) && (
-                    <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  Criar
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-6">
-        {productsData?.products.map((product) => (
-          <Card key={product.id}>
-            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-              <div className="flex-1 min-w-0">
-                <CardTitle className="text-sm font-medium truncate">{product.name}</CardTitle>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {product.category?.name || "Sem categoria"}
-                </p>
-              </div>
-              <div className="flex gap-1 ml-2">
-                <Button variant="ghost" size="icon" onClick={() => openEdit(product)}>
-                  <Icons.edit className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => openDelete(product)}>
-                  <Icons.trash className="h-4 w-4 text-destructive" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {product.image && (
-                <div className="mb-3 h-32 w-full overflow-hidden rounded-md">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="h-full w-full object-cover"
-                  />
                 </div>
-              )}
-              <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
-                {product.description || "Sem descrição"}
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-semibold">{formatPrice(product.price)}</span>
-                {product.trackStock && (
-                  <Badge
-                    variant={product.stock > 0 ? "secondary" : "destructive"}
-                    className="text-xs"
-                  >
-                    {product.stock} em estoque
-                  </Badge>
+              </Collapsible>
+            </div>
+            <DialogFooter className="gap-2 pt-4 pb-6 px-6 border-t bg-background shrink-0">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleCreateOpenChange(false)}
+                disabled={createMutation.isPending || isUploadingImage}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={createMutation.isPending || isUploadingImage}>
+                {(createMutation.isPending || isUploadingImage) && (
+                  <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
                 )}
-              </div>
-              {product.variants.length > 0 && (
-                <div className="mt-3 pt-3 border-t">
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Variantes:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {product.variants.slice(0, 3).map((variant) => (
-                      <Badge key={variant.id} variant="outline" className="text-xs">
-                        {variant.name}: {formatPrice(variant.price)}
-                      </Badge>
-                    ))}
-                    {product.variants.length > 3 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{product.variants.length - 3}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                Criar Produto
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <ContentGrid>
+        {productsData?.products.map((product) => {
+          const cardProduct: ProductCardProduct = {
+            ...product,
+            price: Number(product.price),
+            variants: product.variants.map((v) => ({
+              ...v,
+              price: Number(v.price),
+            })),
+          };
+
+          return (
+            <ProductCard
+              key={product.id}
+              product={cardProduct}
+              badge={
+                !product.isActive ? (
+                  <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+                    Inativo
+                  </span>
+                ) : undefined
+              }
+              headerAction={
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7 bg-background/70 backdrop-blur-sm hover:bg-background/90 text-foreground border border-border/50 shadow-sm"
+                    >
+                      <Icons.moreVertical className="h-4 w-4" />
+                      <span className="sr-only">Ações</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => openEdit(product)}>
+                      <Icons.edit className="mr-2 h-4 w-4" />
+                      Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => openDelete(product)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Icons.trash className="mr-2 h-4 w-4" />
+                      Deletar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              }
+            />
+          );
+        })}
+      </ContentGrid>
 
       {productsData?.products.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <Icons.package className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium">Nenhum produto encontrado</h3>
-          <p className="text-sm text-muted-foreground max-w-sm">
-            Comece adicionando seu primeiro produto ao cardápio
-          </p>
-        </div>
+        <EmptyState
+          icon={<Icons.package className="h-12 w-12" />}
+          title="Nenhum produto encontrado"
+          description="Comece adicionando seu primeiro produto ao cardápio"
+        />
       )}
 
       {/* Edit Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+      <Dialog open={isEditOpen} onOpenChange={handleEditOpenChange}>
+        <DialogContent className="max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-2">
             <DialogTitle>Editar Produto</DialogTitle>
             <DialogDescription>Atualize as informações do produto</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleUpdate}>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-name">Nome</Label>
-                <Input
-                  id="edit-name"
-                  value={productName}
-                  onChange={(e) => setProductName(e.target.value)}
-                  required
-                  maxLength={100}
-                />
-              </div>
-              {/* Image Upload Edit */}
-              <div className="space-y-2">
-                <Label>Imagem do Produto</Label>
-                <div className="flex items-center gap-4">
-                  {(productImage || imageFile) && (
-                    <div className="relative h-20 w-20 overflow-hidden rounded-lg border">
-                      <img
-                        src={
-                          imageFile ? URL.createObjectURL(imageFile) : (productImage ?? undefined)
-                        }
-                        alt="Preview"
-                        className="h-full w-full object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProductImage(null);
-                          setImageFile(null);
-                        }}
-                        className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs text-white"
-                      >
-                        <Icons.close className="h-3 w-3" />
-                      </button>
-                    </div>
-                  )}
-                  <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-4 py-6 text-sm text-muted-foreground hover:bg-muted">
-                    <Icons.image className="h-4 w-4" />
-                    <span>{productImage || imageFile ? "Trocar imagem" : "Adicionar imagem"}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="sr-only"
-                      onChange={handleFileSelect}
-                    />
-                  </label>
+          <form onSubmit={handleUpdate} className="flex flex-col flex-1 min-h-0">
+            <div className="space-y-4 py-3 px-6 overflow-y-auto flex-1">
+              {/* Seção 1: Informações Básicas */}
+              <div className="rounded-lg border bg-card p-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Icons.clipboardList className="h-4 w-4 text-muted-foreground" />
+                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                    Informações Básicas
+                  </h4>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-description">Descrição</Label>
-                <Input
-                  id="edit-description"
-                  value={productDescription}
-                  onChange={(e) => setProductDescription(e.target.value)}
-                  maxLength={2000}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+
                 <div className="space-y-2">
-                  <Label htmlFor="edit-price">Preço</Label>
-                  <div className="relative">
-                    <Icons.dollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="edit-price"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={productPrice}
-                      onChange={(e) => setProductPrice(e.target.value)}
-                      required
-                      className="pl-9"
-                    />
+                  <Label htmlFor="edit-name">
+                    Nome <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="edit-name"
+                    value={productName}
+                    onChange={(e) => setProductName(e.target.value)}
+                    placeholder="Ex: Hambúrguer Clássico"
+                    required
+                    maxLength={100}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Imagem do Produto</Label>
+                  <div className="flex items-center gap-4">
+                    {(productImage || imageFile) && (
+                      <div className="relative h-20 w-20 overflow-hidden rounded-lg border shrink-0">
+                        <img
+                          src={
+                            imageFile ? URL.createObjectURL(imageFile) : (productImage ?? undefined)
+                          }
+                          alt="Preview"
+                          className="h-full w-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProductImage(null);
+                            setImageFile(null);
+                          }}
+                          className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs text-white"
+                        >
+                          <Icons.close className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                    <label className="flex cursor-pointer items-center gap-3 rounded-md border border-dashed px-6 py-10 text-sm text-muted-foreground hover:bg-muted flex-1 justify-center">
+                      <Icons.image className="h-6 w-6" />
+                      <span>
+                        {productImage || imageFile ? "Trocar imagem" : "Adicionar imagem"}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={handleFileSelect}
+                      />
+                    </label>
                   </div>
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="edit-category">Categoria</Label>
-                  <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId} required>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories?.map((category: Category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
+                  <Label htmlFor="edit-description">
+                    Descrição <span className="text-muted-foreground">(opcional)</span>
+                  </Label>
+                  <Input
+                    id="edit-description"
+                    value={productDescription}
+                    onChange={(e) => setProductDescription(e.target.value)}
+                    placeholder="Uma breve descrição do produto"
+                    maxLength={2000}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-price">
+                      Preço <span className="text-destructive">*</span>
+                    </Label>
+                    <div className="relative">
+                      <Icons.dollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="edit-price"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={productPrice}
+                        onChange={(e) => setProductPrice(e.target.value)}
+                        required
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-category">
+                      Categoria <span className="text-destructive">*</span>
+                    </Label>
+                    <Select
+                      value={selectedCategoryId}
+                      onValueChange={(val) => {
+                        if (val === "__create__") {
+                          setIsCreateCategoryOpen(true);
+                          return;
+                        }
+                        setSelectedCategoryId(val);
+                      }}
+                      required
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories?.map((category: Category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                        <SelectSeparator />
+                        <SelectItem
+                          value="__create__"
+                          className="text-primary font-medium cursor-pointer"
+                        >
+                          <Icons.plus className="mr-2 h-4 w-4" />
+                          Criar Categoria
                         </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
-              <div className="space-y-2">
+
+              {/* Seção 2: Estoque */}
+              <div className="rounded-lg border bg-card p-3 space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="edit-stock">Estoque</Label>
+                  <div className="flex items-center gap-2">
+                    <Icons.package className="h-4 w-4 text-muted-foreground" />
+                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                      Estoque
+                    </h4>
+                  </div>
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="edit-trackStock"
@@ -784,102 +890,127 @@ export default function ProductsPage() {
                     </Label>
                   </div>
                 </div>
-                <Input
-                  id="edit-stock"
-                  type="number"
-                  min="0"
-                  value={productStock}
-                  onChange={(e) => setProductStock(e.target.value)}
-                  disabled={!trackStock}
-                />
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="edit-stock"
+                    className={!trackStock ? "text-muted-foreground" : ""}
+                  >
+                    Quantidade em Estoque
+                  </Label>
+                  <Input
+                    id="edit-stock"
+                    type="number"
+                    min="0"
+                    value={productStock}
+                    onChange={(e) => setProductStock(e.target.value)}
+                    disabled={!trackStock}
+                    placeholder={trackStock ? "0" : "Desativado"}
+                  />
+                </div>
               </div>
 
-              {/* Variants Section in Edit */}
+              {/* Seção 3: Variantes */}
               <Collapsible open={variantsOpen} onOpenChange={setVariantsOpen}>
-                <CollapsibleTrigger asChild>
-                  <Button type="button" variant="outline" className="w-full justify-between">
-                    <div className="flex items-center">
-                      <Icons.layers className="mr-2 h-4 w-4" />
-                      <span>Variantes ({variants.length})</span>
-                    </div>
-                    <Icons.chevronDown
-                      className={`h-4 w-4 transition-transform ${variantsOpen ? "rotate-180" : ""}`}
-                    />
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-3 pt-3">
-                  {variants.map((variant, index) => (
-                    <div
-                      key={`variant-new-${variant.name}-${index}`}
-                      className="grid grid-cols-12 gap-2 items-end rounded-md border p-3"
+                <div className="rounded-lg border bg-card p-3 space-y-3">
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full justify-between px-0 hover:bg-transparent"
                     >
-                      <div className="col-span-5">
-                        <Label className="text-xs">Nome</Label>
-                        <Input
-                          value={variant.name}
-                          onChange={(e) => updateVariant(index, "name", e.target.value)}
-                          placeholder="Ex: Grande"
-                          className="mt-1"
+                      <div className="flex items-center gap-2">
+                        <Icons.layers className="h-4 w-4 text-muted-foreground" />
+                        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                          Variantes
+                        </h4>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary">{variants.length}</Badge>
+                        <Icons.chevronDown
+                          className={`h-4 w-4 text-muted-foreground transition-transform ${
+                            variantsOpen ? "rotate-180" : ""
+                          }`}
                         />
                       </div>
-                      <div className="col-span-3">
-                        <Label className="text-xs">Preço</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={variant.price || ""}
-                          onChange={(e) =>
-                            updateVariant(index, "price", Number.parseFloat(e.target.value) || 0)
-                          }
-                          placeholder="0,00"
-                          className="mt-1"
-                        />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-3 pt-2">
+                    <p className="text-sm text-muted-foreground">
+                      Adicione opções como tamanhos (P, M, G) ou complementos (com/sem queijo)
+                    </p>
+                    {variants.map((variant, index) => (
+                      <div
+                        key={variant.id}
+                        className="grid grid-cols-12 gap-2 items-end rounded-md border bg-background p-3"
+                      >
+                        <div className="col-span-5">
+                          <Label className="text-xs text-muted-foreground">Nome</Label>
+                          <Input
+                            value={variant.name}
+                            onChange={(e) => updateVariant(index, "name", e.target.value)}
+                            placeholder="Ex: Grande"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div className="col-span-3">
+                          <Label className="text-xs text-muted-foreground">Preço</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={variant.price || ""}
+                            onChange={(e) =>
+                              updateVariant(index, "price", Number.parseFloat(e.target.value) || 0)
+                            }
+                            placeholder="0,00"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div className="col-span-3">
+                          <Label className="text-xs text-muted-foreground">Estoque</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={variant.stock || ""}
+                            onChange={(e) =>
+                              updateVariant(index, "stock", Number.parseInt(e.target.value) || 0)
+                            }
+                            placeholder="0"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div className="col-span-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeVariant(index)}
+                            className="text-destructive h-9 w-9"
+                          >
+                            <Icons.trash className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="col-span-3">
-                        <Label className="text-xs">Estoque</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={variant.stock || ""}
-                          onChange={(e) =>
-                            updateVariant(index, "stock", Number.parseInt(e.target.value) || 0)
-                          }
-                          placeholder="0"
-                          className="mt-1"
-                        />
-                      </div>
-                      <div className="col-span-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeVariant(index)}
-                          className="text-destructive"
-                        >
-                          <Icons.trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addVariant}
-                    className="w-full"
-                  >
-                    <Icons.plus className="mr-2 h-4 w-4" />
-                    Adicionar Variante
-                  </Button>
-                </CollapsibleContent>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addVariant}
+                      className="w-full mt-2"
+                    >
+                      <Icons.plus className="mr-2 h-4 w-4" />
+                      Adicionar Variante
+                    </Button>
+                  </CollapsibleContent>
+                </div>
               </Collapsible>
             </div>
-            <DialogFooter>
+            <DialogFooter className="gap-2 pt-4 pb-6 px-6 border-t bg-background shrink-0">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsEditOpen(false)}
+                onClick={() => handleEditOpenChange(false)}
                 disabled={updateMutation.isPending || isUploadingImage}
               >
                 Cancelar
@@ -888,7 +1019,7 @@ export default function ProductsPage() {
                 {(updateMutation.isPending || isUploadingImage) && (
                   <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Salvar
+                Salvar Alterações
               </Button>
             </DialogFooter>
           </form>
@@ -897,19 +1028,19 @@ export default function ProductsPage() {
 
       {/* Delete Dialog */}
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader className="space-y-2">
             <AlertDialogTitle>Confirmar exclusão?</AlertDialogTitle>
             <AlertDialogDescription>
               O produto &quot;{selectedProduct?.name}&quot; será movido para a lixeira. Você poderá
               restaurá-lo posteriormente.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="gap-2">
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-white hover:bg-destructive/90"
             >
               {deleteMutation.isPending && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
               Deletar
@@ -978,6 +1109,6 @@ export default function ProductsPage() {
         onCrop={handleCropComplete}
         aspectRatio={4 / 3}
       />
-    </>
+    </PageContainer>
   );
 }

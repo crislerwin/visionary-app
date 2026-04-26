@@ -17,7 +17,7 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
           url: "/api/trpc",
           fetch(url, options) {
             return fetch(url, {
-              ...options,
+              ...(options as RequestInit),
               credentials: "include",
             });
           },
