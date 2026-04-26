@@ -1,13 +1,18 @@
 "use client";
 
 import { PageContainer, PageHeader } from "@/components/layout/page-layout";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataTable } from "@/components/ui/data-table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/trpc/react";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDateTime } from "@/lib/utils";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  Calendar,
   DollarSign,
   History,
   Lock,
@@ -20,13 +25,94 @@ import { OpenCashRegisterDialog } from "./_components/open-cash-register-dialog"
 import { RegisterTransactionDialog } from "./_components/register-transaction-dialog";
 import { TransactionsList } from "./_components/transactions-list";
 
+interface CashRegisterHistory {
+  id: string;
+  openedAt: Date;
+  closedAt: Date | null;
+  openedBy: string;
+  closedBy: string | null;
+  initialAmount: number;
+  finalAmount: number | null;
+  difference: number | null;
+  totalEntries: number;
+  totalExits: number;
+  expectedAmount: number;
+  notes: string | null;
+}
+
+const historyColumns: ColumnDef<CashRegisterHistory>[] = [
+  {
+    accessorKey: "openedAt",
+    header: "Abertura",
+    cell: ({ row }) => formatDateTime(row.original.openedAt as unknown as string),
+  },
+  {
+    accessorKey: "closedAt",
+    header: "Fechamento",
+    cell: ({ row }) => formatDateTime(row.original.closedAt as unknown as string),
+  },
+  {
+    accessorKey: "initialAmount",
+    header: "Valor Inicial",
+    cell: ({ row }) => formatCurrency(row.original.initialAmount),
+  },
+  {
+    accessorKey: "totalEntries",
+    header: "Entradas",
+    cell: ({ row }) => (
+      <span className="text-green-600">{formatCurrency(row.original.totalEntries)}</span>
+    ),
+  },
+  {
+    accessorKey: "totalExits",
+    header: "Saídas",
+    cell: ({ row }) => (
+      <span className="text-red-600">{formatCurrency(row.original.totalExits)}</span>
+    ),
+  },
+  {
+    accessorKey: "expectedAmount",
+    header: "Esperado",
+    cell: ({ row }) => formatCurrency(row.original.expectedAmount),
+  },
+  {
+    accessorKey: "finalAmount",
+    header: "Contado",
+    cell: ({ row }) => formatCurrency(row.original.finalAmount || 0),
+  },
+  {
+    accessorKey: "difference",
+    header: "Diferença",
+    cell: ({ row }) => {
+      const diff = row.original.difference || 0;
+      return (
+        <Badge variant={diff === 0 ? "default" : diff > 0 ? "secondary" : "destructive"}>
+          {diff > 0 ? "+" : ""}
+          {formatCurrency(diff)}
+        </Badge>
+      );
+    },
+  },
+];
+
 export default function CashRegisterPage() {
   const [openOpenDialog, setOpenOpenDialog] = useState(false);
   const [openCloseDialog, setOpenCloseDialog] = useState(false);
   const [openTransactionDialog, setOpenTransactionDialog] = useState(false);
   const [transactionType, setTransactionType] = useState<"EXPENSE" | "WITHDRAWAL">("EXPENSE");
 
+  // History pagination state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [sorting, setSorting] = useState<SortingState>([]);
+
   const { data: cashRegister, isLoading, refetch } = api.cashRegister.getCurrent.useQuery();
+  const { data: historyData, isLoading: isHistoryLoading } = api.cashRegister.getHistory.useQuery({
+    limit: pageSize,
+    page,
+    sortBy: (sorting[0]?.id as "openedAt" | "closedAt" | "difference") || "closedAt",
+    sortOrder: sorting[0]?.desc ? "desc" : "asc",
+  });
 
   const isOpen = cashRegister?.status === "OPEN";
 
@@ -138,32 +224,71 @@ export default function CashRegisterPage() {
           </div>
         )}
 
-        {/* Transactions */}
-        <Card className="gap-0 p-0 overflow-hidden">
-          <CardHeader className="px-3 pt-3 pb-0">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <History className="h-4 w-4" />
-              Movimentações
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-0 pb-0 pt-2">
-            {isLoading ? (
-              <div className="space-y-2 px-3 pb-3">
-                <div className="h-10 w-full bg-muted animate-pulse rounded" />
-                <div className="h-10 w-full bg-muted animate-pulse rounded" />
-                <div className="h-10 w-full bg-muted animate-pulse rounded" />
-              </div>
-            ) : isOpen && cashRegister?.transactions ? (
-              <TransactionsList transactions={cashRegister.transactions} />
-            ) : (
-              <div className="text-center text-muted-foreground text-sm py-8 px-3">
-                {isOpen
-                  ? "Nenhuma movimentação registrada"
-                  : "Abra o caixa para ver as movimentações"}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* Tabs */}
+        <Tabs defaultValue="current" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="current">
+              <DollarSign className="mr-2 h-4 w-4" />
+              Caixa Atual
+            </TabsTrigger>
+            <TabsTrigger value="history">
+              <Calendar className="mr-2 h-4 w-4" />
+              Histórico
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="current">
+            <Card className="gap-0 p-0 overflow-hidden">
+              <CardHeader className="px-3 pt-3 pb-0">
+                <CardTitle className="flex items-center gap-2 text-sm">
+                  <History className="h-4 w-4" />
+                  Movimentações
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 pt-2">
+                {isLoading ? (
+                  <div className="space-y-2">
+                    <div className="h-10 w-full bg-muted animate-pulse rounded" />
+                    <div className="h-10 w-full bg-muted animate-pulse rounded" />
+                    <div className="h-10 w-full bg-muted animate-pulse rounded" />
+                  </div>
+                ) : isOpen && cashRegister?.transactions ? (
+                  <TransactionsList transactions={cashRegister.transactions} />
+                ) : (
+                  <div className="text-center text-muted-foreground text-sm py-8 px-3">
+                    {isOpen
+                      ? "Nenhuma movimentação registrada"
+                      : "Abra o caixa para ver as movimentações"}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="history">
+            <Card className="gap-0 p-0 overflow-hidden">
+              <CardHeader className="px-3 pt-3 pb-0">
+                <CardTitle className="flex items-center gap-2 text-sm">
+                  <Calendar className="h-4 w-4" />
+                  Histórico de Caixas Fechados
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 pt-2">
+                <DataTable
+                  columns={historyColumns}
+                  data={((historyData?.items as unknown[]) || []) as CashRegisterHistory[]}
+                  totalItems={historyData?.total || 0}
+                  currentPage={page}
+                  pageSize={pageSize}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                  onSortingChange={setSorting}
+                  isLoading={isHistoryLoading}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Dialogs */}
         <OpenCashRegisterDialog

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { router, tenantProcedure } from "@/lib/trpc/trpc";
+import type { Prisma } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -22,7 +23,17 @@ const addTransactionSchema = z.object({
 
 const getHistorySchema = z.object({
   limit: z.number().min(1).max(100).default(20),
-  cursor: z.string().optional(),
+  page: z.number().min(1).default(1),
+  sortBy: z.enum(["openedAt", "closedAt", "difference"]).optional().default("closedAt"),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
+  filters: z
+    .object({
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      operatorId: z.string().optional(),
+      hasDifference: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 export const cashRegisterRouter = router({
@@ -62,32 +73,76 @@ export const cashRegisterRouter = router({
   }),
 
   getHistory: tenantProcedure.input(getHistorySchema).query(async ({ ctx, input }) => {
-    const { limit, cursor } = input;
+    const { limit, page, sortBy, sortOrder, filters } = input;
+    const skip = (page - 1) * limit;
+
+    // Build where clause
+    const where: Prisma.CashRegisterWhereInput & {
+      closedAt?: { gte?: Date; lte?: Date };
+      OR?: Array<{ openedBy?: string } | { closedBy?: string }>;
+      difference?: { not: number } | number;
+    } = {
+      tenantId: ctx.tenantId,
+      status: "CLOSED",
+    };
+
+    if (filters?.startDate || filters?.endDate) {
+      where.closedAt = {};
+      if (filters.startDate) where.closedAt.gte = new Date(filters.startDate);
+      if (filters.endDate) where.closedAt.lte = new Date(filters.endDate);
+    }
+
+    if (filters?.operatorId) {
+      where.OR = [{ openedBy: filters.operatorId }, { closedBy: filters.operatorId }];
+    }
+
+    if (filters?.hasDifference !== undefined) {
+      if (filters.hasDifference) {
+        where.difference = { not: 0 };
+      } else {
+        where.difference = 0;
+      }
+    }
+
+    // Get total count
+    const total = await prisma.cashRegister.count({ where });
+
+    // Get items with sorting
+    const orderBy: { [key: string]: "asc" | "desc" } = {};
+    orderBy[sortBy] = sortOrder;
 
     const cashRegisters = await prisma.cashRegister.findMany({
-      where: {
-        tenantId: ctx.tenantId,
-        status: "CLOSED",
-      },
-      take: limit + 1,
-      cursor: cursor ? { id: cursor } : undefined,
-      orderBy: { closedAt: "desc" },
+      where,
+      skip,
+      take: limit,
+      orderBy,
       include: {
-        _count: {
-          select: { transactions: true },
-        },
+        transactions: true,
       },
     });
 
-    let nextCursor: string | undefined;
-    if (cashRegisters.length > limit) {
-      const nextItem = cashRegisters.pop();
-      nextCursor = nextItem?.id;
-    }
+    // Calculate totals for each register
+    const itemsWithTotals = cashRegisters.map((register) => {
+      const transactions = register.transactions;
+      const totalEntries = transactions
+        .filter((t) => t.type === "SALE" || t.type === "INITIAL")
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+      const totalExits = transactions
+        .filter((t) => t.type === "EXPENSE" || t.type === "WITHDRAWAL")
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+      const expectedAmount = totalEntries - totalExits;
+
+      return {
+        ...register,
+        totalEntries,
+        totalExits,
+        expectedAmount,
+      };
+    });
 
     return {
-      items: cashRegisters,
-      nextCursor,
+      items: itemsWithTotals,
+      total,
     };
   }),
 
