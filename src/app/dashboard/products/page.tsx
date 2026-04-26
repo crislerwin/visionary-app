@@ -114,11 +114,14 @@ export default function ProductsPage() {
   // Cropper state
   const [cropperOpen, setCropperOpen] = useState(false);
   const [cropperImageSrc, setCropperImageSrc] = useState("");
+  const [cropperTarget, setCropperTarget] = useState<"product" | "category">("product");
 
   // Category creation form state
   const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryDescription, setNewCategoryDescription] = useState("");
+  const [newCategoryImage, setNewCategoryImage] = useState<string | null>(null);
+  const [newCategoryImageFile, setNewCategoryImageFile] = useState<File | null>(null);
 
   const handleCreateOpenChange = (open: boolean) => {
     setIsCreateOpen(open);
@@ -216,6 +219,7 @@ export default function ProductsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setCropperTarget("product");
     const reader = new FileReader();
     reader.onload = () => {
       setCropperImageSrc(reader.result as string);
@@ -228,19 +232,35 @@ export default function ProductsPage() {
   };
 
   const handleCropComplete = (croppedFile: File) => {
-    setImageFile(croppedFile);
-    setProductImage(null);
+    if (cropperTarget === "category") {
+      setNewCategoryImageFile(croppedFile);
+      setNewCategoryImage(null);
+    } else {
+      setImageFile(croppedFile);
+      setProductImage(null);
+    }
   };
 
-  const handleCreateCategory = (e: React.FormEvent) => {
+  const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentTenant?.id || !newCategoryName.trim()) return;
+
+    let imageUrl: string | undefined;
+    if (newCategoryImageFile) {
+      try {
+        imageUrl = await uploadImage(newCategoryImageFile);
+      } catch (error) {
+        console.error("Image upload failed:", error);
+        return;
+      }
+    }
 
     createCategoryMutation.mutate(
       {
         tenantId: currentTenant.id,
         name: newCategoryName.trim(),
         description: newCategoryDescription.trim() || undefined,
+        image: imageUrl,
       },
       {
         onSuccess: (newCategory) => {
@@ -248,6 +268,8 @@ export default function ProductsPage() {
           setIsCreateCategoryOpen(false);
           setNewCategoryName("");
           setNewCategoryDescription("");
+          setNewCategoryImage(null);
+          setNewCategoryImageFile(null);
         },
       },
     );
@@ -1081,18 +1103,71 @@ export default function ProductsPage() {
                   maxLength={500}
                 />
               </div>
+              <div className="space-y-2">
+                <Label>Imagem da Categoria</Label>
+                <div className="flex items-center gap-4">
+                  {(newCategoryImage || newCategoryImageFile) && (
+                    <div className="relative h-20 w-20 overflow-hidden rounded-lg border shrink-0">
+                      <img
+                        src={
+                          newCategoryImageFile
+                            ? URL.createObjectURL(newCategoryImageFile)
+                            : (newCategoryImage ?? undefined)
+                        }
+                        alt="Preview"
+                        className="h-full w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewCategoryImage(null);
+                          setNewCategoryImageFile(null);
+                        }}
+                        className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs text-white"
+                      >
+                        <Icons.close className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+                  <label className="flex cursor-pointer items-center gap-3 rounded-md border border-dashed px-6 py-10 text-sm text-muted-foreground hover:bg-muted flex-1 justify-center">
+                    <Icons.image className="h-6 w-6" />
+                    <span>
+                      {newCategoryImage || newCategoryImageFile
+                        ? "Trocar imagem"
+                        : "Adicionar imagem"}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setCropperTarget("category");
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          setCropperImageSrc(reader.result as string);
+                          setCropperOpen(true);
+                        };
+                        reader.readAsDataURL(file);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
             </div>
             <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsCreateCategoryOpen(false)}
-                disabled={createCategoryMutation.isPending}
+                disabled={createCategoryMutation.isPending || isUploadingImage}
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={createCategoryMutation.isPending}>
-                {createCategoryMutation.isPending && (
+              <Button type="submit" disabled={createCategoryMutation.isPending || isUploadingImage}>
+                {(createCategoryMutation.isPending || isUploadingImage) && (
                   <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
                 )}
                 Criar

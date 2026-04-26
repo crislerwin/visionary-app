@@ -31,6 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Icons } from "@/components/ui/icons";
+import { ImageCropperDialog } from "@/components/ui/image-cropper-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCurrentTenant } from "@/hooks/use-current-tenant";
@@ -39,6 +40,7 @@ interface Category {
   id: string;
   name: string;
   description: string | null;
+  image: string | null;
   _count?: { products: number };
 }
 
@@ -51,6 +53,15 @@ export default function CategoriesPage() {
 
   const [categoryName, setCategoryName] = useState("");
   const [categoryDescription, setCategoryDescription] = useState("");
+
+  // Image state
+  const [categoryImage, setCategoryImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  // Cropper state
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [cropperImageSrc, setCropperImageSrc] = useState("");
 
   const { data: categories, refetch } = api.category.list.useQuery(
     { tenantId: currentTenant?.id ?? "", includeDeleted: false },
@@ -85,12 +96,59 @@ export default function CategoriesPage() {
   const resetForm = () => {
     setCategoryName("");
     setCategoryDescription("");
+    setCategoryImage(null);
+    setImageFile(null);
+  };
+
+  const uploadImage = async (file: File): Promise<string> => {
+    setIsUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to upload image");
+      }
+
+      const data = await response.json();
+      return data.url as string;
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropperImageSrc(reader.result as string);
+      setCropperOpen(true);
+    };
+    reader.readAsDataURL(file);
+
+    // Reset input so the same file can be selected again
+    e.target.value = "";
+  };
+
+  const handleCropComplete = (croppedFile: File) => {
+    setImageFile(croppedFile);
+    setCategoryImage(null);
   };
 
   const openEdit = (category: Category) => {
     setSelectedCategory(category);
     setCategoryName(category.name);
     setCategoryDescription(category.description ?? "");
+    setCategoryImage(category.image);
+    setImageFile(null);
     setIsEditOpen(true);
   };
 
@@ -99,26 +157,51 @@ export default function CategoriesPage() {
     setIsDeleteOpen(true);
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentTenant?.id) return;
+
+    let imageUrl: string | undefined;
+    if (imageFile) {
+      try {
+        imageUrl = await uploadImage(imageFile);
+      } catch (error) {
+        console.error("Image upload failed:", error);
+        return;
+      }
+    }
 
     createMutation.mutate({
       tenantId: currentTenant.id,
       name: categoryName,
       description: categoryDescription || undefined,
+      image: imageUrl,
     });
   };
 
-  const handleUpdate = (e: React.FormEvent) => {
+  const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCategory || !currentTenant?.id) return;
+
+    let imageUrl: string | null | undefined = undefined;
+    if (imageFile) {
+      try {
+        imageUrl = await uploadImage(imageFile);
+      } catch (error) {
+        console.error("Image upload failed:", error);
+        return;
+      }
+    } else if (categoryImage === null && selectedCategory.image !== null) {
+      // Image was explicitly removed
+      imageUrl = null;
+    }
 
     updateMutation.mutate({
       id: selectedCategory.id,
       tenantId: currentTenant.id,
       name: categoryName,
       description: categoryDescription || null,
+      image: imageUrl,
     });
   };
 
@@ -148,17 +231,19 @@ export default function CategoriesPage() {
               </DialogTrigger>
             }
           />
-          <DialogContent>
-            <DialogHeader>
+          <DialogContent className="max-h-[90vh] flex flex-col p-0">
+            <DialogHeader className="px-6 pt-6 pb-2">
               <DialogTitle>Adicionar Categoria</DialogTitle>
               <DialogDescription>
                 Crie uma nova categoria para organizar seus produtos
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleCreate}>
-              <div className="space-y-4 py-4">
+            <form onSubmit={handleCreate} className="flex flex-col flex-1 min-h-0">
+              <div className="space-y-4 py-3 px-6 overflow-y-auto flex-1">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nome</Label>
+                  <Label htmlFor="name">
+                    Nome <span className="text-destructive">*</span>
+                  </Label>
                   <Input
                     id="name"
                     value={categoryName}
@@ -178,18 +263,58 @@ export default function CategoriesPage() {
                     maxLength={500}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>Imagem da Categoria</Label>
+                  <div className="flex items-center gap-4">
+                    {(categoryImage || imageFile) && (
+                      <div className="relative h-20 w-20 overflow-hidden rounded-lg border shrink-0">
+                        <img
+                          src={
+                            imageFile
+                              ? URL.createObjectURL(imageFile)
+                              : (categoryImage ?? undefined)
+                          }
+                          alt="Preview"
+                          className="h-full w-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCategoryImage(null);
+                            setImageFile(null);
+                          }}
+                          className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs text-white"
+                        >
+                          <Icons.close className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                    <label className="flex cursor-pointer items-center gap-3 rounded-md border border-dashed px-6 py-10 text-sm text-muted-foreground hover:bg-muted flex-1 justify-center">
+                      <Icons.image className="h-6 w-6" />
+                      <span>
+                        {categoryImage || imageFile ? "Trocar imagem" : "Adicionar imagem"}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={handleFileSelect}
+                      />
+                    </label>
+                  </div>
+                </div>
               </div>
-              <DialogFooter>
+              <DialogFooter className="gap-2 pt-4 pb-6 px-6 border-t bg-background shrink-0">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setIsCreateOpen(false)}
-                  disabled={createMutation.isPending}
+                  disabled={createMutation.isPending || isUploadingImage}
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending && (
+                <Button type="submit" disabled={createMutation.isPending || isUploadingImage}>
+                  {(createMutation.isPending || isUploadingImage) && (
                     <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
                   )}
                   Criar
@@ -206,10 +331,20 @@ export default function CategoriesPage() {
               className="flex flex-col overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-shadow hover:shadow-md gap-0 p-0"
             >
               <div className="relative h-28 bg-muted overflow-hidden flex items-center justify-center">
-                <div className="flex flex-col items-center justify-center text-muted-foreground">
-                  <Icons.list className="h-5 w-5 opacity-30 mb-0.5" />
-                  <span className="text-[10px] opacity-50 uppercase tracking-wider">Categoria</span>
-                </div>
+                {category.image ? (
+                  <img
+                    src={category.image}
+                    alt={category.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-muted-foreground">
+                    <Icons.list className="h-5 w-5 opacity-30 mb-0.5" />
+                    <span className="text-[10px] opacity-50 uppercase tracking-wider">
+                      Categoria
+                    </span>
+                  </div>
+                )}
                 <div className="absolute top-2 right-2">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -267,15 +402,17 @@ export default function CategoriesPage() {
         )}
 
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent>
-            <DialogHeader>
+          <DialogContent className="max-h-[90vh] flex flex-col p-0">
+            <DialogHeader className="px-6 pt-6 pb-2">
               <DialogTitle>Editar Categoria</DialogTitle>
               <DialogDescription>Atualize as informações da categoria</DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleUpdate}>
-              <div className="space-y-4 py-4">
+            <form onSubmit={handleUpdate} className="flex flex-col flex-1 min-h-0">
+              <div className="space-y-4 py-3 px-6 overflow-y-auto flex-1">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-name">Nome</Label>
+                  <Label htmlFor="edit-name">
+                    Nome <span className="text-destructive">*</span>
+                  </Label>
                   <Input
                     id="edit-name"
                     value={categoryName}
@@ -293,18 +430,58 @@ export default function CategoriesPage() {
                     maxLength={500}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>Imagem da Categoria</Label>
+                  <div className="flex items-center gap-4">
+                    {(categoryImage || imageFile) && (
+                      <div className="relative h-20 w-20 overflow-hidden rounded-lg border shrink-0">
+                        <img
+                          src={
+                            imageFile
+                              ? URL.createObjectURL(imageFile)
+                              : (categoryImage ?? undefined)
+                          }
+                          alt="Preview"
+                          className="h-full w-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCategoryImage(null);
+                            setImageFile(null);
+                          }}
+                          className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs text-white"
+                        >
+                          <Icons.close className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                    <label className="flex cursor-pointer items-center gap-3 rounded-md border border-dashed px-6 py-10 text-sm text-muted-foreground hover:bg-muted flex-1 justify-center">
+                      <Icons.image className="h-6 w-6" />
+                      <span>
+                        {categoryImage || imageFile ? "Trocar imagem" : "Adicionar imagem"}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={handleFileSelect}
+                      />
+                    </label>
+                  </div>
+                </div>
               </div>
-              <DialogFooter>
+              <DialogFooter className="gap-2 pt-4 pb-6 px-6 border-t bg-background shrink-0">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setIsEditOpen(false)}
-                  disabled={updateMutation.isPending}
+                  disabled={updateMutation.isPending || isUploadingImage}
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={updateMutation.isPending}>
-                  {updateMutation.isPending && (
+                <Button type="submit" disabled={updateMutation.isPending || isUploadingImage}>
+                  {(updateMutation.isPending || isUploadingImage) && (
                     <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
                   )}
                   Salvar
@@ -339,6 +516,14 @@ export default function CategoriesPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <ImageCropperDialog
+          open={cropperOpen}
+          onOpenChange={setCropperOpen}
+          imageSrc={cropperImageSrc}
+          onCrop={handleCropComplete}
+          aspectRatio={1}
+        />
       </div>
     </PageContainer>
   );

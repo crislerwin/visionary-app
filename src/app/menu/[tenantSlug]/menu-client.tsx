@@ -18,6 +18,7 @@ interface MenuClientProps {
   categories: Array<{
     id: string;
     name: string;
+    image: string | null;
     products: Array<{
       id: string;
       name: string;
