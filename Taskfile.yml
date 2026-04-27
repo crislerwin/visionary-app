@@ -79,6 +79,27 @@ tasks:
     cmds:
       - docker-compose down
 
+  # ─── Dev (hot-reload) ───
+  dev:up:
+    desc: Sobe ambiente de DEV com hot-reload (app + db)
+    cmds:
+      - docker compose -f docker-compose.dev.yml up -d
+
+  dev:down:
+    desc: Derruba ambiente de DEV
+    cmds:
+      - docker compose -f docker-compose.dev.yml down
+
+  dev:logs:
+    desc: Logs do app em DEV (hot-reload)
+    cmds:
+      - docker compose -f docker-compose.dev.yml logs -f app
+
+  dev:shell:
+    desc: Abre shell interativo no container de DEV
+    cmds:
+      - docker compose -f docker-compose.dev.yml exec app sh
+
   down:volumes:
     desc: Derruba a stack e REMOVE todos os volumes (⚠️ apaga dados!)
     cmds:
@@ -183,18 +204,18 @@ tasks:
   # ============================================================
 
   dev:
-    desc: Modo desenvolvimento — sobe as dependências e roda o app local (fora do Docker)
+    desc: Modo desenvolvimento — sobe app + db com hot-reload dentro do container
     cmds:
-      - task up:deps
-      - echo "✅ Dependências no ar. Rode 'npm run dev' no seu terminal para iniciar o Next.js."
+      - task dev:up
+      - echo "✅ Dev server no ar com hot-reload! Acesse http://localhost:3000"
 
   dev:setup:
-    desc: Setup completo de dev — sobe deps, push schema e seed
+    desc: Setup completo de dev — sobe app + db, push schema e seed
     cmds:
-      - task up:deps
-      - task db:wait
-      - task db:push
-      - task db:seed
+      - task dev:up
+      - sleep 5
+      - docker compose -f docker-compose.dev.yml exec app sh -c "bunx prisma db push"
+      - docker compose -f docker-compose.dev.yml exec app sh -c "bunx tsx prisma/seed.ts"
 
   setup:
     desc: Setup completo da aplicação com Docker (deps + build app + db push + seed)

@@ -3,6 +3,20 @@ name: Docker Publish
 on:
   push:
     branches: [main]
+    paths:
+      # Só roda quando arquivos relevantes mudam
+      - "src/**"
+      - "prisma/**"
+      - "public/**"
+      - "next.config.*"
+      - "tsconfig.json"
+      - "package.json"
+      - "bun.lockb"
+      - "bun.lock"
+      - "Dockerfile"
+      - ".dockerignore"
+      # Se este próprio workflow mudar, também roda
+      - ".github/workflows/docker-publish.yml"
   workflow_dispatch:
 
 env:
