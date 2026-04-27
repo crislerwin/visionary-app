@@ -14,7 +14,12 @@ import { useCartStore } from "@/stores/cart-store";
 import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-export function CartSheet() {
+interface CartSheetProps {
+  tenantId: string;
+  tenantSlug: string;
+}
+
+export function CartSheet({ tenantId, tenantSlug }: CartSheetProps) {
   const {
     items,
     isOpen,
@@ -179,7 +184,13 @@ export function CartSheet() {
                 </div>
               </div>
               <Separator />
-              <Button className="w-full" size="lg">
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={() => {
+                  window.location.href = `/checkout?tenantId=${encodeURIComponent(tenantId)}&tenantSlug=${encodeURIComponent(tenantSlug)}`;
+                }}
+              >
                 Finalizar Pedido
               </Button>
             </div>

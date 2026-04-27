@@ -40,18 +40,15 @@ interface MenuClientProps {
 export function MenuClient({ tenant, categories }: MenuClientProps) {
   const [mounted, setMounted] = useState(false);
   const setTenant = useCartStore((state) => state.setTenant);
-  const tenantSlug = useCartStore((state) => state.tenantSlug);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Set tenant when component mounts (only when slug actually changes)
+  // Set tenant when component mounts (always update to ensure tenantId is set)
   useEffect(() => {
-    if (tenantSlug !== tenant.slug) {
-      setTenant(tenant.slug, tenant.name);
-    }
-  }, [tenant.slug, tenant.name, tenantSlug, setTenant]);
+    setTenant(tenant.slug, tenant.name, tenant.id);
+  }, [tenant.slug, tenant.name, tenant.id, setTenant]);
 
   const totalItems = useCartStore((state) => state.getTotalItems());
   const totalPrice = useCartStore((state) => state.getTotalPrice());
@@ -77,6 +74,7 @@ export function MenuClient({ tenant, categories }: MenuClientProps) {
                 category={category}
                 tenantSlug={tenant.slug}
                 tenantName={tenant.name}
+                tenantId={tenant.id}
               />
             ))}
           </div>

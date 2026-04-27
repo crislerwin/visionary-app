@@ -5,6 +5,8 @@ import { ImageIcon } from "lucide-react";
 
 interface MenuHeaderProps {
   tenant: {
+    id: string;
+    slug: string;
     name: string;
     description: string | null;
     image: string | null;
@@ -37,7 +39,7 @@ export function MenuHeader({ tenant }: MenuHeaderProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <CartSheet />
+          <CartSheet tenantId={tenant.id} tenantSlug={tenant.slug} />
         </div>
       </div>
     </header>

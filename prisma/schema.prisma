@@ -72,15 +72,16 @@ model VerificationToken {
 }
 
 model Tenant {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  description String?
-  image       String?
-  ownerId     String   @map("owner_id")
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  description   String?
+  image         String?
+  whatsappPhone String?  @map("whatsapp_phone")
+  ownerId       String   @map("owner_id")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   owner       User         @relation("TenantOwner", fields: [ownerId], references: [id])
   memberships Membership[]
@@ -265,6 +266,11 @@ model Order {
 
   customerNotes String? @db.Text @map("customer_notes")
   internalNotes String? @db.Text @map("internal_notes")
+
+  paidAt        DateTime? @map("paid_at")
+  confirmedAt   DateTime? @map("confirmed_at")
+  readyAt       DateTime? @map("ready_at")
+  deliveredAt   DateTime? @map("delivered_at")
 
   customerId String @map("customer_id")
   tenantId   String @map("tenant_id")

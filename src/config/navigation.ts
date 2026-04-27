@@ -1,4 +1,11 @@
-import { DollarSign, FolderOpen, LayoutDashboard, type LucideIcon, Package } from "lucide-react";
+import {
+  DollarSign,
+  FolderOpen,
+  LayoutDashboard,
+  type LucideIcon,
+  Package,
+  ShoppingBag,
+} from "lucide-react";
 
 export interface NavItem {
   title: string;
@@ -40,6 +47,11 @@ export const sidebarNavigation: NavSection[] = [
   {
     title: "Operacional",
     items: [
+      {
+        title: "Pedidos",
+        href: "/dashboard/orders",
+        icon: ShoppingBag,
+      },
       {
         title: "Caixa",
         href: "/dashboard/cash-register",

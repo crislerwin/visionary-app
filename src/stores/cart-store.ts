@@ -17,6 +17,7 @@ interface CartState {
   items: CartItem[];
   tenantSlug: string | null;
   tenantName: string | null;
+  tenantId: string | null;
   isOpen: boolean;
 }
 
@@ -26,7 +27,7 @@ interface CartActions {
   updateQuantity: (id: string, quantity: number) => void;
   updateNotes: (id: string, notes: string) => void;
   clearCart: () => void;
-  setTenant: (slug: string, name: string) => void;
+  setTenant: (slug: string, name: string, id: string) => void;
   toggleCart: () => void;
   openCart: () => void;
   closeCart: () => void;
@@ -45,6 +46,7 @@ export const useCartStore = create<CartState & CartActions>()(
       items: [],
       tenantSlug: null,
       tenantName: null,
+      tenantId: null,
       isOpen: false,
 
       addItem: (item) => {
@@ -102,16 +104,16 @@ export const useCartStore = create<CartState & CartActions>()(
       },
 
       clearCart: () => {
-        set({ items: [], tenantSlug: null, tenantName: null });
+        set({ items: [], tenantSlug: null, tenantName: null, tenantId: null });
       },
 
-      setTenant: (slug, name) => {
+      setTenant: (slug, name, id) => {
         const { tenantSlug } = get();
         if (tenantSlug && tenantSlug !== slug) {
           // Different tenant - clear cart
-          set({ items: [], tenantSlug: slug, tenantName: name });
+          set({ items: [], tenantSlug: slug, tenantName: name, tenantId: id });
         } else {
-          set({ tenantSlug: slug, tenantName: name });
+          set({ tenantSlug: slug, tenantName: name, tenantId: id });
         }
       },
 
@@ -135,12 +137,13 @@ export const useCartStore = create<CartState & CartActions>()(
       },
     }),
     {
-      name: "cart-storage",
+      name: "cart-storage-v2",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         items: state.items,
         tenantSlug: state.tenantSlug,
         tenantName: state.tenantName,
+        tenantId: state.tenantId,
       }),
     },
   ),

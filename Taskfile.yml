@@ -171,7 +171,7 @@ tasks:
   db:migrate:
     desc: Executa as migrações do Prisma no container app
     cmds:
-      - docker-compose exec app npx prisma migrate dev
+      - docker-compose exec app prisma migrate dev
 
   db:push:
     desc: Sincroniza o schema do Prisma com o banco (sem migrações)
@@ -181,22 +181,22 @@ tasks:
   db:seed:
     desc: Popula o banco com dados iniciais (users, tenants, memberships)
     cmds:
-      - docker-compose exec app npx tsx prisma/seed.ts
+      - docker-compose exec app tsx prisma/seed.ts
 
   db:studio:
     desc: Abre o Prisma Studio no container app
     cmds:
-      - docker-compose exec app npx prisma studio
+      - docker-compose exec app prisma studio
 
   db:generate:
     desc: Regenera o Prisma Client no container app
     cmds:
-      - docker-compose exec app npx prisma generate
+      - docker-compose exec app prisma generate
 
   db:reset:
     desc: Reseta o banco (drop + push + seed) ⚠️ apaga todos os dados!
     cmds:
-      - docker-compose exec app npx prisma db push --force-reset
+      - docker-compose exec app prisma db push --force-reset
       - task db:seed
 
   # ============================================================
@@ -213,9 +213,20 @@ tasks:
     desc: Setup completo de dev — sobe app + db, push schema e seed
     cmds:
       - task dev:up
-      - sleep 5
-      - docker compose -f docker-compose.dev.yml exec app sh -c "bunx prisma db push"
-      - docker compose -f docker-compose.dev.yml exec app sh -c "bunx tsx prisma/seed.ts"
+      - |
+        echo "⏳ Aguardando instalação das dependências no container..."
+        for i in {1..60}; do
+          if docker compose -f docker-compose.dev.yml exec -T app sh -c "test -f ./node_modules/.bin/prisma"; then
+            echo "✅ Dependências prontas!"
+            exit 0
+          fi
+          echo "   Ainda instalando... ($i/60)"
+          sleep 3
+        done
+        echo "❌ Timeout aguardando dependências"
+        exit 1
+      - docker compose -f docker-compose.dev.yml exec app sh -c "./node_modules/.bin/prisma db push"
+      - docker compose -f docker-compose.dev.yml exec app sh -c "./node_modules/.bin/tsx prisma/seed.ts"
 
   setup:
     desc: Setup completo da aplicação com Docker (deps + build app + db push + seed)

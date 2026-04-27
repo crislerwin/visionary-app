@@ -11,9 +11,15 @@ interface CategorySectionProps {
   };
   tenantSlug: string;
   tenantName: string;
+  tenantId: string;
 }
 
-export function CategorySection({ category, tenantSlug, tenantName }: CategorySectionProps) {
+export function CategorySection({
+  category,
+  tenantSlug,
+  tenantName,
+  tenantId,
+}: CategorySectionProps) {
   return (
     <section>
       <div className="flex items-center gap-2 mb-4">
@@ -35,6 +41,7 @@ export function CategorySection({ category, tenantSlug, tenantName }: CategorySe
             product={product}
             tenantSlug={tenantSlug}
             tenantName={tenantName}
+            tenantId={tenantId}
           />
         ))}
       </div>

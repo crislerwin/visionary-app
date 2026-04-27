@@ -29,9 +29,10 @@ interface MenuProductCardProps {
   product: Product;
   tenantSlug: string;
   tenantName: string;
+  tenantId: string;
 }
 
-export function ProductCard({ product, tenantSlug, tenantName }: MenuProductCardProps) {
+export function ProductCard({ product, tenantSlug, tenantName, tenantId }: MenuProductCardProps) {
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
     product.variants.length > 0 ? product.variants[0].id : null,
   );
@@ -53,7 +54,7 @@ export function ProductCard({ product, tenantSlug, tenantName }: MenuProductCard
   const handleAddToCart = () => {
     if (isOutOfStock || variantOutOfStock) return;
 
-    setTenant(tenantSlug, tenantName);
+    setTenant(tenantSlug, tenantName, tenantId);
 
     addItem({
       productId: product.id,

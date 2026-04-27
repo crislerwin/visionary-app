@@ -49,6 +49,7 @@ interface DataTableProps<TData, TValue> {
   isLoading?: boolean;
   searchPlaceholder?: string;
   searchColumn?: string;
+  toolbarLeft?: React.ReactNode;
 }
 
 export function DataTable<TData, TValue>({
@@ -64,6 +65,7 @@ export function DataTable<TData, TValue>({
   isLoading,
   searchPlaceholder = "Buscar...",
   searchColumn,
+  toolbarLeft,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -103,6 +105,7 @@ export function DataTable<TData, TValue>({
       {/* Toolbar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
+          {toolbarLeft}
           {searchColumn && table.getColumn(searchColumn) && (
             <Input
               placeholder={searchPlaceholder}

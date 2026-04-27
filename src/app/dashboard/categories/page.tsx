@@ -326,9 +326,7 @@ export default function CategoriesPage() {
                   </div>
                 </div>
               </div>
-              {createError && (
-                <p className="px-6 pt-2 text-sm text-red-500">{createError}</p>
-              )}
+              {createError && <p className="px-6 pt-2 text-sm text-red-500">{createError}</p>}
               <DialogFooter className="gap-2 pt-4 pb-6 px-6 border-t bg-background shrink-0">
                 <Button
                   type="button"
@@ -496,9 +494,7 @@ export default function CategoriesPage() {
                   </div>
                 </div>
               </div>
-              {editError && (
-                <p className="px-6 pt-2 text-sm text-red-500">{editError}</p>
-              )}
+              {editError && <p className="px-6 pt-2 text-sm text-red-500">{editError}</p>}
               <DialogFooter className="gap-2 pt-4 pb-6 px-6 border-t bg-background shrink-0">
                 <Button
                   type="button"

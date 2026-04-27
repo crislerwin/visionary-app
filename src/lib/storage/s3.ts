@@ -1,8 +1,8 @@
 import https from "node:https";
+import { logger } from "@/lib/logger";
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NodeHttpHandler } from "@smithy/node-http-handler";
-import { logger } from "@/lib/logger";
 import type { StorageConfig, StorageProvider } from "./types";
 
 export class S3Storage implements StorageProvider {
