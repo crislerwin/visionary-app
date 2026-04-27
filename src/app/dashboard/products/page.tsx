@@ -148,26 +148,42 @@ export default function ProductsPage() {
     { enabled: !!currentTenant?.id },
   );
 
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
+
   const createCategoryMutation = api.category.create.useMutation({
     onSuccess: () => {
+      setCategoryError(null);
       void refetchCategories();
+    },
+    onError: (err) => {
+      setCategoryError(err.message);
     },
   });
 
   const createMutation = api.product.create.useMutation({
     onSuccess: () => {
+      setCreateError(null);
       setIsCreateOpen(false);
       resetForm();
       void refetch();
+    },
+    onError: (err) => {
+      setCreateError(err.message);
     },
   });
 
   const updateMutation = api.product.update.useMutation({
     onSuccess: () => {
+      setEditError(null);
       setIsEditOpen(false);
       setSelectedProduct(null);
       resetForm();
       void refetch();
+    },
+    onError: (err) => {
+      setEditError(err.message);
     },
   });
 
@@ -243,7 +259,15 @@ export default function ProductsPage() {
 
   const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentTenant?.id || !newCategoryName.trim()) return;
+    setCategoryError(null);
+    if (!currentTenant?.id) {
+      setCategoryError("Nenhum tenant selecionado.");
+      return;
+    }
+    if (!newCategoryName.trim()) {
+      setCategoryError("O nome da categoria é obrigatório.");
+      return;
+    }
 
     let imageUrl: string | undefined;
     if (newCategoryImageFile) {
@@ -317,7 +341,16 @@ export default function ProductsPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentTenant?.id || !selectedCategoryId) return;
+    setCreateError(null);
+
+    if (!currentTenant?.id) {
+      setCreateError("Nenhum tenant selecionado.");
+      return;
+    }
+    if (!selectedCategoryId) {
+      setCreateError("Selecione uma categoria.");
+      return;
+    }
 
     let imageUrl: string | undefined;
 
@@ -326,6 +359,7 @@ export default function ProductsPage() {
         imageUrl = await uploadImage(imageFile);
       } catch (error) {
         console.error("Image upload failed:", error);
+        setCreateError(error instanceof Error ? error.message : "Falha no upload da imagem.");
         return;
       }
     }
@@ -345,7 +379,11 @@ export default function ProductsPage() {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedProduct || !currentTenant?.id) return;
+    setEditError(null);
+    if (!selectedProduct || !currentTenant?.id) {
+      setEditError("Nenhum produto ou tenant selecionado.");
+      return;
+    }
 
     let imageUrl: string | null | undefined = undefined;
 
@@ -354,6 +392,7 @@ export default function ProductsPage() {
         imageUrl = await uploadImage(imageFile);
       } catch (error) {
         console.error("Image upload failed:", error);
+        setEditError(error instanceof Error ? error.message : "Falha no upload da imagem.");
         return;
       }
     } else if (productImage === null && selectedProduct.image !== null) {
@@ -669,6 +708,7 @@ export default function ProductsPage() {
                 </div>
               </Collapsible>
             </div>
+            {createError && <p className="px-6 pt-2 text-sm text-red-500">{createError}</p>}
             <DialogFooter className="gap-2 pt-4 pb-6 px-6 border-t bg-background shrink-0">
               <Button
                 type="button"
@@ -1028,6 +1068,7 @@ export default function ProductsPage() {
                 </div>
               </Collapsible>
             </div>
+            {editError && <p className="px-6 pt-2 text-sm text-red-500">{editError}</p>}
             <DialogFooter className="gap-2 pt-4 pb-6 px-6 border-t bg-background shrink-0">
               <Button
                 type="button"
@@ -1157,6 +1198,7 @@ export default function ProductsPage() {
                 </div>
               </div>
             </div>
+            {categoryError && <p className="px-6 pt-2 text-sm text-red-500">{categoryError}</p>}
             <DialogFooter>
               <Button
                 type="button"

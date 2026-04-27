@@ -1,57 +1,120 @@
-version: "3.8"
-
 services:
-  db:
-    image: postgres:16-alpine
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: saas
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+    db:
+        image: postgres:16-alpine
+        restart: always
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER:-postgres}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+            POSTGRES_DB: ${POSTGRES_DB:-saas}
+        ports:
+            - "5432:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+            - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+        networks:
+            - food-service-net
 
-  redis:
-    image: redis:7-alpine
-    restart: always
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
+    # ─── LGTM Observability Stack (all-in-one) ───
+    otel-lgtm:
+        image: grafana/otel-lgtm:latest
+        container_name: food-service-otel-lgtm
+        ports:
+            - "3001:3000" # Grafana UI
+            - "4318:4318" # OTLP HTTP (traces e métricas)
+            - "9090:9090" # Prometheus (Mimir)
+            - "3100:3100" # Loki push API (para Promtail)
+        volumes:
+            - otel-lgtm-data:/data
+        environment:
+            - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+            - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+        logging:
+            driver: json-file
+            options:
+                max-size: "10m"
+                max-file: "3"
+                tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+                labels: "loki,service_name,logging"
+        networks:
+            - food-service-net
 
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/saas
-      - NEXTAUTH_SECRET=your-secret-key-change-this
-      - NEXTAUTH_URL=http://localhost:3000
-      - GOOGLE_CLIENT_ID=
-      - GOOGLE_CLIENT_SECRET=
-      - GITHUB_CLIENT_ID=
-      - GITHUB_CLIENT_SECRET=
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/.next
-    command: npm run dev
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
+    # ─── Promtail (coleta logs dos containers Docker) ───
+    promtail:
+        image: grafana/promtail:3.2.0
+        container_name: food-service-promtail
+        labels:
+            loki: "true"
+            service_name: "promtail"
+            logging: "promtail"
+        volumes:
+            - ./docker/promtail-config.yml:/etc/promtail/config.yml:ro
+            - /var/lib/docker/containers:/var/lib/docker/containers:ro
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - /var/log:/var/log:ro
+            - promtail-positions:/tmp
+        depends_on:
+            - otel-lgtm
+        networks:
+            - food-service-net
+
+    # ─── Food Service Application ───
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: food-service-app
+        # Carrega todas as variáveis do arquivo .env automaticamente
+        env_file:
+            - .env
+        labels:
+            loki: "true"
+            service_name: "food-service"
+            logging: "food-service"
+        environment:
+            NODE_ENV: ${NODE_ENV:-production}
+            PORT: ${PORT:-3000}
+            HOSTNAME: ${HOSTNAME:-0.0.0.0}
+            # URL do banco apontando para o serviço "db" dentro da rede Docker
+            DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-saas}
+            # OpenTelemetry endpoint (LGTM container dentro da mesma rede)
+            OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-lgtm:4318/v1/traces}
+            OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-food-service}
+            LOG_LEVEL: ${LOG_LEVEL:-info}
+            # NextAuth (sobrescreve NEXTAUTH_URL do .env para o container)
+            NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+            # Storage (MinIO local via IP)
+            STORAGE_PROVIDER: ${STORAGE_PROVIDER:-minio}
+            MINIO_ENDPOINT: http://192.168.3.55:9000
+            MINIO_PUBLIC_ENDPOINT: http://192.168.3.55:9000
+            MINIO_BUCKET: ${MINIO_BUCKET:-food-service-images}
+            MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+            MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+            MINIO_USE_SSL: "false"
+        ports:
+            - "${PORT:-3000}:3000"
+        depends_on:
+            - db
+            - otel-lgtm
+        logging:
+            driver: json-file
+            options:
+                max-size: "10m"
+                max-file: "3"
+                tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+                labels: "loki,service_name,logging"
+        networks:
+            - food-service-net
 
 volumes:
-  postgres_data:
-  redis_data:
+    postgres_data:
+    otel-lgtm-data:
+    promtail-positions:
+
+networks:
+    food-service-net:
+        driver: bridge

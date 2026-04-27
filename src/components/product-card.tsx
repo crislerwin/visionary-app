@@ -17,7 +17,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Image as ImageIcon } from "lucide-react";
-import Image from "next/image";
 import type * as React from "react";
 
 export interface ProductCardVariant {
@@ -72,12 +71,10 @@ export function ProductCard({
       {/* Product Image - flush to top */}
       <div className="relative h-32 bg-muted overflow-hidden">
         {product.image ? (
-          <Image
+          <img
             src={product.image}
             alt={product.name}
-            fill
-            className="object-cover"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="absolute inset-0 w-full h-full object-cover"
           />
         ) : (
           <div className="flex items-center justify-center h-full text-muted-foreground">

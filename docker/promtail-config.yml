@@ -1,0 +1,55 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://otel-lgtm:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker-containers
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        # Sem filtros de nome — descobre TODOS os containers
+    relabel_configs:
+      # Só coleta containers que têm o label loki=true
+      - source_labels: [__meta_docker_container_label_loki]
+        regex: "true"
+        action: keep
+      # Extrai o nome do serviço do label
+      - source_labels: [__meta_docker_container_label_service_name]
+        target_label: service_name
+      # Usa nome do container como job
+      - source_labels: [__meta_docker_container_name]
+        target_label: container
+        regex: "/(.*)"
+      - source_labels: [__meta_docker_container_log_stream]
+        target_label: logstream
+      - source_labels: [__meta_docker_container_label_logging]
+        target_label: logging
+        regex: (.+)
+    pipeline_stages:
+      # Parse logs JSON do Pino
+      - json:
+          expressions:
+            level: 'level'
+            msg: 'msg'
+            time: 'time'
+            trace_id: 'trace_id'
+            span_id: 'span_id'
+            service_name: 'service'
+      # Labels extraídas do JSON
+      - labels:
+          level:
+          trace_id:
+          service_name:
+      # Timestamp do log
+      - timestamp:
+          source: time
+          format: RFC3339Nano
+      # Saída: mensagem pura
+      - output:
+          source: msg

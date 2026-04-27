@@ -85,12 +85,11 @@ model Tenant {
   owner       User         @relation("TenantOwner", fields: [ownerId], references: [id])
   memberships Membership[]
   sessions    Session[]
-  
-  // Food Service relations
-  categories  Category[]
-  products    Product[]
-  customers   Customer[]
-  orders      Order[]
+
+  categories    Category[]
+  products      Product[]
+  customers     Customer[]
+  orders        Order[]
   cashRegisters CashRegister[]
 
   @@map("tenants")
@@ -119,10 +118,6 @@ model Membership {
   @@unique([userId, tenantId])
   @@map("memberships")
 }
-
-// ===============================
-// FOOD SERVICE - MENU & CATEGORIES
-// ===============================
 
 model Category {
   id          String   @id @default(cuid())
@@ -153,23 +148,21 @@ model Product {
   price       Decimal @db.Decimal(10, 2)
   isActive    Boolean @default(true) @map("is_active")
   isDeleted   Boolean @default(false) @map("is_deleted")
-  
-  // Estoque
-  stock       Int     @default(0)
-  trackStock  Boolean @default(false) @map("track_stock")
-  
-  // Relacionamentos
-  categoryId  String  @map("category_id")
-  tenantId    String  @map("tenant_id")
-  
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
 
-  category     Category       @relation(fields: [categoryId], references: [id])
-  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  variants     ProductVariant[]
-  orderItems   OrderItem[]
-  images       ProductImage[]
+  stock      Int     @default(0)
+  trackStock Boolean @default(false) @map("track_stock")
+
+  categoryId String @map("category_id")
+  tenantId   String @map("tenant_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  category   Category       @relation(fields: [categoryId], references: [id])
+  tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  variants   ProductVariant[]
+  orderItems OrderItem[]
+  images     ProductImage[]
 
   @@index([tenantId])
   @@index([categoryId])
@@ -177,58 +170,48 @@ model Product {
 }
 
 model ProductVariant {
-  id          String  @id @default(cuid())
-  name        String  // ex: "Médio", "Grande"
-  price       Decimal @db.Decimal(10, 2)
-  isActive    Boolean @default(true) @map("is_active")
-  
-  // Estoque da variante
-  stock       Int     @default(0)
-  
-  productId   String  @map("product_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id       String  @id @default(cuid())
+  name     String
+  price    Decimal @db.Decimal(10, 2)
+  isActive Boolean @default(true) @map("is_active")
 
-  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  orderItems  OrderItem[]
+  stock Int @default(0)
+
+  productId String @map("product_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
 
   @@index([productId])
   @@map("product_variants")
 }
 
-// ===============================
-// FOOD SERVICE - CUSTOMERS
-// ===============================
-
 model Customer {
-  id          String   @id @default(cuid())
-  name        String?
-  phone       String   // WhatsApp number
-  email       String?
-  addresses   Json?    // Array de endereços
-  notes       String?  @db.Text
-  birthDate   DateTime? @map("birth_date")
-  
-  // Fidelidade
-  points      Int      @default(0)
-  creditLimit Decimal? @db.Decimal(10, 2) @map("credit_limit") // Fiado
-  
-  tenantId    String   @map("tenant_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(cuid())
+  name      String?
+  phone     String
+  email     String?
+  addresses Json?
+  notes     String?  @db.Text
+  birthDate DateTime? @map("birth_date")
 
-  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  orders       Order[]
+  points      Int      @default(0)
+  creditLimit Decimal? @db.Decimal(10, 2) @map("credit_limit")
+
+  tenantId  String   @map("tenant_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders Order[]
 
   @@unique([tenantId, phone])
   @@index([tenantId])
   @@index([phone])
   @@map("customers")
 }
-
-// ===============================
-// FOOD SERVICE - ORDERS
-// ===============================
 
 enum OrderStatus {
   PENDING
@@ -262,43 +245,36 @@ enum PaymentStatus {
 }
 
 model Order {
-  id              String   @id @default(cuid())
-  orderNumber     Int      @map("order_number") // Sequencial por tenant
-  
-  // Tipo e status
-  type            OrderType
-  status          OrderStatus @default(PENDING)
-  
-  // Valores
-  subtotal        Decimal @db.Decimal(10, 2)
-  deliveryFee     Decimal? @db.Decimal(10, 2) @map("delivery_fee")
-  discount        Decimal? @db.Decimal(10, 2)
-  total           Decimal @db.Decimal(10, 2)
-  
-  // Pagamento
-  paymentMethod   PaymentMethod? @map("payment_method")
-  paymentStatus   PaymentStatus  @default(PENDING) @map("payment_status")
-  
-  // Endereço (para delivery)
-  address         Json?
-  
-  // Agendamento
-  scheduledAt     DateTime? @map("scheduled_at")
-  
-  // Observações
-  customerNotes   String? @db.Text @map("customer_notes")
-  internalNotes   String? @db.Text @map("internal_notes")
-  
-  // Relations
-  customerId      String   @map("customer_id")
-  tenantId        String   @map("tenant_id")
-  
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(cuid())
+  orderNumber Int      @map("order_number")
 
-  customer     Customer      @relation(fields: [customerId], references: [id])
-  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  items        OrderItem[]
+  type   OrderType
+  status OrderStatus @default(PENDING)
+
+  subtotal    Decimal @db.Decimal(10, 2)
+  deliveryFee Decimal? @db.Decimal(10, 2) @map("delivery_fee")
+  discount    Decimal? @db.Decimal(10, 2)
+  total       Decimal @db.Decimal(10, 2)
+
+  paymentMethod PaymentMethod? @map("payment_method")
+  paymentStatus PaymentStatus  @default(PENDING) @map("payment_status")
+
+  address Json?
+
+  scheduledAt DateTime? @map("scheduled_at")
+
+  customerNotes String? @db.Text @map("customer_notes")
+  internalNotes String? @db.Text @map("internal_notes")
+
+  customerId String @map("customer_id")
+  tenantId   String @map("tenant_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  customer Customer     @relation(fields: [customerId], references: [id])
+  tenant   Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items    OrderItem[]
 
   @@index([tenantId])
   @@index([customerId])
@@ -307,36 +283,28 @@ model Order {
 }
 
 model OrderItem {
-  id          String @id @default(cuid())
-  quantity    Int
-  unitPrice   Decimal @db.Decimal(10, 2) @map("unit_price")
-  totalPrice  Decimal @db.Decimal(10, 2) @map("total_price")
-  notes       String? @db.Text
-  
-  orderId     String @map("order_id")
-  productId   String @map("product_id")
-  variantId   String? @map("variant_id")
-  
-  // Snapshot do produto
-  productName String @map("product_name") // Para histórico
-  
-  createdAt   DateTime @default(now()) @map("created_at")
+  id         String @id @default(cuid())
+  quantity   Int
+  unitPrice  Decimal @db.Decimal(10, 2) @map("unit_price")
+  totalPrice Decimal @db.Decimal(10, 2) @map("total_price")
+  notes      String? @db.Text
 
-  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product     Product  @relation(fields: [productId], references: [id])
-  variant     ProductVariant? @relation(fields: [variantId], references: [id])
+  orderId   String @map("order_id")
+  productId String @map("product_id")
+  variantId String? @map("variant_id")
+
+  productName String @map("product_name")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product  @relation(fields: [productId], references: [id])
+  variant ProductVariant? @relation(fields: [variantId], references: [id])
 
   @@index([orderId])
   @@index([productId])
   @@map("order_items")
 }
-
-// Relations adicionais para Tenant
-// Relations adicionais para Tenant adicionadas diretamente no model Tenant acima
-
-// ===============================
-// FOOD SERVICE - PRODUCT IMAGES
-// ===============================
 
 model ProductImage {
   id           String   @id @default(cuid())
@@ -344,22 +312,18 @@ model ProductImage {
   url          String
   thumbnailUrl String?  @map("thumbnail_url")
   filename     String
-  size         Int      // em bytes
+  size         Int
   mimeType     String   @map("mime_type")
   width        Int?
   height       Int?
   sortOrder    Int      @default(0) @map("sort_order")
   createdAt    DateTime @default(now()) @map("created_at")
-  
-  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
   @@index([productId])
   @@map("product_images")
 }
-
-// ===============================
-// FOOD SERVICE - CASH REGISTER (Controle de Caixa)
-// ===============================
 
 enum CashRegisterStatus {
   OPEN
@@ -367,10 +331,10 @@ enum CashRegisterStatus {
 }
 
 enum TransactionType {
-  SALE        // Entrada de venda
-  EXPENSE     // Saída de despesa
-  WITHDRAWAL  // Sangria
-  INITIAL     // Valor de abertura
+  SALE
+  EXPENSE
+  WITHDRAWAL
+  INITIAL
 }
 
 model CashRegister {
@@ -378,17 +342,17 @@ model CashRegister {
   tenantId      String   @map("tenant_id")
   openedAt      DateTime @default(now()) @map("opened_at")
   closedAt      DateTime? @map("closed_at")
-  openedBy      String   @map("opened_by") // userId
-  closedBy      String?  @map("closed_by") // userId
+  openedBy      String   @map("opened_by")
+  closedBy      String?  @map("closed_by")
   initialAmount Decimal @db.Decimal(10, 2) @map("initial_amount")
   finalAmount   Decimal? @db.Decimal(10, 2) @map("final_amount")
   difference    Decimal? @db.Decimal(10, 2)
   status        CashRegisterStatus @default(OPEN)
   notes         String? @db.Text
-  
-  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  transactions  CashRegisterTransaction[]
-  
+
+  tenant       Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  transactions CashRegisterTransaction[]
+
   @@index([tenantId])
   @@index([status])
   @@index([openedAt])
@@ -396,19 +360,19 @@ model CashRegister {
 }
 
 model CashRegisterTransaction {
-  id              String   @id @default(cuid())
-  cashRegisterId  String   @map("cash_register_id")
-  type            TransactionType
-  amount          Decimal  @db.Decimal(10, 2)
-  description     String?
-  category        String?  // Para despesas: "suprimentos", "manutenção", etc.
-  paymentMethod   PaymentMethod? @map("payment_method") // Para entradas
-  orderId         String?  @map("order_id") // Referência ao pedido, se aplicável
-  createdBy       String   @map("created_by")
-  createdAt       DateTime @default(now()) @map("created_at")
-  
-  cashRegister    CashRegister @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
-  
+  id             String   @id @default(cuid())
+  cashRegisterId String   @map("cash_register_id")
+  type           TransactionType
+  amount         Decimal  @db.Decimal(10, 2)
+  description    String?
+  category       String?
+  paymentMethod  PaymentMethod? @map("payment_method")
+  orderId        String?  @map("order_id")
+  createdBy      String   @map("created_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  cashRegister CashRegister @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
+
   @@index([cashRegisterId])
   @@index([type])
   @@index([createdAt])

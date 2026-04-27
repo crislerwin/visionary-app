@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/sheet";
 import { useCartStore } from "@/stores/cart-store";
 import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 
 export function CartSheet() {
@@ -88,11 +87,10 @@ export function CartSheet() {
                     {/* Product Image */}
                     <div className="relative size-16 flex-shrink-0 rounded-md overflow-hidden bg-muted">
                       {item.productImage ? (
-                        <Image
+                        <img
                           src={item.productImage}
                           alt={item.productName}
-                          fill
-                          className="object-cover"
+                          className="absolute inset-0 w-full h-full object-cover"
                         />
                       ) : (
                         <div className="flex items-center justify-center h-full text-muted-foreground">

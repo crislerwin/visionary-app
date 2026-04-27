@@ -9,6 +9,7 @@ export interface StorageConfig {
   provider: "s3" | "minio" | "local";
   // S3/MinIO
   endpoint?: string;
+  publicEndpoint?: string;
   region?: string;
   bucket: string;
   accessKeyId?: string;
@@ -34,9 +35,11 @@ export function getStorageConfig(): StorageConfig {
   }
 
   if (provider === "minio") {
+    const endpoint = process.env.MINIO_ENDPOINT || "http://localhost:9000";
     return {
       provider: "minio",
-      endpoint: process.env.MINIO_ENDPOINT || "http://localhost:9000",
+      endpoint,
+      publicEndpoint: process.env.MINIO_PUBLIC_ENDPOINT || endpoint,
       bucket: process.env.MINIO_BUCKET || "food-service-images",
       accessKeyId: process.env.MINIO_ACCESS_KEY || "minioadmin",
       secretAccessKey: process.env.MINIO_SECRET_KEY || "minioadmin",

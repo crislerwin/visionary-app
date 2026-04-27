@@ -1,0 +1,230 @@
+# https://taskfile.dev
+version: "3"
+
+vars:
+  IMAGE_NAME: food-service
+  DOCKER_HUB_USER:
+    sh: grep "^DOCKER_HUB_USER=" .env 2>/dev/null | cut -d '=' -f2 || echo "seu-usuario-dockerhub"
+  TAG: '{{.TAG | default "latest"}}'
+  FULL_IMAGE: "{{.DOCKER_HUB_USER}}/{{.IMAGE_NAME}}:{{.TAG}}"
+
+tasks:
+  default:
+    desc: Lista todos os comandos disponíveis
+    cmds:
+      - task --list
+
+  # ============================================================
+  # Docker Hub — Build & Deploy
+  # ============================================================
+
+  build:
+    desc: Build da imagem Docker localmente
+    cmds:
+      - docker build -t {{.IMAGE_NAME}}:{{.TAG}} .
+
+  docker:tag:
+    desc: Tag da imagem para o Docker Hub
+    cmds:
+      - docker tag {{.IMAGE_NAME}}:{{.TAG}} {{.FULL_IMAGE}}
+
+  docker:push:
+    desc: Push da imagem para o Docker Hub
+    cmds:
+      - docker push {{.FULL_IMAGE}}
+
+  docker:deploy:
+    desc: Build, tag e push da imagem para o Docker Hub (deploy completo)
+    deps: [docker:build]
+    cmds:
+      - task docker:tag
+      - task docker:push
+
+  docker:login:
+    desc: Login no Docker Hub
+    cmds:
+      - docker login
+
+  docker:run:
+    desc: Roda a imagem isoladamente (sem compose) com o .env
+    cmds:
+      - docker run --rm --env-file .env -p 3000:3000 {{.IMAGE_NAME}}:{{.TAG}}
+
+  # ============================================================
+  # Docker Compose — Stack completa
+  # ============================================================
+
+  up:
+    desc: Sobe toda a stack (build + up)
+    cmds:
+      - docker-compose up -d --build
+
+  up:no-build:
+    desc: Sobe toda a stack SEM buildar (usa imagens existentes)
+    cmds:
+      - docker-compose up -d
+
+  up:app:
+    desc: Sobe APENAS o serviço app (útil quando DB já está rodando)
+    cmds:
+      - docker-compose up -d --build app
+
+  up:deps:
+    desc: Sobe apenas os serviços de dependência (db, otel-lgtm, promtail)
+    cmds:
+      - docker-compose up -d db otel-lgtm promtail
+
+  down:
+    desc: Derruba toda a stack
+    cmds:
+      - docker-compose down
+
+  down:volumes:
+    desc: Derruba a stack e REMOVE todos os volumes (⚠️ apaga dados!)
+    cmds:
+      - docker-compose down -v
+
+  restart:
+    desc: Restart de todos os serviços
+    cmds:
+      - docker-compose restart
+
+  restart:app:
+    desc: Restart apenas do serviço app
+    cmds:
+      - docker-compose restart app
+
+  build:app:
+    desc: Builda APENAS a imagem do serviço app
+    cmds:
+      - docker-compose build app
+
+  build:
+    desc: Builda todas as imagens do compose
+    cmds:
+      - docker-compose build
+
+  # ============================================================
+  # Logs
+  # ============================================================
+
+  logs:
+    desc: Logs da aplicação (app) em tempo real
+    cmds:
+      - docker-compose logs -f app
+
+  logs:all:
+    desc: Logs de TODOS os serviços em tempo real
+    cmds:
+      - docker-compose logs -f
+
+  logs:db:
+    desc: Logs do banco de dados
+    cmds:
+      - docker-compose logs -f db
+
+  logs:otel:
+    desc: Logs do stack de observabilidade (LGTM)
+    cmds:
+      - docker-compose logs -f otel-lgtm
+
+  logs:promtail:
+    desc: Logs do Promtail (coletor de logs)
+    cmds:
+      - docker-compose logs -f promtail
+
+  # ============================================================
+  # Prisma — Database operations
+  # ============================================================
+
+  db:wait:
+    desc: Aguarda o PostgreSQL ficar pronto para conexões
+    cmds:
+      - |
+        echo "⏳ Aguardando PostgreSQL ficar pronto..."
+        until docker-compose exec -T db pg_isready -U ${POSTGRES_USER:-postgres}; do
+          sleep 1
+        done
+        echo "✅ PostgreSQL pronto!"
+
+  db:migrate:
+    desc: Executa as migrações do Prisma no container app
+    cmds:
+      - docker-compose exec app npx prisma migrate dev
+
+  db:push:
+    desc: Sincroniza o schema do Prisma com o banco (sem migrações)
+    cmds:
+      - docker-compose exec app prisma db push --skip-generate
+
+  db:seed:
+    desc: Popula o banco com dados iniciais (users, tenants, memberships)
+    cmds:
+      - docker-compose exec app npx tsx prisma/seed.ts
+
+  db:studio:
+    desc: Abre o Prisma Studio no container app
+    cmds:
+      - docker-compose exec app npx prisma studio
+
+  db:generate:
+    desc: Regenera o Prisma Client no container app
+    cmds:
+      - docker-compose exec app npx prisma generate
+
+  db:reset:
+    desc: Reseta o banco (drop + push + seed) ⚠️ apaga todos os dados!
+    cmds:
+      - docker-compose exec app npx prisma db push --force-reset
+      - task db:seed
+
+  # ============================================================
+  # Dev — Modo desenvolvimento
+  # ============================================================
+
+  dev:
+    desc: Modo desenvolvimento — sobe as dependências e roda o app local (fora do Docker)
+    cmds:
+      - task up:deps
+      - echo "✅ Dependências no ar. Rode 'npm run dev' no seu terminal para iniciar o Next.js."
+
+  dev:setup:
+    desc: Setup completo de dev — sobe deps, push schema e seed
+    cmds:
+      - task up:deps
+      - task db:wait
+      - task db:push
+      - task db:seed
+
+  setup:
+    desc: Setup completo da aplicação com Docker (deps + build app + db push + seed)
+    cmds:
+      - task up:deps
+      - task db:wait
+      - task up:app
+      - task db:push
+      - task db:seed
+      - |
+        echo ""
+        echo "🚀 Food Service está no ar!"
+        echo "   App: http://localhost:3000"
+        echo "   Grafana: http://localhost:3001"
+        echo ""
+        echo "👤 Usuários de teste:"
+        echo "   admin@pizzariacentral.com / admin123"
+        echo "   gerente@bomsabor.com / user123"
+
+  # ============================================================
+  # Limpeza
+  # ============================================================
+
+  clean:
+    desc: Remove containers parados, redes órfãs e imagens dangling
+    cmds:
+      - docker system prune -f
+
+  clean:all:
+    desc: LIMPEZA TOTAL — remove containers, volumes, imagens e caches (⚠️ cuidado!)
+    cmds:
+      - docker-compose down -v
+      - docker system prune -af --volumes

@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+import { SpanStatusCode, trace } from "@opentelemetry/api";
 import { TRPCError, initTRPC } from "@trpc/server";
 import type { Session } from "next-auth";
 
@@ -25,10 +27,79 @@ type ContextWithUser = TRPCContext & {
 const t = initTRPC.context<TRPCContext>().create();
 
 export const router = t.router;
-export const publicProcedure = t.procedure;
 export const createCallerFactory = t.createCallerFactory;
 
-export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
+// ─── Logging Middleware ─────────────────────────────────────────
+// Loga cada chamada tRPC com duração, path, tipo e usuário.
+// ────────────────────────────────────────────────────────────────
+
+const loggingMiddleware = t.middleware(async ({ path, type, next, ctx }) => {
+  const start = Date.now();
+  const userId = ctx.user?.id ?? "anonymous";
+
+  try {
+    const result = await next();
+    const duration = Date.now() - start;
+    logger.info(
+      { path, type, userId, tenantId: ctx.tenantId ?? null, durationMs: duration, status: "ok" },
+      `tRPC ${type} ${path} — ${duration}ms`,
+    );
+    return result;
+  } catch (err) {
+    const duration = Date.now() - start;
+    const trpcError = err as TRPCError;
+    logger.warn(
+      {
+        path,
+        type,
+        userId,
+        tenantId: ctx.tenantId ?? null,
+        durationMs: duration,
+        status: "error",
+        code: trpcError.code,
+        message: trpcError.message,
+      },
+      `tRPC ${type} ${path} failed — ${duration}ms`,
+    );
+    throw err;
+  }
+});
+
+// ─── Telemetry Middleware ───────────────────────────────────────
+// Wraps every tRPC procedure with an OpenTelemetry span.
+// ────────────────────────────────────────────────────────────────
+
+const telemetryMiddleware = t.middleware(async ({ path, type, next, ctx }) => {
+  const tracer = trace.getTracer("food-service");
+  const span = tracer.startSpan(`trpc.${type}.${path}`);
+
+  span.setAttribute("trpc.path", path);
+  span.setAttribute("trpc.type", type);
+  span.setAttribute("user.id", ctx.user?.id ?? "anonymous");
+  span.setAttribute("tenant.id", ctx.tenantId ?? "none");
+
+  try {
+    const result = await next();
+    span.setStatus({ code: SpanStatusCode.OK });
+    return result;
+  } catch (err) {
+    span.recordException(err as Error);
+    span.setStatus({ code: SpanStatusCode.ERROR });
+    throw err;
+  } finally {
+    span.end();
+  }
+});
+
+// ─── Base Procedures ────────────────────────────────────────────
+// Todas as procedures incluem logging + telemetry por padrão.
+// ────────────────────────────────────────────────────────────────
+
+const baseProcedure = t.procedure.use(loggingMiddleware).use(telemetryMiddleware);
+
+export const publicProcedure = baseProcedure;
+
+export const protectedProcedure = baseProcedure.use(async ({ ctx, next }) => {
   if (!ctx.session) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
@@ -44,18 +115,73 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   });
 });
 
-export const tenantProcedure = protectedProcedure.use(async ({ ctx, next }) => {
-  if (!ctx.tenantId) {
+// ─── Tenant Procedure ───────────────────────────────────────────
+// Resolve o tenantId do input (se presente) ou do contexto da sessão.
+// Verifica se o usuário tem membership no tenant solicitado.
+// ────────────────────────────────────────────────────────────────
+
+export const tenantProcedure = protectedProcedure.use(async (opts) => {
+  const { ctx, next } = opts;
+
+  // 1. Tenta extrair tenantId do input (permite trocar de tenant dinamicamente)
+  let tenantId: string | null = null;
+
+  // O input pode estar disponível como unknown no middleware
+  const input = (opts as unknown as { input?: Record<string, unknown> }).input;
+  if (input && typeof input === "object") {
+    if (typeof input.tenantId === "string") {
+      tenantId = input.tenantId;
+    }
+  }
+
+  // 2. Se não veio do input, usa o tenantId do contexto (sessão ativa)
+  if (!tenantId) {
+    tenantId = ctx.tenantId ?? null;
+  }
+
+  if (!tenantId) {
     throw new TRPCError({
       code: "BAD_REQUEST",
       message: "No tenant selected",
     });
   }
 
+  // 3. Verifica se o usuário é membro do tenant solicitado
+  const userId = ctx.user.id ?? "";
+  if (!userId) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "User ID not found in session",
+    });
+  }
+
+  const { prisma } = await import("@/lib/db");
+  const membership = await prisma.membership.findUnique({
+    where: {
+      userId_tenantId: {
+        userId,
+        tenantId,
+      },
+    },
+  });
+
+  if (!membership) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You do not have access to this tenant",
+    });
+  }
+
   return next({
     ctx: {
       ...ctx,
-      tenantId: ctx.tenantId,
+      tenantId,
+      membership,
     },
   });
 });
+
+// ─── Legacy Exports (para compatibilidade) ──────────────────────
+export const publicProcedureWithTelemetry = publicProcedure;
+export const protectedProcedureWithTelemetry = protectedProcedure;
+export const tenantProcedureWithTelemetry = tenantProcedure;
