@@ -55,8 +55,9 @@ RUN npm install -g prisma@6.3.0 tsx@4.19.2
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/bcryptjs ./node_modules/bcryptjs
 
-# Copia o .env para que o Next.js leia as variáveis em runtime
-COPY --from=builder --chown=nextjs:nodejs /app/.env ./.env
+# NOTA: Não copiamos .env para a imagem.
+# As variáveis de ambiente devem ser passadas no runtime
+# (docker run -e, docker-compose environment, Komodo, Umbrel, etc.)
 
 USER nextjs
 
