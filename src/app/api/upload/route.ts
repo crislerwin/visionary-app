@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { logger } from "@/lib/logger";
 import { createStorageProvider, getStorageConfig } from "@/lib/storage";
 import { NextResponse } from "next/server";
 
@@ -15,6 +16,8 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
 
+    logger.info({ userId: session.user.id, hasFile: !!file }, "[Upload] Request received");
+
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
@@ -29,18 +32,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "File size must be less than 10MB" }, { status: 400 });
     }
 
+    logger.info({ name: file.name, type: file.type, size: file.size }, "[Upload] File info");
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
     const timestamp = Date.now();
     const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-    const key = `uploads/${session.user.id}/${timestamp}_${sanitizedFilename}`;
+    const key = `${session.user.id}/${timestamp}_${sanitizedFilename}`;
+
+    logger.info({ key, provider: process.env.STORAGE_PROVIDER }, "[Upload] Uploading to storage");
 
     const publicUrl = await storage.upload(buffer, key, file.type);
 
+    logger.info({ publicUrl, key }, "[Upload] Success");
+
     return NextResponse.json({ url: publicUrl, key });
   } catch (error) {
-    console.error("Upload error:", error);
-    return NextResponse.json({ error: "Failed to upload file" }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    logger.error({ err: error, message: errorMessage }, "[Upload] Error");
+    return NextResponse.json(
+      { error: "Failed to upload file", details: errorMessage },
+      { status: 500 },
+    );
   }
 }

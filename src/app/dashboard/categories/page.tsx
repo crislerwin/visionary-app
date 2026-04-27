@@ -53,6 +53,8 @@ export default function CategoriesPage() {
 
   const [categoryName, setCategoryName] = useState("");
   const [categoryDescription, setCategoryDescription] = useState("");
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
 
   // Image state
   const [categoryImage, setCategoryImage] = useState<string | null>(null);
@@ -70,18 +72,26 @@ export default function CategoriesPage() {
 
   const createMutation = api.category.create.useMutation({
     onSuccess: () => {
+      setCreateError(null);
       setIsCreateOpen(false);
       resetForm();
       void refetch();
+    },
+    onError: (err) => {
+      setCreateError(err.message);
     },
   });
 
   const updateMutation = api.category.update.useMutation({
     onSuccess: () => {
+      setEditError(null);
       setIsEditOpen(false);
       setSelectedCategory(null);
       resetForm();
       void refetch();
+    },
+    onError: (err) => {
+      setEditError(err.message);
     },
   });
 
@@ -98,6 +108,8 @@ export default function CategoriesPage() {
     setCategoryDescription("");
     setCategoryImage(null);
     setImageFile(null);
+    setCreateError(null);
+    setEditError(null);
   };
 
   const uploadImage = async (file: File): Promise<string> => {
@@ -159,14 +171,19 @@ export default function CategoriesPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentTenant?.id) return;
+    setCreateError(null);
+    if (!currentTenant?.id) {
+      setCreateError("Nenhum tenant selecionado.");
+      return;
+    }
 
     let imageUrl: string | undefined;
     if (imageFile) {
       try {
         imageUrl = await uploadImage(imageFile);
       } catch (error) {
-        console.error("Image upload failed:", error);
+        const message = error instanceof Error ? error.message : "Falha no upload da imagem";
+        setCreateError(message);
         return;
       }
     }
@@ -181,14 +198,19 @@ export default function CategoriesPage() {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCategory || !currentTenant?.id) return;
+    setEditError(null);
+    if (!selectedCategory || !currentTenant?.id) {
+      setEditError("Nenhum tenant selecionado.");
+      return;
+    }
 
     let imageUrl: string | null | undefined = undefined;
     if (imageFile) {
       try {
         imageUrl = await uploadImage(imageFile);
       } catch (error) {
-        console.error("Image upload failed:", error);
+        const message = error instanceof Error ? error.message : "Falha no upload da imagem";
+        setEditError(message);
         return;
       }
     } else if (categoryImage === null && selectedCategory.image !== null) {
@@ -304,6 +326,9 @@ export default function CategoriesPage() {
                   </div>
                 </div>
               </div>
+              {createError && (
+                <p className="px-6 pt-2 text-sm text-red-500">{createError}</p>
+              )}
               <DialogFooter className="gap-2 pt-4 pb-6 px-6 border-t bg-background shrink-0">
                 <Button
                   type="button"
@@ -471,6 +496,9 @@ export default function CategoriesPage() {
                   </div>
                 </div>
               </div>
+              {editError && (
+                <p className="px-6 pt-2 text-sm text-red-500">{editError}</p>
+              )}
               <DialogFooter className="gap-2 pt-4 pb-6 px-6 border-t bg-background shrink-0">
                 <Button
                   type="button"

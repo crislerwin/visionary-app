@@ -2,6 +2,7 @@ import https from "node:https";
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NodeHttpHandler } from "@smithy/node-http-handler";
+import { logger } from "@/lib/logger";
 import type { StorageConfig, StorageProvider } from "./types";
 
 export class S3Storage implements StorageProvider {
@@ -43,13 +44,26 @@ export class S3Storage implements StorageProvider {
   }
 
   async upload(file: Buffer, key: string, contentType: string): Promise<string> {
+    logger.info(
+      { bucket: this.bucket, key, contentType, endpoint: this.endpoint, isMinio: this.isMinio },
+      "[S3Storage] Uploading",
+    );
+
     const command = new PutObjectCommand({
       Bucket: this.bucket,
       Key: key,
       Body: file,
       ContentType: contentType,
     });
-    await this.client.send(command);
+
+    try {
+      await this.client.send(command);
+      logger.info({ key }, "[S3Storage] Upload successful");
+    } catch (error) {
+      logger.error({ err: error, key }, "[S3Storage] Upload failed");
+      throw error;
+    }
+
     return this.getPublicUrl(key);
   }
 
