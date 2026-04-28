@@ -1,5 +1,4 @@
 import { ArrowRight, Check } from "lucide-react";
-import Link from "next/link";
 
 const perks = [
   "Cardápio digital ilimitado",
@@ -26,20 +25,22 @@ export function Pricing() {
           <div className="relative grid md:grid-cols-2 gap-10 items-center">
             <div>
               <p className="text-sm font-semibold uppercase tracking-widest text-accent">
-                Comece grátis
+                Entre em contato
               </p>
-              <h2 className="mt-3 text-4xl sm:text-5xl font-bold">Plano único, sem pegadinha.</h2>
+              <h2 className="mt-3 text-4xl sm:text-5xl font-bold">Plano sob medida para você.</h2>
               <p className="mt-4 text-primary-foreground/80 text-lg">
-                Use de graça enquanto valida. Quando crescer, escolhe um plano simples — sem
-                comissão por pedido.
+                Solução completa para restaurantes, lanchonetes e food trucks. Sem comissão por
+                pedido, com suporte humano dedicado.
               </p>
-              <Link
-                href="/sign-in"
+              <a
+                href="https://wa.me/5562981878663"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="mt-8 inline-flex items-center gap-2 rounded-full bg-background text-foreground px-6 py-3.5 text-sm font-semibold hover:bg-background/90 transition-colors"
               >
-                Criar meu cardápio grátis
+                Falar com vendas
                 <ArrowRight className="h-4 w-4" />
-              </Link>
+              </a>
             </div>
             <ul className="space-y-3">
               {perks.map((p) => (

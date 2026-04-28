@@ -35,12 +35,14 @@ export function Navbar() {
           >
             Entrar
           </Link>
-          <Link
-            href="/sign-in"
+          <a
+            href="https://wa.me/5562981878663"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center rounded-full bg-foreground text-background px-4 py-2 text-sm font-semibold hover:bg-foreground/90 transition-colors"
           >
-            Começar grátis
-          </Link>
+            Fale conosco
+          </a>
         </div>
       </div>
     </header>
