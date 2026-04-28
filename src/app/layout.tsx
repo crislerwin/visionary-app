@@ -1,83 +1,26 @@
 import type { Metadata } from "next";
+import { Fraunces, Inter } from "next/font/google";
 
 import { Providers } from "./providers";
 import "@/app/globals.css";
 
-export const metadata: Metadata = {
-  title: "Food Service - Digital Menu & POS",
-  description: "A digital menu and point-of-sale platform for restaurants and food services.",
-};
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-geist-sans",
+  display: "swap",
+});
 
-const ANTI_FLICKER_SCRIPT = `
-(function() {
-  try {
-    var PREFIX = "tenant-branding";
-    var keys = Object.keys(localStorage).filter(function(k) {
-      return k.startsWith(PREFIX);
-    });
-    if (keys.length === 0) return;
-    var mostRecent = null;
-    var mostRecentTime = 0;
-    for (var i = 0; i < keys.length; i++) {
-      var raw = localStorage.getItem(keys[i]);
-      if (!raw) continue;
-      try {
-        var parsed = JSON.parse(raw);
-        if (parsed.timestamp > mostRecentTime) {
-          mostRecentTime = parsed.timestamp;
-          mostRecent = parsed.colors;
-        }
-      } catch (_e) {}
-    }
-    if (!mostRecent) return;
-    var root = document.documentElement;
-    var c = mostRecent;
-    if (c.primary) {
-      root.style.setProperty("--primary", c.primary);
-      root.style.setProperty("--ring", c.primary);
-      root.style.setProperty("--accent", c.primary);
-      root.style.setProperty("--sidebar-primary", c.primary);
-      root.style.setProperty("--sidebar-ring", c.primary);
-      root.style.setProperty("--chart-1", c.primary);
-    }
-    if (c.secondary) {
-      root.style.setProperty("--secondary", c.secondary);
-      root.style.setProperty("--sidebar-accent", c.secondary);
-      root.style.setProperty("--chart-2", c.secondary);
-    }
-    if (c.background) {
-      root.style.setProperty("--background", c.background);
-      root.style.setProperty("--card", c.background);
-      root.style.setProperty("--popover", c.background);
-      root.style.setProperty("--sidebar", c.background);
-    }
-    if (c.text) {
-      root.style.setProperty("--foreground", c.text);
-      root.style.setProperty("--card-foreground", c.text);
-      root.style.setProperty("--popover-foreground", c.text);
-      root.style.setProperty("--muted-foreground", c.text + "80");
-      root.style.setProperty("--sidebar-foreground", c.text);
-      root.style.setProperty("--sidebar-border", c.text + "20");
-    }
-    if (c.primaryText) {
-      root.style.setProperty("--primary-foreground", c.primaryText);
-      root.style.setProperty("--accent-foreground", c.primaryText);
-      root.style.setProperty("--sidebar-primary-foreground", c.primaryText);
-      root.style.setProperty("--sidebar-accent-foreground", c.primaryText);
-    }
-    if (c.secondaryText) {
-      root.style.setProperty("--secondary-foreground", c.secondaryText);
-    }
-    if (c.background) {
-      root.style.setProperty("--muted", c.background + "80");
-      if (c.text) {
-        root.style.setProperty("--border", c.text + "20");
-        root.style.setProperty("--input", c.text + "20");
-      }
-    }
-  } catch (_e) {}
-})();
-`;
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: "Food Service - Cardápio Digital, Pedidos e PDV",
+  description:
+    "Cardápio digital com QR Code, pedidos online e PDV — tudo em uma única plataforma feita para restaurantes, lanchonetes e food trucks no Brasil.",
+};
 
 export default function RootLayout({
   children,
@@ -85,11 +28,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: ANTI_FLICKER_SCRIPT }} />
-      </head>
-      <body className="min-h-screen bg-background font-sans antialiased">
+    <html lang="pt-BR" suppressHydrationWarning>
+      <body
+        className={`${inter.variable} ${fraunces.variable} min-h-screen bg-background font-sans antialiased`}
+      >
         <Providers>{children}</Providers>
       </body>
     </html>
