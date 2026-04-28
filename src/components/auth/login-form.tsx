@@ -11,9 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-interface LoginFormProps extends React.HTMLAttributes<HTMLDivElement> {}
+interface LoginFormProps extends React.HTMLAttributes<HTMLDivElement> {
+  showGoogle?: boolean;
+}
 
-export function LoginForm({ className, ...props }: LoginFormProps) {
+export function LoginForm({ className, showGoogle = false, ...props }: LoginFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
@@ -38,13 +40,13 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
       });
 
       if (result?.error) {
-        setError("Invalid credentials");
+        setError("E-mail ou senha inválidos");
         return;
       }
 
       router.push(callbackUrl);
     } catch (_error) {
-      setError("Something went wrong");
+      setError("Algo deu errado. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
@@ -55,21 +57,34 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
       <form onSubmit={onSubmit}>
         <div className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-sm font-medium">
+              E-mail
+            </Label>
             <Input
               id="email"
               name="email"
-              placeholder="name@example.com"
+              placeholder="nome@exemplo.com"
               type="email"
               autoCapitalize="none"
               autoComplete="email"
               autoCorrect="off"
               disabled={isLoading}
               required
+              className="h-11 rounded-xl border-border bg-card px-4 transition-colors focus-visible:ring-ring"
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password" className="text-sm font-medium">
+                Senha
+              </Label>
+              <Link
+                href="/forgot-password"
+                className="text-xs text-muted-foreground underline-offset-4 hover:text-primary hover:underline"
+              >
+                Esqueceu?
+              </Link>
+            </div>
             <Input
               id="password"
               name="password"
@@ -77,38 +92,47 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
               autoComplete="current-password"
               disabled={isLoading}
               required
+              className="h-11 rounded-xl border-border bg-card px-4 transition-colors focus-visible:ring-ring"
             />
           </div>
-          {error && <p className="text-sm text-red-500">{error}</p>}
-          <Button disabled={isLoading}>
-            {isLoading && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
-            Sign In
+          {error && (
+            <p className="text-sm font-medium text-destructive">{error}</p>
+          )}
+          <Button
+            disabled={isLoading}
+            className="h-11 w-full rounded-full bg-foreground text-background font-semibold shadow-[var(--shadow-elegant)] hover:translate-y-[-1px] transition-transform"
+          >
+            {isLoading && (
+              <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+            )}
+            Entrar
           </Button>
         </div>
       </form>
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-        </div>
-      </div>
-      <div className="grid gap-4">
-        <Button
-          variant="outline"
-          disabled={isLoading}
-          onClick={() => signIn("google", { callbackUrl })}
-        >
-          <Icons.google className="mr-2 h-4 w-4" />
-          Google
-        </Button>
-      </div>
-      <p className="text-center text-sm text-muted-foreground">
-        <Link href="/forgot-password" className="underline hover:text-primary">
-          Forgot your password?
-        </Link>
-      </p>
+
+      {showGoogle && (
+        <>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Ou continue com
+              </span>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            disabled={isLoading}
+            onClick={() => signIn("google", { callbackUrl })}
+            className="h-11 w-full rounded-full border-border bg-card font-semibold hover:bg-secondary transition-colors"
+          >
+            <Icons.google className="mr-2 h-4 w-4" />
+            Google
+          </Button>
+        </>
+      )}
     </div>
   );
 }
