@@ -83,7 +83,7 @@ export function ProductCard({ product, tenantSlug, tenantName, tenantId }: MenuP
       onVariantChange={setSelectedVariantId}
       badge={
         mounted && currentQuantity > 0 ? (
-          <Badge className="bg-primary text-primary-foreground shadow-sm text-xs">
+          <Badge className="bg-secondary text-secondary-foreground shadow-sm text-xs">
             {currentQuantity} no carrinho
           </Badge>
         ) : undefined

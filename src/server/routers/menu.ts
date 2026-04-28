@@ -19,6 +19,7 @@ export const menuRouter = router({
           slug: true,
           description: true,
           image: true,
+          config: true,
         },
       });
 

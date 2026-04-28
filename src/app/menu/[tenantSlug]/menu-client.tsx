@@ -3,6 +3,7 @@
 import { EmptyState, PageContainer } from "@/components/layout/page-layout";
 import { CategorySection } from "@/components/menu/category-section";
 import { MenuHeader } from "@/components/menu/menu-header";
+import { useTenantBranding } from "@/hooks/use-tenant-branding";
 import { useCartStore } from "@/stores/cart-store";
 import { ShoppingCart, Store } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -14,6 +15,7 @@ interface MenuClientProps {
     slug: string;
     description: string | null;
     image: string | null;
+    config: unknown;
   };
   categories: Array<{
     id: string;
@@ -37,9 +39,32 @@ interface MenuClientProps {
   }>;
 }
 
+function getBrandingColors(config: unknown) {
+  const cfg = config as Record<string, unknown> | null;
+  const branding = (cfg?.branding as Record<string, unknown>) ?? {};
+  const colors = (branding.colors as Record<string, string>) ?? {};
+  return {
+    primary: colors.primary ?? undefined,
+    secondary: colors.secondary ?? undefined,
+    background: colors.background ?? undefined,
+    text: colors.text ?? undefined,
+    primaryText: colors.primaryText ?? undefined,
+    secondaryText: colors.secondaryText ?? undefined,
+  };
+}
+
 export function MenuClient({ tenant, categories }: MenuClientProps) {
   const [mounted, setMounted] = useState(false);
   const setTenant = useCartStore((state) => state.setTenant);
+
+  const colors = getBrandingColors(tenant.config);
+  useTenantBranding(tenant.config, tenant.slug);
+
+  // Debug - log colors to verify they're being extracted
+  useEffect(() => {
+    console.log("[MenuClient] Tenant config:", tenant.config);
+    console.log("[MenuClient] Extracted colors:", colors);
+  }, [tenant.config, colors]);
 
   useEffect(() => {
     setMounted(true);
@@ -55,8 +80,11 @@ export function MenuClient({ tenant, categories }: MenuClientProps) {
   const openCart = useCartStore((state) => state.openCart);
 
   return (
-    <div className="min-h-screen bg-background pb-24 md:pb-8">
-      <MenuHeader tenant={tenant} />
+    <div
+      className="min-h-screen pb-24 md:pb-8"
+      style={{ backgroundColor: colors.background ?? undefined }}
+    >
+      <MenuHeader tenant={tenant} colors={colors} />
 
       {/* Main Content */}
       <PageContainer className="max-w-7xl mx-auto pt-4">
@@ -67,7 +95,7 @@ export function MenuClient({ tenant, categories }: MenuClientProps) {
             description="Este estabelecimento ainda não adicionou produtos."
           />
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-6" style={{ color: colors.text ?? undefined }}>
             {categories.map((category) => (
               <CategorySection
                 key={category.id}
@@ -83,11 +111,18 @@ export function MenuClient({ tenant, categories }: MenuClientProps) {
 
       {/* Mobile Cart Bar */}
       {mounted && totalItems > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 md:hidden z-50">
+        <div
+          className="fixed bottom-0 left-0 right-0 border-t p-4 md:hidden z-50"
+          style={{ backgroundColor: colors.background ?? "#fff" }}
+        >
           <button
             type="button"
             onClick={openCart}
-            className="w-full bg-primary text-primary-foreground rounded-lg py-3 px-4 flex items-center justify-between"
+            className="w-full rounded-lg py-3 px-4 flex items-center justify-between"
+            style={{
+              backgroundColor: colors.primary ?? undefined,
+              color: colors.primaryText ?? undefined,
+            }}
           >
             <div className="flex items-center gap-2">
               <ShoppingCart className="w-5 h-5" />

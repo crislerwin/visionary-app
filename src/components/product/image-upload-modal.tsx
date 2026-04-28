@@ -1,9 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import { Cropper } from "react-cropper";
-import "cropperjs/dist/cropper.css";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +9,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import imageCompression from "browser-image-compression";
+import { useState } from "react";
+import { Cropper } from "react-cropper";
 
 interface ImageUploadModalProps {
   open: boolean;

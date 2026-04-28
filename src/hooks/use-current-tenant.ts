@@ -8,7 +8,9 @@ interface Tenant {
   id: string;
   name: string;
   slug: string;
+  description: string | null;
   image: string | null;
+  whatsappPhone: string | null;
 }
 
 interface TenantStore {
@@ -46,7 +48,7 @@ export function useCurrentTenant(): {
   return {
     currentTenant,
     setCurrentTenant,
-    tenants,
+    tenants: tenants as Tenant[] | undefined,
     isLoading,
   };
 }

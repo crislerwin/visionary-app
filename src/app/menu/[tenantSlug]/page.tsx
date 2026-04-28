@@ -1,4 +1,4 @@
-import { api } from "@/lib/trpc/server";
+import { prisma } from "@/lib/db";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MenuClient } from "./menu-client";
@@ -10,10 +10,13 @@ interface MenuPageProps {
 export async function generateMetadata({ params }: MenuPageProps): Promise<Metadata> {
   const { tenantSlug } = await params;
   try {
-    const tenant = await api.menu.getTenantBySlug({ slug: tenantSlug });
+    const tenant = await prisma.tenant.findUnique({
+      where: { slug: tenantSlug, isActive: true },
+      select: { name: true, description: true },
+    });
     return {
-      title: `${tenant.name} - Cardápio`,
-      description: tenant.description || `Cardápio de ${tenant.name}`,
+      title: `${tenant?.name ?? "Cardápio"} - Cardápio`,
+      description: tenant?.description || `Cardápio de ${tenant?.name ?? ""}`,
     };
   } catch {
     return {
@@ -26,19 +29,66 @@ export async function generateMetadata({ params }: MenuPageProps): Promise<Metad
 export default async function MenuPage({ params }: MenuPageProps) {
   const { tenantSlug } = await params;
 
-  let tenant: Awaited<ReturnType<typeof api.menu.getTenantBySlug>> | undefined;
-  let categories: Awaited<ReturnType<typeof api.menu.getCategoriesWithProducts>> | undefined;
-
-  try {
-    tenant = await api.menu.getTenantBySlug({ slug: tenantSlug });
-    categories = await api.menu.getCategoriesWithProducts({ tenantSlug });
-  } catch (_error) {
-    return notFound();
-  }
+  const tenant = await prisma.tenant.findUnique({
+    where: { slug: tenantSlug, isActive: true },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
+      image: true,
+      config: true,
+    },
+  });
 
   if (!tenant) {
     return notFound();
   }
 
-  return <MenuClient tenant={tenant} categories={categories || []} />;
+  const categories = await prisma.category.findMany({
+    where: {
+      tenantId: tenant.id,
+      isActive: true,
+      isDeleted: false,
+    },
+    orderBy: { sortOrder: "asc" },
+    include: {
+      products: {
+        where: {
+          isActive: true,
+          isDeleted: false,
+        },
+        orderBy: { name: "asc" },
+        include: {
+          variants: {
+            where: { isActive: true },
+            orderBy: { price: "asc" },
+          },
+        },
+      },
+    },
+  });
+
+  // Filter out categories with no products
+  const categoriesWithProducts = categories.filter((cat) => cat.products.length > 0);
+
+  // Convert Decimal prices to numbers and serialize config safely
+  const serializedCategories = categoriesWithProducts.map((category) => ({
+    ...category,
+    products: category.products.map((product) => ({
+      ...product,
+      price: Number(product.price),
+      variants: product.variants.map((variant) => ({
+        ...variant,
+        price: Number(variant.price),
+      })),
+    })),
+  }));
+
+  const serializedTenant = {
+    ...tenant,
+    config: tenant.config as Record<string, unknown> | null,
+  };
+
+  return <MenuClient tenant={serializedTenant} categories={serializedCategories} />;
 }

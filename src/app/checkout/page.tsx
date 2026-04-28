@@ -1,5 +1,6 @@
 "use client";
 
+import { useTenantBranding } from "@/hooks/use-tenant-branding";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { OrderType, PaymentMethod } from "@prisma/client";
 import {
@@ -112,6 +113,15 @@ export default function CheckoutPage() {
 
   const tenantId = urlTenantId ?? cartTenantId;
   const queryTenantSlug = urlTenantSlug ?? tenantSlug;
+
+  const { data: tenant } = api.tenant.bySlug.useQuery(
+    { slug: queryTenantSlug || "" },
+    { enabled: !!queryTenantSlug },
+  );
+
+  const tenantConfig =
+    tenant != null ? ((tenant as unknown as Record<string, unknown>).config ?? null) : null;
+  useTenantBranding(tenantConfig, queryTenantSlug || undefined);
 
   const createOrderMutation = api.order.createOrder.useMutation({
     onSuccess: (data: { id: string }) => {

@@ -14,12 +14,22 @@ import { useCartStore } from "@/stores/cart-store";
 import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+interface BrandingColors {
+  primary?: string;
+  secondary?: string;
+  background?: string;
+  text?: string;
+  primaryText?: string;
+  secondaryText?: string;
+}
+
 interface CartSheetProps {
   tenantId: string;
   tenantSlug: string;
+  colors?: BrandingColors;
 }
 
-export function CartSheet({ tenantId, tenantSlug }: CartSheetProps) {
+export function CartSheet({ tenantId, tenantSlug, colors }: CartSheetProps) {
   const {
     items,
     isOpen,
@@ -46,14 +56,22 @@ export function CartSheet({ tenantId, tenantSlug }: CartSheetProps) {
         variant="outline"
         size="icon"
         className="relative"
+        style={{
+          backgroundColor: colors?.secondary ?? undefined,
+          borderColor: colors?.secondary ?? undefined,
+          color: colors?.secondaryText ?? undefined,
+        }}
         onClick={() => useCartStore.getState().openCart()}
       >
         <ShoppingCart className="size-5" />
         {mounted && totalItems > 0 && (
           <Badge
             data-testid="cart-badge"
-            variant="destructive"
             className="absolute -top-2 -right-2 size-5 flex items-center justify-center p-0 text-xs"
+            style={{
+              backgroundColor: "#fff",
+              color: "#000",
+            }}
           >
             {totalItems}
           </Badge>
@@ -110,7 +128,7 @@ export function CartSheet({ tenantId, tenantSlug }: CartSheetProps) {
                       {item.variantName && (
                         <p className="text-xs text-muted-foreground">{item.variantName}</p>
                       )}
-                      <p className="text-sm font-medium text-primary">
+                      <p className="text-sm font-medium text-foreground">
                         R${" "}
                         {item.price.toLocaleString("pt-BR", {
                           minimumFractionDigits: 2,
@@ -187,6 +205,10 @@ export function CartSheet({ tenantId, tenantSlug }: CartSheetProps) {
               <Button
                 className="w-full"
                 size="lg"
+                style={{
+                  backgroundColor: colors?.primary ?? undefined,
+                  color: colors?.primaryText ?? undefined,
+                }}
                 onClick={() => {
                   window.location.href = `/checkout?tenantId=${encodeURIComponent(tenantId)}&tenantSlug=${encodeURIComponent(tenantSlug)}`;
                 }}

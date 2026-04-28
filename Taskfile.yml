@@ -100,6 +100,11 @@ tasks:
     cmds:
       - docker compose -f docker-compose.dev.yml exec app sh
 
+  app:
+    desc: Entra no shell do container app (dev)
+    cmds:
+      - docker compose -f docker-compose.dev.yml exec app bash
+
   down:volumes:
     desc: Derruba a stack e REMOVE todos os volumes (⚠️ apaga dados!)
     cmds:
@@ -204,13 +209,22 @@ tasks:
   # ============================================================
 
   dev:
-    desc: Modo desenvolvimento — sobe app + db com hot-reload dentro do container
+    desc: Sobe as dependencias (db, observability) - app roda local com bun run dev
     cmds:
-      - task dev:up
-      - echo "✅ Dev server no ar com hot-reload! Acesse http://localhost:3000"
+      - task up:deps
+      - |
+        echo ""
+        echo "Dependencias no ar!"
+        echo ""
+        echo "Agora rode o app localmente:"
+        echo "   bun install --frozen-lockfile"
+        echo "   bunx prisma generate"
+        echo "   bun run dev"
+        echo ""
+        echo "Acesse http://localhost:3000"
 
   dev:setup:
-    desc: Setup completo de dev — sobe app + db, push schema e seed
+    desc: Setup completo de dev - sobe deps, push schema e seed (app roda local)
     cmds:
       - task dev:up
       - |

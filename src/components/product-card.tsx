@@ -144,7 +144,7 @@ export function ProductCard({
 
         {/* Price */}
         <div className="flex items-baseline gap-1">
-          <span className="text-base font-bold text-primary">R$ {formatBRL(displayPrice)}</span>
+          <span className="text-base font-bold text-foreground">R$ {formatBRL(displayPrice)}</span>
         </div>
 
         {/* Stock info */}

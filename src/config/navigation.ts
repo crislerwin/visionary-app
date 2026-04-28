@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   type LucideIcon,
   Package,
+  Settings,
   ShoppingBag,
 } from "lucide-react";
 
@@ -56,6 +57,16 @@ export const sidebarNavigation: NavSection[] = [
         title: "Caixa",
         href: "/dashboard/cash-register",
         icon: DollarSign,
+      },
+    ],
+  },
+  {
+    title: "Configurações",
+    items: [
+      {
+        title: "Marca",
+        href: "/dashboard/settings/branding",
+        icon: Settings,
       },
     ],
   },

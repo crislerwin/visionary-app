@@ -124,7 +124,7 @@ export default function CashRegisterPage() {
           description="Entradas, saídas e fechamento"
           action={
             isOpen ? (
-              <Button variant="destructive" size="sm" onClick={() => setOpenCloseDialog(true)}>
+              <Button size="sm" onClick={() => setOpenCloseDialog(true)}>
                 <Lock className="mr-1.5 h-4 w-4" />
                 Fechar Caixa
               </Button>

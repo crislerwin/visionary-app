@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { chmod, mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { StorageConfig, StorageProvider } from "./types";
 
@@ -17,7 +17,14 @@ export class LocalStorage implements StorageProvider {
     const dir = path.dirname(fullPath);
 
     if (!existsSync(dir)) {
-      await mkdir(dir, { recursive: true });
+      await mkdir(dir, { recursive: true, mode: 0o755 });
+    }
+
+    // Ensure the base upload directory is writable by all (fixes Docker vs local dev ownership issues)
+    try {
+      await chmod(this.basePath, 0o777);
+    } catch {
+      // Ignore if we don't have permission to chmod the base path
     }
 
     await writeFile(fullPath, file);

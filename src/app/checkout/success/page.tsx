@@ -1,5 +1,6 @@
 "use client";
 
+import { useTenantBranding } from "@/hooks/use-tenant-branding";
 import {
   ArrowLeft,
   CheckCircle,
@@ -296,6 +297,24 @@ function SuccessContent() {
   );
 }
 
+function SuccessWithTheme() {
+  const searchParams = useSearchParams();
+  const tenantId = searchParams.get("tenantId");
+
+  const { data: order } = api.order.getOrderById.useQuery(
+    { id: searchParams.get("orderId") || "", tenantId: tenantId || "" },
+    { enabled: !!searchParams.get("orderId") && !!tenantId },
+  );
+
+  const tenantConfig =
+    order?.tenant != null
+      ? ((order.tenant as unknown as Record<string, unknown>).config ?? null)
+      : null;
+  useTenantBranding(tenantConfig, order?.tenant?.slug || undefined);
+
+  return <SuccessContent />;
+}
+
 export default function CheckoutSuccessPage() {
   return (
     <Suspense
@@ -310,7 +329,7 @@ export default function CheckoutSuccessPage() {
         </div>
       }
     >
-      <SuccessContent />
+      <SuccessWithTheme />
     </Suspense>
   );
 }

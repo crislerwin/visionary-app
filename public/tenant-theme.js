@@ -1,23 +1,20 @@
-import type { Metadata } from "next";
+// This script runs immediately in the browser, before React hydration
+// It reads cached tenant colors from localStorage and applies them
+// to prevent the white/default flash (flicker) on page load.
 
-import { Providers } from "./providers";
-import "@/app/globals.css";
-
-export const metadata: Metadata = {
-  title: "Food Service - Digital Menu & POS",
-  description: "A digital menu and point-of-sale platform for restaurants and food services.",
-};
-
-const ANTI_FLICKER_SCRIPT = `
-(function() {
+(function () {
   try {
     var PREFIX = "tenant-branding";
-    var keys = Object.keys(localStorage).filter(function(k) {
+    var keys = Object.keys(localStorage).filter(function (k) {
       return k.startsWith(PREFIX);
     });
+
     if (keys.length === 0) return;
+
+    // Use the most recently cached tenant colors
     var mostRecent = null;
     var mostRecentTime = 0;
+
     for (var i = 0; i < keys.length; i++) {
       var raw = localStorage.getItem(keys[i]);
       if (!raw) continue;
@@ -29,9 +26,12 @@ const ANTI_FLICKER_SCRIPT = `
         }
       } catch (_e) {}
     }
+
     if (!mostRecent) return;
+
     var root = document.documentElement;
     var c = mostRecent;
+
     if (c.primary) {
       root.style.setProperty("--primary", c.primary);
       root.style.setProperty("--ring", c.primary);
@@ -77,21 +77,3 @@ const ANTI_FLICKER_SCRIPT = `
     }
   } catch (_e) {}
 })();
-`;
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: ANTI_FLICKER_SCRIPT }} />
-      </head>
-      <body className="min-h-screen bg-background font-sans antialiased">
-        <Providers>{children}</Providers>
-      </body>
-    </html>
-  );
-}

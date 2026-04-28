@@ -43,6 +43,7 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-lgtm:4318/v1/traces}
       OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-food-service}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       STORAGE_PROVIDER: local
       LOCAL_UPLOAD_PATH: /app/public/uploads

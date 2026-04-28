@@ -1,5 +1,7 @@
 "use client";
 
+import { useTenantBranding } from "@/hooks/use-tenant-branding";
+import { api } from "@/lib/trpc/react";
 import { cn } from "@/lib/utils";
 import type * as React from "react";
 import { useState } from "react";
@@ -13,6 +15,14 @@ interface DashboardShellProps {
 
 export function DashboardShell({ children, className }: DashboardShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { data: tenants } = api.tenant.list.useQuery();
+  const currentTenant = tenants?.[0];
+
+  const tenantConfig =
+    currentTenant != null
+      ? ((currentTenant as unknown as Record<string, unknown>).config ?? null)
+      : null;
+  useTenantBranding(tenantConfig, currentTenant?.slug);
 
   return (
     <div className="flex min-h-screen">
