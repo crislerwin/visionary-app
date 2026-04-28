@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { createStorageProvider, getStorageConfig } from "@/lib/storage";
-import { router, tenantProcedure } from "@/lib/trpc/trpc";
+import { adminProcedure, router, tenantProcedure } from "@/lib/trpc/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -30,7 +30,7 @@ export const productImageRouter = router({
       return { presignedUrl, publicUrl, key };
     }),
 
-  create: tenantProcedure
+  create: adminProcedure
     .input(
       z.object({
         productId: z.string(),
@@ -80,7 +80,7 @@ export const productImageRouter = router({
       return image;
     }),
 
-  delete: tenantProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+  delete: adminProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
     const image = await prisma.productImage.findFirst({
       where: {
         id: input.id,
@@ -130,7 +130,7 @@ export const productImageRouter = router({
       return images;
     }),
 
-  updateOrder: tenantProcedure
+  updateOrder: adminProcedure
     .input(
       z.object({
         images: z.array(

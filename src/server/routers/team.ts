@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { router, tenantProcedure } from "@/lib/trpc/trpc";
+import { adminProcedure, router, tenantProcedure } from "@/lib/trpc/trpc";
 import { MemberRole } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -55,7 +55,7 @@ export const teamRouter = router({
     };
   }),
 
-  invite: tenantProcedure.input(inviteMemberSchema).mutation(async ({ ctx, input }) => {
+  invite: adminProcedure.input(inviteMemberSchema).mutation(async ({ ctx, input }) => {
     const currentUserMembership = await prisma.membership.findUnique({
       where: {
         userId_tenantId: {
@@ -128,7 +128,7 @@ export const teamRouter = router({
     return membership;
   }),
 
-  updateRole: tenantProcedure.input(updateMemberSchema).mutation(async ({ ctx, input }) => {
+  updateRole: adminProcedure.input(updateMemberSchema).mutation(async ({ ctx, input }) => {
     const currentUserMembership = await prisma.membership.findUnique({
       where: {
         userId_tenantId: {
@@ -213,7 +213,7 @@ export const teamRouter = router({
     return updated;
   }),
 
-  remove: tenantProcedure.input(removeMemberSchema).mutation(async ({ ctx, input }) => {
+  remove: adminProcedure.input(removeMemberSchema).mutation(async ({ ctx, input }) => {
     const currentUserMembership = await prisma.membership.findUnique({
       where: {
         userId_tenantId: {

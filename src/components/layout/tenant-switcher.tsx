@@ -1,6 +1,7 @@
 "use client";
 
 import { Building2, Check, ChevronsUpDown, Plus } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
@@ -29,12 +30,15 @@ import { cn } from "@/lib/utils";
 
 export function TenantSwitcher() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { currentTenant, setCurrentTenant, tenants } = useCurrentTenant();
   const [open, setOpen] = React.useState(false);
   const [showNewTenantDialog, setShowNewTenantDialog] = React.useState(false);
   const [newTenantName, setNewTenantName] = React.useState("");
   const [newTenantSlug, setNewTenantSlug] = React.useState("");
   const utils = trpc.useUtils();
+
+  const isBackoffice = session?.user?.isBackoffice ?? false;
 
   // biome-ignore lint/suspicious/noExplicitAny: tRPC RC type workaround
   const createTenant = (trpc.tenant.create.useMutation as any)({
@@ -60,6 +64,15 @@ export function TenantSwitcher() {
       slug: newTenantSlug,
     });
   };
+
+  if (!isBackoffice) {
+    return (
+      <div className="flex items-center gap-2 h-8 px-2 text-xs w-full">
+        <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <span className="truncate font-medium">{currentTenant?.name || "—"}</span>
+      </div>
+    );
+  }
 
   return (
     <Dialog open={showNewTenantDialog} onOpenChange={setShowNewTenantDialog}>

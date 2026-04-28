@@ -1,3 +1,4 @@
+import { isBackofficeUser } from "@/lib/backoffice";
 import bcrypt from "bcryptjs";
 import type { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
@@ -62,12 +63,14 @@ export const authConfig: NextAuthConfig = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.isBackoffice = isBackofficeUser(user.email);
       }
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
+        session.user.isBackoffice = isBackofficeUser(session.user.email);
       }
       return session;
     },

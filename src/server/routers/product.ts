@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { router, tenantProcedure } from "@/lib/trpc/trpc";
+import { adminProcedure, router, tenantProcedure } from "@/lib/trpc/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -155,7 +155,7 @@ export const productRouter = router({
     }),
 
   // Criar produto
-  create: tenantProcedure.input(createProductSchema).mutation(async ({ input }) => {
+  create: adminProcedure.input(createProductSchema).mutation(async ({ input }) => {
     // Verificar se categoria existe
     const category = await prisma.category.findFirst({
       where: {
@@ -202,7 +202,7 @@ export const productRouter = router({
   }),
 
   // Atualizar produto
-  update: tenantProcedure.input(updateProductSchema).mutation(async ({ input }) => {
+  update: adminProcedure.input(updateProductSchema).mutation(async ({ input }) => {
     const existing = await prisma.product.findFirst({
       where: {
         id: input.id,
@@ -258,7 +258,7 @@ export const productRouter = router({
   }),
 
   // Deletar produto (soft delete)
-  delete: tenantProcedure.input(deleteProductSchema).mutation(async ({ input }) => {
+  delete: adminProcedure.input(deleteProductSchema).mutation(async ({ input }) => {
     const product = await prisma.product.findFirst({
       where: {
         id: input.id,
@@ -285,7 +285,7 @@ export const productRouter = router({
   }),
 
   // Add variant to product
-  addVariant: tenantProcedure
+  addVariant: adminProcedure
     .input(
       z.object({
         tenantId: z.string(),
@@ -321,7 +321,7 @@ export const productRouter = router({
     }),
 
   // Update variant
-  updateVariant: tenantProcedure
+  updateVariant: adminProcedure
     .input(
       z.object({
         tenantId: z.string(),
@@ -359,7 +359,7 @@ export const productRouter = router({
     }),
 
   // Delete variant
-  deleteVariant: tenantProcedure
+  deleteVariant: adminProcedure
     .input(
       z.object({
         tenantId: z.string(),

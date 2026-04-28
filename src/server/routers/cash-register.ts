@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { router, tenantProcedure } from "@/lib/trpc/trpc";
+import { adminProcedure, router, tenantProcedure } from "@/lib/trpc/trpc";
 import type { Prisma } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -170,7 +170,7 @@ export const cashRegisterRouter = router({
   }),
 
   // Mutations
-  open: tenantProcedure.input(openCashRegisterSchema).mutation(async ({ ctx, input }) => {
+  open: adminProcedure.input(openCashRegisterSchema).mutation(async ({ ctx, input }) => {
     const userId = ctx.session?.user?.id;
     if (!userId) {
       throw new TRPCError({
@@ -217,7 +217,7 @@ export const cashRegisterRouter = router({
     return cashRegister;
   }),
 
-  close: tenantProcedure.input(closeCashRegisterSchema).mutation(async ({ ctx, input }) => {
+  close: adminProcedure.input(closeCashRegisterSchema).mutation(async ({ ctx, input }) => {
     const userId = ctx.session?.user?.id;
     if (!userId) {
       throw new TRPCError({
@@ -275,7 +275,7 @@ export const cashRegisterRouter = router({
     };
   }),
 
-  addTransaction: tenantProcedure.input(addTransactionSchema).mutation(async ({ ctx, input }) => {
+  addTransaction: adminProcedure.input(addTransactionSchema).mutation(async ({ ctx, input }) => {
     const userId = ctx.session?.user?.id;
     if (!userId) {
       throw new TRPCError({

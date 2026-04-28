@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { router, tenantProcedure } from "@/lib/trpc/trpc";
+import { adminProcedure, router, tenantProcedure } from "@/lib/trpc/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -129,7 +129,7 @@ export const categoryRouter = router({
     }),
 
   // Criar categoria
-  create: tenantProcedure.input(createCategorySchema).mutation(async ({ input }) => {
+  create: adminProcedure.input(createCategorySchema).mutation(async ({ input }) => {
     const slug = generateSlug(input.name);
 
     // Verificar se slug já existe para este tenant
@@ -161,7 +161,7 @@ export const categoryRouter = router({
   }),
 
   // Atualizar categoria
-  update: tenantProcedure.input(updateCategorySchema).mutation(async ({ input }) => {
+  update: adminProcedure.input(updateCategorySchema).mutation(async ({ input }) => {
     const existing = await prisma.category.findFirst({
       where: {
         id: input.id,
@@ -212,7 +212,7 @@ export const categoryRouter = router({
   }),
 
   // Deletar categoria (soft delete)
-  delete: tenantProcedure.input(deleteCategorySchema).mutation(async ({ input }) => {
+  delete: adminProcedure.input(deleteCategorySchema).mutation(async ({ input }) => {
     const category = await prisma.category.findFirst({
       where: {
         id: input.id,
@@ -252,7 +252,7 @@ export const categoryRouter = router({
   }),
 
   // Reordenar categorias
-  reorder: tenantProcedure.input(reorderCategoriesSchema).mutation(async ({ input }) => {
+  reorder: adminProcedure.input(reorderCategoriesSchema).mutation(async ({ input }) => {
     // Validar que todos IDs pertencem ao tenant
     const categoryIds = input.items.map((item) => item.id);
     const categories = await prisma.category.findMany({

@@ -17,7 +17,7 @@ export default async function MenuRedirectPage() {
   });
 
   if (!membership) {
-    redirect("/dashboard");
+    redirect("/setup");
   }
 
   redirect(`/menu/${membership.tenant.slug}`);

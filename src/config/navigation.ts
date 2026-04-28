@@ -1,3 +1,4 @@
+import type { MemberRole } from "@prisma/client";
 import {
   DollarSign,
   FolderOpen,
@@ -13,6 +14,7 @@ export interface NavItem {
   href: string;
   icon: LucideIcon;
   disabled?: boolean;
+  requiredRole?: MemberRole;
 }
 
 export interface NavSection {
@@ -37,11 +39,13 @@ export const sidebarNavigation: NavSection[] = [
         title: "Produtos",
         href: "/dashboard/products",
         icon: Package,
+        requiredRole: "ADMIN",
       },
       {
         title: "Categorias",
         href: "/dashboard/categories",
         icon: FolderOpen,
+        requiredRole: "ADMIN",
       },
     ],
   },
@@ -52,11 +56,13 @@ export const sidebarNavigation: NavSection[] = [
         title: "Pedidos",
         href: "/dashboard/orders",
         icon: ShoppingBag,
+        requiredRole: "MEMBER",
       },
       {
         title: "Caixa",
         href: "/dashboard/cash-register",
         icon: DollarSign,
+        requiredRole: "ADMIN",
       },
     ],
   },
@@ -67,6 +73,7 @@ export const sidebarNavigation: NavSection[] = [
         title: "Marca",
         href: "/dashboard/settings/branding",
         icon: Settings,
+        requiredRole: "ADMIN",
       },
     ],
   },

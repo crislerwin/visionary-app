@@ -1,13 +1,22 @@
 import { auth } from "@/auth";
 import { LoginForm } from "@/components/auth/login-form";
+import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export default async function SignInPage() {
   const session = await auth();
 
-  if (session) {
-    redirect("/dashboard");
+  if (session?.user?.id) {
+    const membership = await prisma.membership.findFirst({
+      where: { userId: session.user.id },
+    });
+
+    if (membership) {
+      redirect("/dashboard");
+    }
+
+    redirect("/setup");
   }
 
   return (

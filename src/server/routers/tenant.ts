@@ -1,5 +1,12 @@
 import { prisma } from "@/lib/db";
-import { protectedProcedure, publicProcedure, router, tenantProcedure } from "@/lib/trpc/trpc";
+import {
+  adminProcedure,
+  backofficeProcedure,
+  protectedProcedure,
+  publicProcedure,
+  router,
+  tenantProcedure,
+} from "@/lib/trpc/trpc";
 import { MemberRole } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -139,7 +146,7 @@ export const tenantRouter = router({
     return tenant;
   }),
 
-  create: protectedProcedure.input(createTenantSchema).mutation(async ({ ctx, input }) => {
+  create: backofficeProcedure.input(createTenantSchema).mutation(async ({ ctx, input }) => {
     // Check if slug is already taken
     const existing = await prisma.tenant.findUnique({
       where: { slug: input.slug },
@@ -180,26 +187,7 @@ export const tenantRouter = router({
     return tenant;
   }),
 
-  update: tenantProcedure.input(updateTenantSchema).mutation(async ({ ctx, input }) => {
-    const membership = await prisma.membership.findUnique({
-      where: {
-        userId_tenantId: {
-          userId: ctx.user.id!,
-          tenantId: input.id,
-        },
-      },
-    });
-
-    if (
-      !membership ||
-      (membership.role !== MemberRole.OWNER && membership.role !== MemberRole.ADMIN)
-    ) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "You do not have permission to update this tenant",
-      });
-    }
-
+  update: adminProcedure.input(updateTenantSchema).mutation(async ({ input }) => {
     // Check if slug is being changed and if new slug is already taken
     if (input.slug) {
       const existing = await prisma.tenant.findUnique({
@@ -273,7 +261,7 @@ export const tenantRouter = router({
     };
   }),
 
-  updateConfig: tenantProcedure.input(updateConfigSchema).mutation(async ({ ctx, input }) => {
+  updateConfig: adminProcedure.input(updateConfigSchema).mutation(async ({ ctx, input }) => {
     const tenant = await prisma.tenant.findUnique({
       where: { id: ctx.tenantId },
       select: { config: true },

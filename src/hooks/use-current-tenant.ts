@@ -1,6 +1,7 @@
 "use client";
 
 import { trpc } from "@/lib/trpc/react";
+import type { MemberRole } from "@prisma/client";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -11,6 +12,7 @@ interface Tenant {
   description: string | null;
   image: string | null;
   whatsappPhone: string | null;
+  role?: MemberRole;
 }
 
 interface TenantStore {
@@ -32,6 +34,7 @@ const useTenantStore = create<TenantStore>()(
 
 export function useCurrentTenant(): {
   currentTenant: Tenant | null;
+  currentRole: MemberRole | undefined;
   setCurrentTenant: (id: string | null) => void;
   tenants: Tenant[] | undefined;
   isLoading: boolean;
@@ -47,6 +50,7 @@ export function useCurrentTenant(): {
 
   return {
     currentTenant,
+    currentRole: currentTenant?.role,
     setCurrentTenant,
     tenants: tenants as Tenant[] | undefined,
     isLoading,

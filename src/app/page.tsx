@@ -1,12 +1,21 @@
 import { auth } from "@/auth";
 import { MarketingHero } from "@/components/marketing/hero";
+import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 
 export default async function HomePage() {
   const session = await auth();
 
-  if (session) {
-    redirect("/dashboard");
+  if (session?.user?.id) {
+    const membership = await prisma.membership.findFirst({
+      where: { userId: session.user.id },
+    });
+
+    if (membership) {
+      redirect("/dashboard");
+    }
+
+    redirect("/setup");
   }
 
   return (

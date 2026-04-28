@@ -1,5 +1,8 @@
+import { isBackofficeUser } from "@/lib/backoffice";
 import { logger } from "@/lib/logger";
+import { hasRole } from "@/lib/permissions";
 import { SpanStatusCode, trace } from "@opentelemetry/api";
+import { MemberRole } from "@prisma/client";
 import { TRPCError, initTRPC } from "@trpc/server";
 import type { Session } from "next-auth";
 
@@ -115,6 +118,21 @@ export const protectedProcedure = baseProcedure.use(async ({ ctx, next }) => {
   });
 });
 
+// ─── Backoffice Procedure ───────────────────────────────────────
+// Apenas usuários com email do domínio reactivesoftware.com.br.
+// ────────────────────────────────────────────────────────────────
+
+export const backofficeProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  if (!isBackofficeUser(ctx.user.email)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Apenas usuários de backoffice podem executar esta ação",
+    });
+  }
+
+  return next({ ctx });
+});
+
 // ─── Tenant Procedure ───────────────────────────────────────────
 // Resolve o tenantId do input (se presente) ou do contexto da sessão.
 // Verifica se o usuário tem membership no tenant solicitado.
@@ -179,6 +197,36 @@ export const tenantProcedure = protectedProcedure.use(async (opts) => {
       membership,
     },
   });
+});
+
+// ─── Admin Procedure ────────────────────────────────────────────
+// Requer role ADMIN ou OWNER no tenant.
+// ────────────────────────────────────────────────────────────────
+
+export const adminProcedure = tenantProcedure.use(async ({ ctx, next }) => {
+  if (!hasRole(ctx.membership.role, MemberRole.ADMIN)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Apenas administradores podem executar esta ação",
+    });
+  }
+
+  return next({ ctx });
+});
+
+// ─── Member Procedure ───────────────────────────────────────────
+// Requer role MEMBER, ADMIN ou OWNER no tenant.
+// ────────────────────────────────────────────────────────────────
+
+export const memberProcedure = tenantProcedure.use(async ({ ctx, next }) => {
+  if (!hasRole(ctx.membership.role, MemberRole.MEMBER)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Você não tem permissão para executar esta ação",
+    });
+  }
+
+  return next({ ctx });
 });
 
 // ─── Legacy Exports (para compatibilidade) ──────────────────────

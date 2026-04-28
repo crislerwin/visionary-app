@@ -2,13 +2,15 @@
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { type NavSection, sidebarNavigation } from "@/config/navigation";
+import { type NavItem, type NavSection, sidebarNavigation } from "@/config/navigation";
 import { useCurrentTenant } from "@/hooks/use-current-tenant";
+import { hasRole } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
+import type { MemberRole } from "@prisma/client";
 import { ChevronLeft, ChevronRight, Menu, Store } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { TenantSwitcher } from "./tenant-switcher";
 
 interface SidebarProps {
@@ -43,11 +45,22 @@ function MenuLink({ collapsed }: { collapsed: boolean }) {
 function SidebarNavSection({
   section,
   collapsed,
+  role,
 }: {
   section: NavSection;
   collapsed: boolean;
+  role?: MemberRole;
 }) {
   const pathname = usePathname();
+
+  const visibleItems = useMemo(() => {
+    return section.items.filter((item: NavItem) => {
+      if (!item.requiredRole) return true;
+      return hasRole(role, item.requiredRole);
+    });
+  }, [section.items, role]);
+
+  if (visibleItems.length === 0) return null;
 
   return (
     <div className="px-3 py-2">
@@ -57,7 +70,7 @@ function SidebarNavSection({
         </h3>
       )}
       <div className="space-y-1">
-        {section.items.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
 
@@ -87,9 +100,11 @@ function SidebarNavSection({
 function MobileMenu({
   open,
   setOpen,
+  role,
 }: {
   open: boolean;
   setOpen: (value: boolean) => void;
+  role?: MemberRole;
 }) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -115,6 +130,7 @@ function MobileMenu({
                 key={section.title || section.items[0]?.href}
                 section={section}
                 collapsed={false}
+                role={role}
               />
             ))}
             <div className="px-3 py-2">
@@ -134,11 +150,12 @@ function MobileMenu({
 
 export function Sidebar({ collapsed, setCollapsed, className }: SidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { currentRole } = useCurrentTenant();
 
   return (
     <>
       {/* Mobile Menu */}
-      <MobileMenu open={mobileOpen} setOpen={setMobileOpen} />
+      <MobileMenu open={mobileOpen} setOpen={setMobileOpen} role={currentRole} />
 
       {/* Desktop Sidebar */}
       <aside
@@ -186,6 +203,7 @@ export function Sidebar({ collapsed, setCollapsed, className }: SidebarProps) {
               key={section.title || section.items[0]?.href}
               section={section}
               collapsed={collapsed}
+              role={currentRole}
             />
           ))}
           <div className="px-3 py-2">
@@ -205,6 +223,8 @@ export function Sidebar({ collapsed, setCollapsed, className }: SidebarProps) {
 }
 
 export function MobileSidebarTrigger() {
+  const { currentRole } = useCurrentTenant();
+
   return (
     <Sheet>
       <SheetTrigger asChild className="lg:hidden">
@@ -225,6 +245,7 @@ export function MobileSidebarTrigger() {
                 key={section.title || section.items[0]?.href}
                 section={section}
                 collapsed={false}
+                role={currentRole}
               />
             ))}
             <div className="px-3 py-2">
