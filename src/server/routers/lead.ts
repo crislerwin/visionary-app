@@ -192,6 +192,7 @@ export const leadRouter = router({
 
       // Create user if doesn't exist
       let user = await tx.user.findUnique({ where: { email: lead.email } });
+      let inviteUrl: string | null = null;
       if (!user) {
         const token = crypto.randomBytes(32).toString("hex");
         user = await tx.user.create({
@@ -214,7 +215,7 @@ export const leadRouter = router({
           },
         });
 
-        console.log(`Lead approved - invite link: ${process.env.NEXTAUTH_URL}/invite/${token}`);
+        inviteUrl = `${process.env.NEXTAUTH_URL}/invite/${token}`;
       }
 
       // Create membership if doesn't exist
@@ -249,7 +250,7 @@ export const leadRouter = router({
         },
       });
 
-      return updated;
+      return { lead: updated, inviteUrl };
     });
 
     return result;

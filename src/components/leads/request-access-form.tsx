@@ -80,13 +80,7 @@ export function RequestAccessForm() {
       <div className="grid gap-4">
         <div className="grid gap-2">
           <Label htmlFor="name">Nome completo *</Label>
-          <Input
-            id="name"
-            name="name"
-            placeholder="Seu nome"
-            required
-            disabled={isLoading}
-          />
+          <Input id="name" name="name" placeholder="Seu nome" required disabled={isLoading} />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="businessName">Nome do negócio</Label>

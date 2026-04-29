@@ -303,10 +303,24 @@ export const authRouter = router({
       });
 
       if (existingUser) {
-        // Se usuário existe, apenas associa ao tenant
+        // Se usuário existe (ex: aprovado via lead), atualiza senha e associa ao tenant
+        const hashedPassword = await bcrypt.hash(input.password, 10);
+
         await prisma.$transaction(async (tx) => {
-          await tx.membership.create({
-            data: {
+          await tx.user.update({
+            where: { id: existingUser.id },
+            data: { name: input.name, password: hashedPassword },
+          });
+
+          await tx.membership.upsert({
+            where: {
+              userId_tenantId: {
+                userId: existingUser.id,
+                tenantId: invite.tenantId,
+              },
+            },
+            update: { role: invite.role },
+            create: {
               userId: existingUser.id,
               tenantId: invite.tenantId,
               role: invite.role,

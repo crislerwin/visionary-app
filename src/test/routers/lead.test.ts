@@ -138,9 +138,10 @@ describe("Lead Router", () => {
         role: "MEMBER",
       });
 
-      expect(result.status).toBe(LeadStatus.APPROVED);
-      expect(result.approvedAt).toBeTruthy();
-      expect(result.tenantId).toBeTruthy();
+      expect(result.lead.status).toBe(LeadStatus.APPROVED);
+      expect(result.lead.approvedAt).toBeTruthy();
+      expect(result.lead.tenantId).toBeTruthy();
+      expect(result.inviteUrl).toBeTruthy();
 
       const invite = await prisma.invite.findFirst({
         where: { email: lead.email },
