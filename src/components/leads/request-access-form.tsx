@@ -40,13 +40,14 @@ export function RequestAccessForm() {
 
     const formData = new FormData(event.currentTarget as HTMLFormElement);
     const name = formData.get("name") as string;
+    const businessName = (formData.get("businessName") as string) || undefined;
     const email = formData.get("email") as string;
     const phone = (formData.get("phone") as string) || undefined;
-    const employeeCount = formData.get("employeeCount") as string;
     const currentTool = (formData.get("currentTool") as string) || undefined;
 
     createLead.mutate({
       name,
+      businessName,
       email,
       phone,
       businessSize: (businessSize || undefined) as
@@ -55,7 +56,6 @@ export function RequestAccessForm() {
         | "MEDIUM"
         | "LARGE"
         | undefined,
-      employeeCount: employeeCount ? Number.parseInt(employeeCount, 10) : undefined,
       currentTool,
     });
   }
@@ -94,12 +94,65 @@ export function RequestAccessForm() {
           />
         </div>
         <div className="grid gap-2">
+          <Label htmlFor="name">Seu nome *</Label>
+          <Input
+            id="name"
+            name="name"
+            placeholder="Seu nome completo"
+            required
+            disabled={isLoading}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="businessName">Nome do negócio</Label>
+          <Input
+            id="businessName"
+            name="businessName"
+            placeholder="Ex: Restaurante Sabor & Arte"
+            disabled={isLoading}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="email">E-mail *</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="nome@exemplo.com"
+            required
+            disabled={isLoading}
+          />
+        </div>
+        <div className="grid gap-2">
           <Label htmlFor="phone">Telefone / WhatsApp</Label>
           <Input
             id="phone"
             name="phone"
             type="tel"
             placeholder="(11) 99999-9999"
+            disabled={isLoading}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="businessSize">Tamanho do negócio</Label>
+          <Select value={businessSize} onValueChange={setBusinessSize} disabled={isLoading}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="SOLO">Solo (apenas eu)</SelectItem>
+              <SelectItem value="SMALL">Pequeno (2-10 pessoas)</SelectItem>
+              <SelectItem value="MEDIUM">Médio (11-50 pessoas)</SelectItem>
+              <SelectItem value="LARGE">Grande (50+ pessoas)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="currentTool">Qual ferramenta usa hoje?</Label>
+          <Input
+            id="currentTool"
+            name="currentTool"
+            placeholder="Ex: Planilha, WhatsApp, outro sistema..."
             disabled={isLoading}
           />
         </div>

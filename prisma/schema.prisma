@@ -428,6 +428,7 @@ enum BusinessSize {
 model Lead {
   id              String        @id @default(cuid())
   name            String
+  businessName    String?       @map("business_name")
   email           String        @unique
   phone           String?
   status          LeadStatus    @default(PENDING)

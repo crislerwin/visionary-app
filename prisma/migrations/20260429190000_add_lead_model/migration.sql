@@ -6,6 +6,7 @@ CREATE TYPE "BusinessSize" AS ENUM ('SOLO', 'SMALL', 'MEDIUM', 'LARGE');
 CREATE TABLE "leads" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "business_name" TEXT,
     "email" TEXT NOT NULL,
     "phone" TEXT,
     "status" "LeadStatus" NOT NULL DEFAULT 'PENDING',

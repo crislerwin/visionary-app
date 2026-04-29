@@ -7,10 +7,10 @@ import { z } from "zod";
 
 const createLeadSchema = z.object({
   name: z.string().min(2).max(50),
+  businessName: z.string().min(2).max(100).optional(),
   email: z.string().email(),
   phone: z.string().optional(),
   businessSize: z.enum(["SOLO", "SMALL", "MEDIUM", "LARGE"]).optional(),
-  employeeCount: z.number().int().min(0).optional(),
   currentTool: z.string().optional(),
 });
 
@@ -75,10 +75,10 @@ export const leadRouter = router({
     const lead = await prisma.lead.create({
       data: {
         name: input.name,
+        businessName: input.businessName,
         email: input.email,
         phone: input.phone,
         businessSize: input.businessSize as "SOLO" | "SMALL" | "MEDIUM" | "LARGE" | undefined,
-        employeeCount: input.employeeCount,
         currentTool: input.currentTool,
       },
     });
