@@ -65,6 +65,9 @@ export function MenuClient({ tenant, categories }: MenuClientProps) {
 
   const colors = getBrandingColors(tenant.config);
   const social = getSocialConfig(tenant.config, tenant);
+  const cfg = tenant.config as Record<string, unknown> | null;
+  const businessHours = cfg?.businessHours;
+  const timezone = (cfg?.timezone as string) || "America/Sao_Paulo";
   useTenantBranding(tenant.config, tenant.slug);
 
   const { addItem, setTenant, getTotalItems, getTotalPrice, getProductTotalCount } = useCartStore();
@@ -165,7 +168,13 @@ export function MenuClient({ tenant, categories }: MenuClientProps) {
 
   return (
     <div className="min-h-screen bg-background pb-32">
-      <MenuHero tenant={tenant} colors={colors} social={social} />
+      <MenuHero
+        tenant={tenant}
+        colors={colors}
+        social={social}
+        businessHours={businessHours}
+        timezone={timezone}
+      />
 
       <MenuSearchBar
         categories={filteredCategories.map((c) => ({ id: c.id, name: c.name }))}

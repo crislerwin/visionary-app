@@ -2,6 +2,11 @@
 
 import { PageContainer, PageHeader } from "@/components/layout/page-layout";
 import { MenuPreview } from "@/components/menu/menu-preview";
+import {
+  type BusinessHours,
+  BusinessHoursEditor,
+  type DayKey,
+} from "@/components/settings/business-hours-editor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -134,6 +139,10 @@ export default function BrandingSettingsPage() {
     config?.branding?.colors?.secondaryText ?? "#ffffff",
   );
 
+  // Business hours
+  const [businessHours, setBusinessHours] = useState<BusinessHours>({});
+  const [timezone, setTimezone] = useState("America/Sao_Paulo");
+
   // Upload state
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -165,6 +174,8 @@ export default function BrandingSettingsPage() {
       setDeliveryTime(config.social?.deliveryTime ?? "");
       setAddress(config.social?.address ?? "");
       setExternalOrderUrl(config.social?.externalOrderUrl ?? "");
+      setBusinessHours((config.businessHours as BusinessHours) ?? {});
+      setTimezone((config.timezone as string) ?? "America/Sao_Paulo");
     }
   }, [config]);
 
@@ -205,6 +216,19 @@ export default function BrandingSettingsPage() {
         address: address || undefined,
         externalOrderUrl: externalOrderUrl || undefined,
       },
+    });
+  };
+
+  const handleSaveHours = async () => {
+    const stripped: BusinessHours = {};
+    for (const [day, shifts] of Object.entries(businessHours)) {
+      if (shifts && shifts.length > 0) {
+        stripped[day as DayKey] = shifts.map(({ open, close }) => ({ open, close }));
+      }
+    }
+    await updateConfig.mutateAsync({
+      businessHours: Object.keys(stripped).length > 0 ? stripped : undefined,
+      timezone: timezone || undefined,
     });
   };
 
@@ -296,6 +320,11 @@ export default function BrandingSettingsPage() {
               <Share2 className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Social e Contato</span>
               <span className="sm:hidden">Social</span>
+            </TabsTrigger>
+            <TabsTrigger value="hours" className="text-xs sm:text-sm">
+              <Clock className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Horários</span>
+              <span className="sm:hidden">Horas</span>
             </TabsTrigger>
             <TabsTrigger value="preview" className="text-xs sm:text-sm">
               <Eye className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -590,6 +619,48 @@ export default function BrandingSettingsPage() {
                 className="w-full sm:w-auto"
               >
                 {updateConfig.isPending ? "Salvando..." : "Salvar social e contato"}
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="hours" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Horário de Funcionamento</CardTitle>
+                <CardDescription>
+                  Configure os horários de abertura e fechamento do seu estabelecimento
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <BusinessHoursEditor value={businessHours} onChange={setBusinessHours} />
+                <div className="space-y-2">
+                  <Label htmlFor="timezone">Fuso horário</Label>
+                  <select
+                    id="timezone"
+                    value={timezone}
+                    onChange={(e) => setTimezone(e.target.value)}
+                    className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm"
+                  >
+                    <option value="America/Sao_Paulo">América/São Paulo (BRT)</option>
+                    <option value="America/Fortaleza">América/Fortaleza (BRT)</option>
+                    <option value="America/Manaus">América/Manaus (AMT)</option>
+                    <option value="America/Cuiaba">América/Cuiabá (AMT)</option>
+                    <option value="America/Belem">América/Belém (BRT)</option>
+                    <option value="America/Recife">América/Recife (BRT)</option>
+                    <option value="America/Bahia">América/Bahia (BRT)</option>
+                    <option value="America/Noronha">América/Noronha (FNT)</option>
+                  </select>
+                </div>
+              </CardContent>
+            </Card>
+            <div className="flex justify-end">
+              <Button
+                onClick={handleSaveHours}
+                disabled={updateConfig.isPending}
+                size="lg"
+                className="w-full sm:w-auto"
+              >
+                {updateConfig.isPending ? "Salvando..." : "Salvar horários"}
               </Button>
             </div>
           </TabsContent>

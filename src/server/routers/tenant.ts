@@ -71,6 +71,18 @@ const updateConfigSchema = z
       })
       .partial()
       .optional(),
+    businessHours: z
+      .object({
+        monday: z.array(z.object({ open: z.string(), close: z.string() })).optional(),
+        tuesday: z.array(z.object({ open: z.string(), close: z.string() })).optional(),
+        wednesday: z.array(z.object({ open: z.string(), close: z.string() })).optional(),
+        thursday: z.array(z.object({ open: z.string(), close: z.string() })).optional(),
+        friday: z.array(z.object({ open: z.string(), close: z.string() })).optional(),
+        saturday: z.array(z.object({ open: z.string(), close: z.string() })).optional(),
+        sunday: z.array(z.object({ open: z.string(), close: z.string() })).optional(),
+      })
+      .optional(),
+    timezone: z.string().optional(),
   })
   .partial();
 
@@ -260,6 +272,7 @@ export const tenantRouter = router({
       string
     >;
     const social = (parsedConfig?.social as Record<string, unknown>) || null;
+    const businessHours = (parsedConfig?.businessHours as Record<string, unknown>) || null;
     return {
       branding: {
         logo: (parsedConfig?.branding as Record<string, string>)?.logo || null,
@@ -281,6 +294,8 @@ export const tenantRouter = router({
         address: (social?.address as string) || "",
         externalOrderUrl: (social?.externalOrderUrl as string) || "",
       },
+      businessHours: businessHours || null,
+      timezone: (parsedConfig?.timezone as string) || "America/Sao_Paulo",
     };
   }),
 

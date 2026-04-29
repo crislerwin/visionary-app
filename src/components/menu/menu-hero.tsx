@@ -1,5 +1,6 @@
 "use client";
 
+import { isOpenNow } from "@/lib/business-hours";
 import type { TenantSocialConfig } from "@/lib/tenant-social";
 import { Clock, MapPin, Star } from "lucide-react";
 import Image from "next/image";
@@ -18,9 +19,11 @@ interface MenuHeroProps {
     primaryText?: string;
   };
   social?: TenantSocialConfig;
+  businessHours?: unknown;
+  timezone?: string;
 }
 
-export function MenuHero({ tenant, colors, social }: MenuHeroProps) {
+export function MenuHero({ tenant, colors, social, businessHours, timezone }: MenuHeroProps) {
   const [imgError, setImgError] = useState(false);
   const hasImage = tenant.image && !imgError;
 
@@ -30,6 +33,10 @@ export function MenuHero({ tenant, colors, social }: MenuHeroProps) {
   const showStars = googleStars > 0;
 
   const primaryColor = colors?.primary ?? "var(--primary)";
+
+  const open = isOpenNow(businessHours, timezone);
+  const hasHours =
+    !!businessHours && typeof businessHours === "object" && Object.keys(businessHours).length > 0;
 
   return (
     <section className="relative h-[42vh] min-h-[320px] w-full overflow-hidden">
@@ -49,8 +56,17 @@ export function MenuHero({ tenant, colors, social }: MenuHeroProps) {
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/50 to-background" />
       <div className="relative z-10 mx-auto max-w-5xl h-full px-6 flex flex-col justify-end pb-10">
         <div className="flex items-center gap-2 text-white/90 text-xs font-medium mb-3">
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/90 text-white px-3 py-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-white" /> Aberto agora
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-3 py-1 ${
+              !hasHours || open ? "bg-emerald-500/90 text-white" : "bg-red-500/90 text-white"
+            }`}
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                !hasHours || open ? "bg-white" : "bg-white/80"
+              }`}
+            />
+            {!hasHours || open ? "Aberto agora" : "Fechado"}
           </span>
           <span
             className="inline-flex items-center gap-1 rounded-full bg-white/15 backdrop-blur px-3 py-1"
