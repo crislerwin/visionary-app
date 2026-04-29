@@ -7,7 +7,7 @@ import {
   router,
   tenantProcedure,
 } from "@/lib/trpc/trpc";
-import { MemberRole } from "@prisma/client";
+import { MemberRole, type Prisma } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -83,6 +83,67 @@ const updateConfigSchema = z
       })
       .optional(),
     timezone: z.string().optional(),
+    paymentOptions: z
+      .object({
+        pix: z.object({ enabled: z.boolean(), key: z.string().optional() }).optional(),
+        creditCard: z.object({ enabled: z.boolean() }).optional(),
+        debitCard: z.object({ enabled: z.boolean() }).optional(),
+        cash: z.object({ enabled: z.boolean(), change: z.boolean().optional() }).optional(),
+        whatsappOrder: z.object({ enabled: z.boolean() }).optional(),
+      })
+      .optional(),
+    customerForm: z
+      .object({
+        name: z
+          .object({
+            enabled: z.boolean(),
+            required: z.boolean(),
+            label: z.string().optional(),
+            placeholder: z.string().optional(),
+          })
+          .optional(),
+        phone: z
+          .object({
+            enabled: z.boolean(),
+            required: z.boolean(),
+            label: z.string().optional(),
+            placeholder: z.string().optional(),
+          })
+          .optional(),
+        email: z
+          .object({
+            enabled: z.boolean(),
+            required: z.boolean(),
+            label: z.string().optional(),
+            placeholder: z.string().optional(),
+          })
+          .optional(),
+        address: z
+          .object({
+            enabled: z.boolean(),
+            required: z.boolean(),
+            label: z.string().optional(),
+            placeholder: z.string().optional(),
+          })
+          .optional(),
+        notes: z
+          .object({
+            enabled: z.boolean(),
+            required: z.boolean(),
+            label: z.string().optional(),
+            placeholder: z.string().optional(),
+          })
+          .optional(),
+        tableNumber: z
+          .object({
+            enabled: z.boolean(),
+            required: z.boolean(),
+            label: z.string().optional(),
+            placeholder: z.string().optional(),
+          })
+          .optional(),
+      })
+      .optional(),
   })
   .partial();
 
@@ -273,6 +334,8 @@ export const tenantRouter = router({
     >;
     const social = (parsedConfig?.social as Record<string, unknown>) || null;
     const businessHours = (parsedConfig?.businessHours as Record<string, unknown>) || null;
+    const paymentOptions = (parsedConfig?.paymentOptions as Record<string, unknown>) || null;
+    const customerForm = (parsedConfig?.customerForm as Record<string, unknown>) || null;
     return {
       branding: {
         logo: (parsedConfig?.branding as Record<string, string>)?.logo || null,
@@ -296,6 +359,8 @@ export const tenantRouter = router({
       },
       businessHours: businessHours || null,
       timezone: (parsedConfig?.timezone as string) || "America/Sao_Paulo",
+      paymentOptions: paymentOptions || null,
+      customerForm: customerForm || null,
     };
   }),
 
@@ -314,6 +379,36 @@ export const tenantRouter = router({
 
     // Merge existing config with new config
     const currentConfig = (tenant.config as Record<string, unknown>) || {};
+
+    const mergeDeep = (
+      target: Record<string, unknown> | undefined,
+      source: Record<string, unknown> | undefined,
+    ): Record<string, unknown> | undefined => {
+      if (!source) return target;
+      if (!target) return source;
+      const result: Record<string, unknown> = { ...target };
+      for (const key of Object.keys(source)) {
+        const srcVal = source[key];
+        const tgtVal = result[key];
+        if (
+          typeof srcVal === "object" &&
+          srcVal !== null &&
+          !Array.isArray(srcVal) &&
+          typeof tgtVal === "object" &&
+          tgtVal !== null &&
+          !Array.isArray(tgtVal)
+        ) {
+          result[key] = mergeDeep(
+            tgtVal as Record<string, unknown>,
+            srcVal as Record<string, unknown>,
+          );
+        } else {
+          result[key] = srcVal;
+        }
+      }
+      return result;
+    };
+
     const newConfig = {
       ...currentConfig,
       ...input,
@@ -332,29 +427,56 @@ export const tenantRouter = router({
         ...(currentConfig.social as Record<string, unknown>),
         ...input.social,
       },
+      paymentOptions: mergeDeep(
+        currentConfig.paymentOptions as Record<string, unknown> | undefined,
+        input.paymentOptions as Record<string, unknown> | undefined,
+      ),
+      customerForm: mergeDeep(
+        currentConfig.customerForm as Record<string, unknown> | undefined,
+        input.customerForm as Record<string, unknown> | undefined,
+      ),
     };
 
     await prisma.tenant.update({
       where: { id: ctx.tenantId },
-      data: { config: newConfig },
+      data: { config: newConfig as unknown as Prisma.InputJsonValue },
     });
+
+    const parsedConfig = newConfig as Record<string, unknown>;
+    const colors = (parsedConfig.branding as Record<string, unknown>)?.colors as Record<
+      string,
+      string
+    >;
+    const social = (parsedConfig.social as Record<string, unknown>) || null;
+    const businessHours = (parsedConfig.businessHours as Record<string, unknown>) || null;
+    const paymentOptions = (parsedConfig.paymentOptions as Record<string, unknown>) || null;
+    const customerForm = (parsedConfig.customerForm as Record<string, unknown>) || null;
 
     return {
       branding: {
-        logo: (newConfig.branding as unknown as Record<string, string>)?.logo || null,
+        logo: (parsedConfig.branding as Record<string, string>)?.logo || null,
         colors: {
-          primary:
-            (
-              (newConfig.branding as unknown as Record<string, unknown>)
-                ?.colors as unknown as Record<string, string>
-            )?.primary || "#3b82f6",
-          secondary:
-            (
-              (newConfig.branding as unknown as Record<string, unknown>)
-                ?.colors as unknown as Record<string, string>
-            )?.secondary || "#10b981",
+          primary: colors?.primary || "#3b82f6",
+          secondary: colors?.secondary || "#10b981",
+          background: colors?.background || "#ffffff",
+          text: colors?.text || "#1f2937",
+          primaryText: colors?.primaryText || "#ffffff",
+          secondaryText: colors?.secondaryText || "#ffffff",
         },
       },
+      social: {
+        instagram: (social?.instagram as string) || "",
+        googleMapsUrl: (social?.googleMapsUrl as string) || "",
+        googleStars: (social?.googleStars as number) ?? null,
+        whatsapp: (social?.whatsapp as string) || "",
+        deliveryTime: (social?.deliveryTime as string) || "",
+        address: (social?.address as string) || "",
+        externalOrderUrl: (social?.externalOrderUrl as string) || "",
+      },
+      businessHours: businessHours || null,
+      timezone: (parsedConfig.timezone as string) || "America/Sao_Paulo",
+      paymentOptions: paymentOptions || null,
+      customerForm: customerForm || null,
     };
   }),
 

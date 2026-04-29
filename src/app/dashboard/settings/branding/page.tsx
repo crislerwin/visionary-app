@@ -7,15 +7,22 @@ import {
   BusinessHoursEditor,
   type DayKey,
 } from "@/components/settings/business-hours-editor";
+import {
+  CheckoutConfigEditor,
+  type CustomerForm,
+  type PaymentOptions,
+} from "@/components/settings/checkout-config-editor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCurrentTenant } from "@/hooks/use-current-tenant";
+import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/trpc/react";
 import {
   Clock,
+  CreditCard,
   ExternalLink,
   Eye,
   Image as ImageIcon,
@@ -89,6 +96,7 @@ function ColorPickerButton({ color, onChange, label }: ColorPickerButtonProps) {
 }
 
 export default function BrandingSettingsPage() {
+  const { toast } = useToast();
   const { currentTenant, isLoading: isLoadingTenant } = useCurrentTenant();
   const utils = api.useUtils();
 
@@ -143,15 +151,21 @@ export default function BrandingSettingsPage() {
   const [businessHours, setBusinessHours] = useState<BusinessHours>({});
   const [timezone, setTimezone] = useState("America/Sao_Paulo");
 
+  // Checkout config
+  const [paymentOptions, setPaymentOptions] = useState<PaymentOptions>({});
+  const [customerForm, setCustomerForm] = useState<CustomerForm>({});
+
   // Upload state
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Only initialize from server data once on mount, don't overwrite user changes
-  const initialized = useRef(false);
+  const tenantInitialized = useRef(false);
+  const configInitialized = useRef(false);
+
   useEffect(() => {
-    if (currentTenant && !initialized.current) {
-      initialized.current = true;
+    if (currentTenant && !tenantInitialized.current) {
+      tenantInitialized.current = true;
       setName(currentTenant.name);
       setSlug(currentTenant.slug);
       setDescription(currentTenant.description ?? "");
@@ -161,7 +175,8 @@ export default function BrandingSettingsPage() {
   }, [currentTenant]);
 
   useEffect(() => {
-    if (config && !initialized.current) {
+    if (config && !configInitialized.current) {
+      configInitialized.current = true;
       setPrimaryColor(config.branding?.colors?.primary ?? "#3b82f6");
       setSecondaryColor(config.branding?.colors?.secondary ?? "#10b981");
       setBackgroundColor(config.branding?.colors?.background ?? "#ffffff");
@@ -176,6 +191,8 @@ export default function BrandingSettingsPage() {
       setExternalOrderUrl(config.social?.externalOrderUrl ?? "");
       setBusinessHours((config.businessHours as BusinessHours) ?? {});
       setTimezone((config.timezone as string) ?? "America/Sao_Paulo");
+      setPaymentOptions((config.paymentOptions as PaymentOptions) ?? {});
+      setCustomerForm((config.customerForm as CustomerForm) ?? {});
     }
   }, [config]);
 
@@ -230,6 +247,25 @@ export default function BrandingSettingsPage() {
       businessHours: Object.keys(stripped).length > 0 ? stripped : undefined,
       timezone: timezone || undefined,
     });
+  };
+
+  const handleSaveCheckout = async () => {
+    try {
+      await updateConfig.mutateAsync({
+        paymentOptions: Object.keys(paymentOptions).length > 0 ? paymentOptions : undefined,
+        customerForm: Object.keys(customerForm).length > 0 ? customerForm : undefined,
+      });
+      toast({
+        title: "Configurações salvas",
+        description: "As configurações de checkout foram atualizadas com sucesso.",
+      });
+    } catch {
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar as configurações de checkout.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -325,6 +361,11 @@ export default function BrandingSettingsPage() {
               <Clock className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Horários</span>
               <span className="sm:hidden">Horas</span>
+            </TabsTrigger>
+            <TabsTrigger value="checkout" className="text-xs sm:text-sm">
+              <CreditCard className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Checkout</span>
+              <span className="sm:hidden">Pagto</span>
             </TabsTrigger>
             <TabsTrigger value="preview" className="text-xs sm:text-sm">
               <Eye className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -661,6 +702,35 @@ export default function BrandingSettingsPage() {
                 className="w-full sm:w-auto"
               >
                 {updateConfig.isPending ? "Salvando..." : "Salvar horários"}
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="checkout" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Configuração do Checkout</CardTitle>
+                <CardDescription>
+                  Personalize os métodos de pagamento e os campos do formulário de checkout
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CheckoutConfigEditor
+                  paymentOptions={paymentOptions}
+                  onPaymentOptionsChange={setPaymentOptions}
+                  customerForm={customerForm}
+                  onCustomerFormChange={setCustomerForm}
+                />
+              </CardContent>
+            </Card>
+            <div className="flex justify-end">
+              <Button
+                onClick={handleSaveCheckout}
+                disabled={updateConfig.isPending}
+                size="lg"
+                className="w-full sm:w-auto"
+              >
+                {updateConfig.isPending ? "Salvando..." : "Salvar checkout"}
               </Button>
             </div>
           </TabsContent>

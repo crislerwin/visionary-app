@@ -29,8 +29,8 @@ const createOrderInputSchema = z.object({
   tenantId: z.string(),
   type: z.nativeEnum(OrderType),
   customer: z.object({
-    name: z.string().min(1, "Nome é obrigatório"),
-    phone: z.string().min(1, "Telefone é obrigatório"),
+    name: z.string().nullish(),
+    phone: z.string().nullish(),
     email: z.string().email().nullish(),
   }),
   address: addressInputSchema.nullish(),
@@ -39,8 +39,10 @@ const createOrderInputSchema = z.object({
   deliveryFee: z.number().min(0).nullish(),
   discount: z.number().min(0).nullish(),
   total: z.number().min(0),
-  paymentMethod: z.nativeEnum(PaymentMethod),
+  paymentMethod: z.nativeEnum(PaymentMethod).nullish(),
   customerNotes: z.string().nullish(),
+  tableNumber: z.string().nullish(),
+  source: z.string().optional(),
 });
 
 const getOrderByIdInputSchema = z.object({
@@ -119,12 +121,15 @@ export const orderRouter = router({
   createOrder: publicProcedure.input(createOrderInputSchema).mutation(async ({ input }) => {
     const { tenantId } = input;
 
+    const customerPhone = input.customer.phone || "";
+    const customerName = input.customer.name || "Cliente";
+
     // Buscar ou criar cliente
     let customer = await prisma.customer.findUnique({
       where: {
         tenantId_phone: {
           tenantId,
-          phone: input.customer.phone,
+          phone: customerPhone,
         },
       },
     });
@@ -132,8 +137,8 @@ export const orderRouter = router({
     if (!customer) {
       customer = await prisma.customer.create({
         data: {
-          name: input.customer.name,
-          phone: input.customer.phone,
+          name: customerName,
+          phone: customerPhone,
           email: input.customer.email,
           tenantId,
         },
@@ -168,10 +173,12 @@ export const orderRouter = router({
         deliveryFee: input.deliveryFee,
         discount: input.discount,
         total: input.total,
-        paymentMethod: input.paymentMethod,
+        paymentMethod: input.paymentMethod ?? undefined,
         paymentStatus: PaymentStatus.PENDING,
+        source: input.source ?? "WEB",
         address: input.address ?? undefined,
         customerNotes: input.customerNotes ?? undefined,
+        tableNumber: input.tableNumber ?? undefined,
         customerId: customer.id,
         tenantId,
         items: {

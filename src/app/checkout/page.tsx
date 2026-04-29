@@ -1,5 +1,6 @@
 "use client";
 
+import type { CustomerForm } from "@/components/settings/checkout-config-editor";
 import { useTenantBranding } from "@/hooks/use-tenant-branding";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { OrderType, PaymentMethod } from "@prisma/client";
@@ -9,13 +10,14 @@ import {
   CreditCard,
   Loader2,
   MapPin,
+  MessageCircle,
   Minus,
   Plus,
   QrCode,
   Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -43,28 +45,129 @@ import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/trpc/react";
 import { useCartStore } from "@/stores/cart-store";
 
-const checkoutFormSchema = z.object({
-  customerName: z.string().min(1, "Nome é obrigatório"),
-  customerPhone: z.string().min(1, "Telefone é obrigatório"),
-  customerEmail: z.string().email("Email inválido").optional().or(z.literal("")),
-  addressStreet: z.string().min(1, "Rua é obrigatória"),
-  addressNumber: z.string().min(1, "Número é obrigatório"),
-  addressComplement: z.string().optional(),
-  addressNeighborhood: z.string().min(1, "Bairro é obrigatório"),
-  addressCity: z.string().min(1, "Cidade é obrigatória"),
-  addressState: z.string().min(1, "Estado é obrigatório"),
-  addressZipCode: z.string().min(1, "CEP é obrigatório"),
-  addressReference: z.string().optional(),
-  paymentMethod: z.nativeEnum(PaymentMethod, {
-    errorMap: () => ({ message: "Selecione um método de pagamento" }),
-  }),
-  customerNotes: z.string().optional(),
-  orderType: z.nativeEnum(OrderType, {
-    errorMap: () => ({ message: "Selecione o tipo de pedido" }),
-  }),
-});
+type CheckoutFormValues = {
+  orderType: OrderType;
+  paymentMethod: PaymentMethod;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  addressStreet?: string;
+  addressNumber?: string;
+  addressComplement?: string;
+  addressNeighborhood?: string;
+  addressCity?: string;
+  addressState?: string;
+  addressZipCode?: string;
+  addressReference?: string;
+  customerNotes?: string;
+  tableNumber?: string;
+};
 
-type CheckoutFormValues = z.infer<typeof checkoutFormSchema>;
+function getFieldConfig(customerForm: CustomerForm | null, key: keyof CustomerForm) {
+  const defaults: Record<keyof CustomerForm, { enabled: boolean; required: boolean }> = {
+    name: { enabled: true, required: true },
+    phone: { enabled: true, required: true },
+    email: { enabled: false, required: false },
+    address: { enabled: true, required: true },
+    notes: { enabled: false, required: false },
+    tableNumber: { enabled: false, required: false },
+  };
+  const field = customerForm?.[key];
+  return {
+    enabled: field?.enabled ?? defaults[key].enabled,
+    required: field?.required ?? defaults[key].required,
+    label: field?.label,
+    placeholder: field?.placeholder,
+  };
+}
+
+function buildCheckoutSchema(customerForm: CustomerForm | null) {
+  const shape: Record<string, z.ZodTypeAny> = {
+    orderType: z.nativeEnum(OrderType, {
+      errorMap: () => ({ message: "Selecione o tipo de pedido" }),
+    }),
+    paymentMethod: z.nativeEnum(PaymentMethod, {
+      errorMap: () => ({ message: "Selecione um método de pagamento" }),
+    }),
+  };
+
+  const addField = (key: keyof CustomerForm, fieldName: string, base: z.ZodTypeAny) => {
+    if (getFieldConfig(customerForm, key).enabled) {
+      shape[fieldName] = base;
+    }
+  };
+
+  addField("name", "customerName", z.string().optional());
+  addField("phone", "customerPhone", z.string().optional());
+  addField(
+    "email",
+    "customerEmail",
+    z.string().email("Email inválido").optional().or(z.literal("")),
+  );
+  addField("address", "addressStreet", z.string().optional());
+  addField("address", "addressNumber", z.string().optional());
+  addField("address", "addressComplement", z.string().optional());
+  addField("address", "addressNeighborhood", z.string().optional());
+  addField("address", "addressCity", z.string().optional());
+  addField("address", "addressState", z.string().optional());
+  addField("address", "addressZipCode", z.string().optional());
+  addField("address", "addressReference", z.string().optional());
+  addField("notes", "customerNotes", z.string().optional());
+  addField("tableNumber", "tableNumber", z.string().optional());
+
+  return z.object(shape).superRefine((data, ctx) => {
+    const check = (key: keyof CustomerForm, value: unknown, msg: string, path: string[]) => {
+      const config = getFieldConfig(customerForm, key);
+      if (
+        config.enabled &&
+        config.required &&
+        (!value || (typeof value === "string" && value.trim() === ""))
+      ) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: msg, path });
+      }
+    };
+
+    check("name", data.customerName, "Nome é obrigatório", ["customerName"]);
+    check("phone", data.customerPhone, "Telefone é obrigatório", ["customerPhone"]);
+    check("email", data.customerEmail, "Email é obrigatório", ["customerEmail"]);
+
+    if (data.orderType === OrderType.DELIVERY && getFieldConfig(customerForm, "address").enabled) {
+      if (getFieldConfig(customerForm, "address").required) {
+        check("address", data.addressStreet, "Rua é obrigatória", ["addressStreet"]);
+        check("address", data.addressNumber, "Número é obrigatório", ["addressNumber"]);
+        check("address", data.addressNeighborhood, "Bairro é obrigatório", ["addressNeighborhood"]);
+        check("address", data.addressCity, "Cidade é obrigatória", ["addressCity"]);
+        check("address", data.addressState, "Estado é obrigatório", ["addressState"]);
+        check("address", data.addressZipCode, "CEP é obrigatório", ["addressZipCode"]);
+      }
+    }
+
+    check("tableNumber", data.tableNumber, "Número da mesa é obrigatório", ["tableNumber"]);
+  }) as unknown as z.ZodSchema<CheckoutFormValues>;
+}
+
+function getDefaultValues(customerForm: CustomerForm | null): Partial<CheckoutFormValues> {
+  const vals: Partial<CheckoutFormValues> = {
+    orderType: OrderType.DELIVERY,
+    paymentMethod: undefined,
+  };
+  if (getFieldConfig(customerForm, "name").enabled) vals.customerName = "";
+  if (getFieldConfig(customerForm, "phone").enabled) vals.customerPhone = "";
+  if (getFieldConfig(customerForm, "email").enabled) vals.customerEmail = "";
+  if (getFieldConfig(customerForm, "address").enabled) {
+    vals.addressStreet = "";
+    vals.addressNumber = "";
+    vals.addressComplement = "";
+    vals.addressNeighborhood = "";
+    vals.addressCity = "";
+    vals.addressState = "";
+    vals.addressZipCode = "";
+    vals.addressReference = "";
+  }
+  if (getFieldConfig(customerForm, "notes").enabled) vals.customerNotes = "";
+  if (getFieldConfig(customerForm, "tableNumber").enabled) vals.tableNumber = "";
+  return vals;
+}
 
 const paymentMethodLabels: Record<PaymentMethod, string> = {
   [PaymentMethod.CASH]: "Dinheiro",
@@ -87,6 +190,32 @@ const orderTypeLabels: Record<OrderType, string> = {
   [OrderType.PICKUP]: "Retirada",
   [OrderType.DINE_IN]: "Comer no Local",
 };
+
+function buildWhatsAppMessage(
+  items: Array<{
+    productName: string;
+    variantName?: string | null;
+    quantity: number;
+    price: number;
+    notes?: string;
+  }>,
+  total: number,
+): string {
+  let message = "Olá! Gostaria de fazer um pedido:\n\n";
+  for (const item of items) {
+    const line = `${item.quantity}x ${item.productName}${item.variantName ? ` (${item.variantName})` : ""}`;
+    const price = (item.price * item.quantity).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+    message += `${line} - ${price}\n`;
+    if (item.notes) {
+      message += `   Obs: ${item.notes}\n`;
+    }
+  }
+  message += `\n*Total: ${total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}*`;
+  return message;
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -123,6 +252,63 @@ export default function CheckoutPage() {
     tenant != null ? ((tenant as unknown as Record<string, unknown>).config ?? null) : null;
   useTenantBranding(tenantConfig, queryTenantSlug || undefined);
 
+  const rawConfig = (tenantConfig ?? {}) as Record<string, unknown>;
+  const paymentOptions =
+    (rawConfig.paymentOptions as Record<string, { enabled?: boolean }> | null) ?? null;
+  const customerForm = (rawConfig.customerForm as CustomerForm | null) ?? null;
+
+  const enabledPaymentMethods = Object.values(PaymentMethod).filter((method) => {
+    const map: Record<string, string> = {
+      [PaymentMethod.PIX]: "pix",
+      [PaymentMethod.CREDIT_CARD]: "creditCard",
+      [PaymentMethod.DEBIT_CARD]: "debitCard",
+      [PaymentMethod.CASH]: "cash",
+    };
+    const key = map[method];
+    if (!key) return false;
+    if (!paymentOptions) return true;
+    return paymentOptions[key]?.enabled !== false;
+  });
+
+  const schema = useMemo(() => buildCheckoutSchema(customerForm), [customerForm]);
+  const defaultValues = useMemo(() => getDefaultValues(customerForm), [customerForm]);
+
+  const form = useForm<CheckoutFormValues>({
+    resolver: zodResolver(schema),
+    defaultValues,
+  });
+
+  useEffect(() => {
+    form.reset(defaultValues);
+  }, [form, defaultValues]);
+
+  const orderType = form.watch("orderType");
+  const isDelivery = orderType === OrderType.DELIVERY;
+
+  const subtotal = getTotalPrice();
+  const deliveryFee = isDelivery ? 5.0 : 0;
+  const total = subtotal + deliveryFee;
+
+  const nameConfig = getFieldConfig(customerForm, "name");
+  const phoneConfig = getFieldConfig(customerForm, "phone");
+  const emailConfig = getFieldConfig(customerForm, "email");
+  const addressConfig = getFieldConfig(customerForm, "address");
+  const notesConfig = getFieldConfig(customerForm, "notes");
+  const tableNumberConfig = getFieldConfig(customerForm, "tableNumber");
+
+  const hasAnyCustomerField =
+    nameConfig.enabled ||
+    phoneConfig.enabled ||
+    emailConfig.enabled ||
+    addressConfig.enabled ||
+    notesConfig.enabled ||
+    tableNumberConfig.enabled;
+
+  const whatsappPhone =
+    (tenant as unknown as { whatsappPhone?: string | null } | null)?.whatsappPhone ?? null;
+  const whatsappEnabled = paymentOptions?.whatsappOrder?.enabled === true;
+  const showWhatsAppOnly = !hasAnyCustomerField && whatsappEnabled && !!whatsappPhone;
+
   const createOrderMutation = api.order.createOrder.useMutation({
     onSuccess: (data: { id: string }) => {
       clearCart();
@@ -140,32 +326,16 @@ export default function CheckoutPage() {
     },
   });
 
-  const form = useForm<CheckoutFormValues>({
-    resolver: zodResolver(checkoutFormSchema),
-    defaultValues: {
-      customerName: "",
-      customerPhone: "",
-      customerEmail: "",
-      addressStreet: "",
-      addressNumber: "",
-      addressComplement: "",
-      addressNeighborhood: "",
-      addressCity: "",
-      addressState: "",
-      addressZipCode: "",
-      addressReference: "",
-      paymentMethod: undefined,
-      customerNotes: "",
-      orderType: OrderType.DELIVERY,
-    },
-  });
-
-  const orderType = form.watch("orderType");
-  const isDelivery = orderType === OrderType.DELIVERY;
-
-  const subtotal = getTotalPrice();
-  const deliveryFee = isDelivery ? 5.0 : 0;
-  const total = subtotal + deliveryFee;
+  const handleWhatsAppOrder = () => {
+    if (!whatsappPhone) return;
+    const cleanPhone = whatsappPhone.replace(/\D/g, "");
+    if (!cleanPhone) return;
+    const message = buildWhatsAppMessage(items, total);
+    const url = `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+    clearCart();
+    router.push(queryTenantSlug ? `/menu/${queryTenantSlug}` : "/");
+  };
 
   const onSubmit = async (values: CheckoutFormValues) => {
     if (items.length === 0) {
@@ -218,28 +388,30 @@ export default function CheckoutPage() {
       tenantId,
       type: values.orderType,
       customer: {
-        name: values.customerName,
-        phone: values.customerPhone,
-        email: values.customerEmail || undefined,
+        name: nameConfig.enabled ? values.customerName : undefined,
+        phone: phoneConfig.enabled ? values.customerPhone : undefined,
+        email: emailConfig.enabled ? values.customerEmail || undefined : undefined,
       },
-      address: isDelivery
-        ? {
-            street: values.addressStreet,
-            number: values.addressNumber,
-            complement: values.addressComplement,
-            neighborhood: values.addressNeighborhood,
-            city: values.addressCity,
-            state: values.addressState,
-            zipCode: values.addressZipCode,
-            reference: values.addressReference,
-          }
-        : undefined,
+      address:
+        isDelivery && addressConfig.enabled
+          ? {
+              street: values.addressStreet ?? "",
+              number: values.addressNumber ?? "",
+              complement: values.addressComplement,
+              neighborhood: values.addressNeighborhood ?? "",
+              city: values.addressCity ?? "",
+              state: values.addressState ?? "",
+              zipCode: values.addressZipCode ?? "",
+              reference: values.addressReference,
+            }
+          : undefined,
       items: orderItems,
       subtotal,
       deliveryFee: isDelivery ? deliveryFee : undefined,
       total,
       paymentMethod: values.paymentMethod,
-      customerNotes: values.customerNotes,
+      customerNotes: notesConfig.enabled ? values.customerNotes : undefined,
+      tableNumber: tableNumberConfig.enabled ? values.tableNumber : undefined,
     });
   };
 
@@ -254,6 +426,52 @@ export default function CheckoutPage() {
             </Button>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  if (showWhatsAppOnly) {
+    return (
+      <div className="mx-auto w-full max-w-4xl px-3 py-2 sm:px-4 sm:py-8">
+        <h1 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-6">Finalizar Pedido</h1>
+
+        <div className="flex flex-col gap-3">
+          {/* Resumo do Pedido */}
+          <Card className="overflow-hidden rounded-md">
+            <CardContent className="px-3 py-3 space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Resumo do Pedido
+              </p>
+              {items.map((item) => (
+                <div key={item.id} className="flex items-center justify-between text-sm">
+                  <span>
+                    {item.quantity}x {item.productName}
+                    {item.variantName ? ` (${item.variantName})` : ""}
+                  </span>
+                  <span className="font-medium">R$ {(item.price * item.quantity).toFixed(2)}</span>
+                </div>
+              ))}
+              <Separator />
+              <div className="flex justify-between font-bold text-sm">
+                <span>Total</span>
+                <span>R$ {total.toFixed(2)}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <button
+            type="button"
+            onClick={handleWhatsAppOrder}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-full py-3.5 font-semibold transition-colors hover:opacity-90"
+            style={{
+              backgroundColor: "#25d366",
+              color: "#ffffff",
+            }}
+          >
+            <MessageCircle className="h-4 w-4" />
+            Enviar pedido pelo WhatsApp
+          </button>
+        </div>
       </div>
     );
   }
@@ -343,72 +561,94 @@ export default function CheckoutPage() {
                   />
 
                   {/* Dados do Cliente */}
-                  <div className="space-y-3">
-                    <h3 className="font-medium text-xs text-muted-foreground uppercase tracking-wide">
-                      Dados do Cliente
-                    </h3>
-                    <FormField
-                      control={form.control}
-                      name="customerName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs sm:text-sm">Nome Completo</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Seu nome"
-                              className="h-9 text-xs sm:text-sm"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage className="text-xs" />
-                        </FormItem>
+                  {(nameConfig.enabled || phoneConfig.enabled || emailConfig.enabled) && (
+                    <div className="space-y-3">
+                      <h3 className="font-medium text-xs text-muted-foreground uppercase tracking-wide">
+                        Dados do Cliente
+                      </h3>
+
+                      {nameConfig.enabled && (
+                        <FormField
+                          control={form.control}
+                          name="customerName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs sm:text-sm">
+                                {nameConfig.label || "Nome Completo"}
+                                {nameConfig.required && (
+                                  <span className="text-destructive ml-0.5">*</span>
+                                )}
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder={nameConfig.placeholder || "Seu nome"}
+                                  className="h-9 text-xs sm:text-sm"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage className="text-xs" />
+                            </FormItem>
+                          )}
+                        />
                       )}
-                    />
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <FormField
-                        control={form.control}
-                        name="customerPhone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs sm:text-sm">
-                              Telefone / WhatsApp
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="(11) 99999-9999"
-                                className="h-9 text-xs sm:text-sm"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage className="text-xs" />
-                          </FormItem>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {phoneConfig.enabled && (
+                          <FormField
+                            control={form.control}
+                            name="customerPhone"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs sm:text-sm">
+                                  {phoneConfig.label || "Telefone / WhatsApp"}
+                                  {phoneConfig.required && (
+                                    <span className="text-destructive ml-0.5">*</span>
+                                  )}
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder={phoneConfig.placeholder || "(11) 99999-9999"}
+                                    className="h-9 text-xs sm:text-sm"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage className="text-xs" />
+                              </FormItem>
+                            )}
+                          />
                         )}
-                      />
 
-                      <FormField
-                        control={form.control}
-                        name="customerEmail"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs sm:text-sm">Email (opcional)</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="email"
-                                placeholder="seu@email.com"
-                                className="h-9 text-xs sm:text-sm"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage className="text-xs" />
-                          </FormItem>
+                        {emailConfig.enabled && (
+                          <FormField
+                            control={form.control}
+                            name="customerEmail"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs sm:text-sm">
+                                  {emailConfig.label || "Email"}
+                                  {emailConfig.required && (
+                                    <span className="text-destructive ml-0.5">*</span>
+                                  )}
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="email"
+                                    placeholder={emailConfig.placeholder || "seu@email.com"}
+                                    className="h-9 text-xs sm:text-sm"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage className="text-xs" />
+                              </FormItem>
+                            )}
+                          />
                         )}
-                      />
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Endereço (apenas para Delivery) */}
-                  {isDelivery && (
+                  {isDelivery && addressConfig.enabled && (
                     <div>
                       <button
                         type="button"
@@ -418,7 +658,10 @@ export default function CheckoutPage() {
                         <div className="flex items-center gap-2">
                           <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
                           <h3 className="font-medium text-xs text-muted-foreground uppercase tracking-wide">
-                            Endereço de Entrega
+                            {addressConfig.label || "Endereço de Entrega"}
+                            {addressConfig.required && (
+                              <span className="text-destructive ml-0.5">*</span>
+                            )}
                           </h3>
                         </div>
                         <ChevronDown
@@ -583,6 +826,32 @@ export default function CheckoutPage() {
                     </div>
                   )}
 
+                  {/* Número da Mesa */}
+                  {tableNumberConfig.enabled && (
+                    <FormField
+                      control={form.control}
+                      name="tableNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs sm:text-sm">
+                            {tableNumberConfig.label || "Número da Mesa"}
+                            {tableNumberConfig.required && (
+                              <span className="text-destructive ml-0.5">*</span>
+                            )}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder={tableNumberConfig.placeholder || "Ex: 12"}
+                              className="h-9 text-xs sm:text-sm"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage className="text-xs" />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
                   {/* Método de Pagamento */}
                   <FormField
                     control={form.control}
@@ -597,7 +866,7 @@ export default function CheckoutPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {Object.values(PaymentMethod).map((method) => {
+                            {enabledPaymentMethods.map((method) => {
                               const Icon = paymentMethodIcons[method];
                               return (
                                 <SelectItem
@@ -620,23 +889,32 @@ export default function CheckoutPage() {
                   />
 
                   {/* Observações */}
-                  <FormField
-                    control={form.control}
-                    name="customerNotes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs sm:text-sm">Observações (opcional)</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Alguma observação sobre o pedido?"
-                            className="text-xs sm:text-sm min-h-[60px]"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage className="text-xs" />
-                      </FormItem>
-                    )}
-                  />
+                  {notesConfig.enabled && (
+                    <FormField
+                      control={form.control}
+                      name="customerNotes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs sm:text-sm">
+                            {notesConfig.label || "Observações"}
+                            {notesConfig.required && (
+                              <span className="text-destructive ml-0.5">*</span>
+                            )}
+                          </FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder={
+                                notesConfig.placeholder || "Alguma observação sobre o pedido?"
+                              }
+                              className="text-xs sm:text-sm min-h-[60px]"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage className="text-xs" />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   <Button type="submit" className="w-full h-11" disabled={isSubmitting}>
                     {isSubmitting ? (

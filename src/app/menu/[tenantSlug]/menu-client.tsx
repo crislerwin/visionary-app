@@ -5,6 +5,7 @@ import { MenuCartFab } from "@/components/menu/menu-cart-fab";
 import { MenuHero } from "@/components/menu/menu-hero";
 import { MenuItemCard } from "@/components/menu/menu-item-card";
 import { MenuSearchBar } from "@/components/menu/menu-search-bar";
+import type { CustomerForm, PaymentOptions } from "@/components/settings/checkout-config-editor";
 import { useTenantBranding } from "@/hooks/use-tenant-branding";
 import { getSocialConfig } from "@/lib/tenant-social";
 import { useCartStore } from "@/stores/cart-store";
@@ -68,6 +69,7 @@ export function MenuClient({ tenant, categories }: MenuClientProps) {
   const cfg = tenant.config as Record<string, unknown> | null;
   const businessHours = cfg?.businessHours;
   const timezone = (cfg?.timezone as string) || "America/Sao_Paulo";
+  const paymentOptions = cfg?.paymentOptions;
   useTenantBranding(tenant.config, tenant.slug);
 
   const { addItem, setTenant, getTotalItems, getTotalPrice, getProductTotalCount } = useCartStore();
@@ -249,6 +251,9 @@ export function MenuClient({ tenant, categories }: MenuClientProps) {
             tenantId={tenant.id}
             tenantSlug={tenant.slug}
             colors={colors}
+            paymentOptions={paymentOptions as PaymentOptions}
+            whatsappPhone={tenant.whatsappPhone}
+            customerForm={cfg?.customerForm as CustomerForm}
           />
         </>
       )}

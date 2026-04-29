@@ -261,12 +261,15 @@ model Order {
   paymentMethod PaymentMethod? @map("payment_method")
   paymentStatus PaymentStatus  @default(PENDING) @map("payment_status")
 
+  source String @default("WEB") @map("source")
+
   address Json?
 
   scheduledAt DateTime? @map("scheduled_at")
 
   customerNotes String? @db.Text @map("customer_notes")
   internalNotes String? @db.Text @map("internal_notes")
+  tableNumber   String? @map("table_number")
 
   paidAt        DateTime? @map("paid_at")
   confirmedAt   DateTime? @map("confirmed_at")
