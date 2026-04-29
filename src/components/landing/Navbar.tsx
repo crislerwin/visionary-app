@@ -36,10 +36,10 @@ export function Navbar() {
             Entrar
           </Link>
           <Link
-            href="/sign-up"
+            href="/request-access"
             className="hidden sm:inline text-sm font-medium text-foreground hover:text-primary transition-colors"
           >
-            Criar conta
+            Solicitar acesso
           </Link>
           <a
             href="https://wa.me/5562981878663"

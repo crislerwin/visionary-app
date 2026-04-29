@@ -21,12 +21,9 @@ export default async function SignInPage() {
     redirect("/setup");
   }
 
-  const showGoogle = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
-
   return (
     <div className="landing-theme min-h-screen bg-background text-foreground">
       <div className="container relative h-screen flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
-        {/* Left Panel — Brand */}
         <div
           className="relative hidden h-full flex-col p-10 text-white lg:flex"
           style={{ background: "var(--gradient-hero)" }}
@@ -68,7 +65,6 @@ export default async function SignInPage() {
           </div>
         </div>
 
-        {/* Right Panel — Form */}
         <div className="flex h-full items-center justify-center p-6 lg:p-8">
           <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[380px]">
             <div className="flex flex-col space-y-2 text-center">
@@ -82,17 +78,15 @@ export default async function SignInPage() {
                 Entre com seu e-mail para acessar sua conta
               </p>
             </div>
-            <LoginForm showGoogle={showGoogle} />
+            <LoginForm showGoogle={false} />
             <p className="px-8 text-center text-xs text-muted-foreground">
-              Ao continuar, você concorda com nossos{" "}
-              <Link href="/terms" className="underline underline-offset-4 hover:text-primary">
-                Termos de Serviço
-              </Link>{" "}
-              e{" "}
-              <Link href="/privacy" className="underline underline-offset-4 hover:text-primary">
-                Política de Privacidade
+              Não tem conta?{" "}
+              <Link
+                href="/request-access"
+                className="underline underline-offset-4 hover:text-primary"
+              >
+                Solicite acesso
               </Link>
-              .
             </p>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import type { MemberRole } from "@prisma/client";
 import {
+  ClipboardList,
   DollarSign,
   FolderOpen,
   LayoutDashboard,
@@ -70,6 +71,12 @@ export const sidebarNavigation: NavSection[] = [
   {
     title: "Configurações",
     items: [
+      {
+        title: "Leads",
+        href: "/dashboard/leads",
+        icon: ClipboardList,
+        requiredRole: "ADMIN",
+      },
       {
         title: "Marca",
         href: "/dashboard/settings/branding",
