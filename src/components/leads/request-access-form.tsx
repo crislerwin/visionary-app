@@ -80,25 +80,10 @@ export function RequestAccessForm() {
       <div className="grid gap-4">
         <div className="grid gap-2">
           <Label htmlFor="name">Nome completo *</Label>
-          <Input id="name" name="name" placeholder="Seu nome" required disabled={isLoading} />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="email">E-mail *</Label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            placeholder="nome@exemplo.com"
-            required
-            disabled={isLoading}
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="name">Seu nome *</Label>
           <Input
             id="name"
             name="name"
-            placeholder="Seu nome completo"
+            placeholder="Seu nome"
             required
             disabled={isLoading}
           />
@@ -146,40 +131,6 @@ export function RequestAccessForm() {
               <SelectItem value="LARGE">Grande (50+ pessoas)</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="currentTool">Qual ferramenta usa hoje?</Label>
-          <Input
-            id="currentTool"
-            name="currentTool"
-            placeholder="Ex: Planilha, WhatsApp, outro sistema..."
-            disabled={isLoading}
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="businessSize">Tamanho do negócio</Label>
-          <Select value={businessSize} onValueChange={setBusinessSize} disabled={isLoading}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="SOLO">Solo (apenas eu)</SelectItem>
-              <SelectItem value="SMALL">Pequeno (2-10 pessoas)</SelectItem>
-              <SelectItem value="MEDIUM">Médio (11-50 pessoas)</SelectItem>
-              <SelectItem value="LARGE">Grande (50+ pessoas)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="employeeCount">Quantidade de funcionários</Label>
-          <Input
-            id="employeeCount"
-            name="employeeCount"
-            type="number"
-            min="0"
-            placeholder="10"
-            disabled={isLoading}
-          />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="currentTool">Qual ferramenta usa hoje?</Label>
