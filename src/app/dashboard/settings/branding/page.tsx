@@ -1,6 +1,7 @@
 "use client";
 
 import { PageContainer, PageHeader } from "@/components/layout/page-layout";
+import { MenuPreview } from "@/components/menu/menu-preview";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,19 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCurrentTenant } from "@/hooks/use-current-tenant";
 import { api } from "@/lib/trpc/react";
-import { Eye, Image as ImageIcon, Loader2, Palette, Phone, Store } from "lucide-react";
+import {
+  Clock,
+  ExternalLink,
+  Eye,
+  Image as ImageIcon,
+  Loader2,
+  MapPin,
+  Palette,
+  Phone,
+  Share2,
+  Star,
+  Store,
+} from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HexColorPicker } from "react-colorful";
@@ -97,6 +110,14 @@ export default function BrandingSettingsPage() {
   const [whatsappPhone, setWhatsappPhone] = useState("");
   const [imageUrl, setImageUrl] = useState(currentTenant?.image ?? "");
 
+  // Social fields
+  const [instagram, setInstagram] = useState("");
+  const [googleMapsUrl, setGoogleMapsUrl] = useState("");
+  const [googleStars, setGoogleStars] = useState<string>("");
+  const [deliveryTime, setDeliveryTime] = useState("");
+  const [address, setAddress] = useState("");
+  const [externalOrderUrl, setExternalOrderUrl] = useState("");
+
   // Branding fields
   const [primaryColor, setPrimaryColor] = useState(config?.branding?.colors?.primary ?? "#3b82f6");
   const [secondaryColor, setSecondaryColor] = useState(
@@ -138,6 +159,12 @@ export default function BrandingSettingsPage() {
       setTextColor(config.branding?.colors?.text ?? "#1f2937");
       setPrimaryTextColor(config.branding?.colors?.primaryText ?? "#ffffff");
       setSecondaryTextColor(config.branding?.colors?.secondaryText ?? "#ffffff");
+      setInstagram(config.social?.instagram ?? "");
+      setGoogleMapsUrl(config.social?.googleMapsUrl ?? "");
+      setGoogleStars(config.social?.googleStars?.toString() ?? "");
+      setDeliveryTime(config.social?.deliveryTime ?? "");
+      setAddress(config.social?.address ?? "");
+      setExternalOrderUrl(config.social?.externalOrderUrl ?? "");
     }
   }, [config]);
 
@@ -164,6 +191,19 @@ export default function BrandingSettingsPage() {
           primaryText: primaryTextColor,
           secondaryText: secondaryTextColor,
         },
+      },
+    });
+  };
+
+  const handleSaveSocial = async () => {
+    await updateConfig.mutateAsync({
+      social: {
+        instagram: instagram || undefined,
+        googleMapsUrl: googleMapsUrl || undefined,
+        googleStars: googleStars ? Number.parseFloat(googleStars) : undefined,
+        deliveryTime: deliveryTime || undefined,
+        address: address || undefined,
+        externalOrderUrl: externalOrderUrl || undefined,
       },
     });
   };
@@ -241,17 +281,24 @@ export default function BrandingSettingsPage() {
         />
 
         <Tabs defaultValue="general" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="general">
-              <Store className="mr-2 h-4 w-4" />
-              Dados Gerais
+          <TabsList className="h-auto flex-wrap w-full justify-start gap-1">
+            <TabsTrigger value="general" className="text-xs sm:text-sm">
+              <Store className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Dados Gerais</span>
+              <span className="sm:hidden">Geral</span>
             </TabsTrigger>
-            <TabsTrigger value="branding">
-              <Palette className="mr-2 h-4 w-4" />
-              Cores e Logo
+            <TabsTrigger value="branding" className="text-xs sm:text-sm">
+              <Palette className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Cores e Logo</span>
+              <span className="sm:hidden">Cores</span>
             </TabsTrigger>
-            <TabsTrigger value="preview">
-              <Eye className="mr-2 h-4 w-4" />
+            <TabsTrigger value="social" className="text-xs sm:text-sm">
+              <Share2 className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Social e Contato</span>
+              <span className="sm:hidden">Social</span>
+            </TabsTrigger>
+            <TabsTrigger value="preview" className="text-xs sm:text-sm">
+              <Eye className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Preview
             </TabsTrigger>
           </TabsList>
@@ -312,7 +359,12 @@ export default function BrandingSettingsPage() {
             </Card>
 
             <div className="flex justify-end">
-              <Button onClick={handleSaveTenant} disabled={updateTenant.isPending} size="lg">
+              <Button
+                onClick={handleSaveTenant}
+                disabled={updateTenant.isPending}
+                size="lg"
+                className="w-full sm:w-auto"
+              >
                 {updateTenant.isPending ? "Salvando..." : "Salvar dados"}
               </Button>
             </div>
@@ -326,8 +378,8 @@ export default function BrandingSettingsPage() {
                 <CardDescription>Faça upload da logo do seu estabelecimento</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center gap-6">
-                  <div className="relative h-32 w-32 rounded-lg border bg-muted overflow-hidden flex items-center justify-center">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+                  <div className="relative h-24 w-24 sm:h-32 sm:w-32 rounded-lg border bg-muted overflow-hidden flex items-center justify-center shrink-0">
                     {imageUrl ? (
                       <Image
                         src={imageUrl}
@@ -336,13 +388,23 @@ export default function BrandingSettingsPage() {
                         className="object-contain p-2"
                       />
                     ) : (
-                      <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                      <ImageIcon className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
                     )}
                   </div>
-                  <div className="space-y-2">
-                    <Input type="file" accept="image/*" onChange={handleFileSelect} />
+                  <div className="space-y-2 w-full sm:w-auto">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileSelect}
+                      className="text-xs sm:text-sm"
+                    />
                     {selectedFile && (
-                      <Button onClick={handleUpload} disabled={isUploading} size="sm">
+                      <Button
+                        onClick={handleUpload}
+                        disabled={isUploading}
+                        size="sm"
+                        className="w-full sm:w-auto"
+                      >
                         {isUploading ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -354,7 +416,12 @@ export default function BrandingSettingsPage() {
                       </Button>
                     )}
                     {imageUrl && (
-                      <Button variant="outline" onClick={() => setImageUrl("")} size="sm">
+                      <Button
+                        variant="outline"
+                        onClick={() => setImageUrl("")}
+                        size="sm"
+                        className="w-full sm:w-auto"
+                      >
                         Remover
                       </Button>
                     )}
@@ -370,7 +437,7 @@ export default function BrandingSettingsPage() {
                 <CardDescription>Personalize as cores do seu cardápio</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
                   <ColorPickerButton
                     label="Cor Primária"
                     color={primaryColor}
@@ -407,86 +474,149 @@ export default function BrandingSettingsPage() {
 
             {/* Save Button */}
             <div className="flex justify-end">
-              <Button onClick={handleSaveBranding} disabled={updateConfig.isPending} size="lg">
+              <Button
+                onClick={handleSaveBranding}
+                disabled={updateConfig.isPending}
+                size="lg"
+                className="w-full sm:w-auto"
+              >
                 {updateConfig.isPending ? "Salvando..." : "Salvar branding"}
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="social" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Redes Sociais e Contato</CardTitle>
+                <CardDescription>
+                  Configure os links e informações que aparecerão no cardápio público
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="instagram">Instagram</Label>
+                    <div className="flex items-center gap-2">
+                      <Share2 className="h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="instagram"
+                        value={instagram}
+                        onChange={(e) => setInstagram(e.target.value)}
+                        placeholder="@meurestaurante"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="google-maps">Google Maps</Label>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="google-maps"
+                        value={googleMapsUrl}
+                        onChange={(e) => setGoogleMapsUrl(e.target.value)}
+                        placeholder="https://g.page/..."
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="google-stars">Nota Google (0–5)</Label>
+                    <div className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="google-stars"
+                        type="number"
+                        min={0}
+                        max={5}
+                        step={0.1}
+                        value={googleStars}
+                        onChange={(e) => setGoogleStars(e.target.value)}
+                        placeholder="4.8"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="delivery-time">Tempo de Entrega</Label>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="delivery-time"
+                        value={deliveryTime}
+                        onChange={(e) => setDeliveryTime(e.target.value)}
+                        placeholder="20-35 min"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Endereço curto</Label>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="address"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="Rua das Flores, 123"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="external-order">Link de pedido externo</Label>
+                  <div className="flex items-center gap-2">
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="external-order"
+                      value={externalOrderUrl}
+                      onChange={(e) => setExternalOrderUrl(e.target.value)}
+                      placeholder="https://ifood.com.br/..."
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-end">
+              <Button
+                onClick={handleSaveSocial}
+                disabled={updateConfig.isPending}
+                size="lg"
+                className="w-full sm:w-auto"
+              >
+                {updateConfig.isPending ? "Salvando..." : "Salvar social e contato"}
               </Button>
             </div>
           </TabsContent>
 
           <TabsContent value="preview">
             <Card>
-              <CardHeader>
+              <CardHeader className="px-4 sm:px-6">
                 <CardTitle>Preview do Cardápio</CardTitle>
-                <CardDescription>Veja como seu cardápio ficará</CardDescription>
+                <CardDescription>
+                  Veja como seu cardápio ficará no celular do cliente
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div
-                  className="rounded-lg border p-6 space-y-6"
-                  style={
-                    {
-                      backgroundColor,
-                      color: textColor,
-                    } as React.CSSProperties
-                  }
-                >
-                  {/* Header simulado */}
-                  <div
-                    className="flex items-center gap-3 p-4 rounded-lg"
-                    style={{ backgroundColor: primaryColor }}
-                  >
-                    {imageUrl ? (
-                      <div className="relative h-12 w-12">
-                        <Image
-                          src={imageUrl}
-                          alt="Logo"
-                          fill
-                          className="object-contain rounded-full"
-                        />
-                      </div>
-                    ) : (
-                      <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
-                        <ImageIcon className="h-6 w-6 text-white" />
-                      </div>
-                    )}
-                    <div>
-                      <h3 className="text-white font-bold">{name || "Nome do Estabelecimento"}</h3>
-                      {description && <p className="text-white/80 text-sm">{description}</p>}
-                    </div>
-                  </div>
-
-                  {/* Botão simulado */}
-                  <div className="flex gap-4">
-                    <button
-                      type="button"
-                      className="px-4 py-2 rounded-lg"
-                      style={{ backgroundColor: primaryColor, color: primaryTextColor }}
-                    >
-                      Botão Primário
-                    </button>
-                    <button
-                      type="button"
-                      className="px-4 py-2 rounded-lg"
-                      style={{ backgroundColor: secondaryColor, color: secondaryTextColor }}
-                    >
-                      Botão Secundário
-                    </button>
-                  </div>
-
-                  {/* Cards simulados */}
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="p-4 rounded-lg border" style={{ color: textColor }}>
-                      <h4 className="font-medium" style={{ color: primaryColor }}>
-                        Categoria Destaque
-                      </h4>
-                      <p className="text-sm opacity-70">Descrição com a cor primária no título</p>
-                    </div>
-                    <div className="p-4 rounded-lg border" style={{ color: textColor }}>
-                      <h4 className="font-medium" style={{ color: secondaryColor }}>
-                        Promoção
-                      </h4>
-                      <p className="text-sm opacity-70">Descrição com a cor secundária no título</p>
-                    </div>
-                  </div>
+              <CardContent className="px-3 sm:px-6">
+                <div className="max-w-xs sm:max-w-sm mx-auto">
+                  <MenuPreview
+                    name={name}
+                    description={description}
+                    imageUrl={imageUrl}
+                    colors={{
+                      primary: primaryColor,
+                      secondary: secondaryColor,
+                      background: backgroundColor,
+                      text: textColor,
+                      primaryText: primaryTextColor,
+                      secondaryText: secondaryTextColor,
+                    }}
+                  />
                 </div>
               </CardContent>
             </Card>

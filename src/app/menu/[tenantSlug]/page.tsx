@@ -37,6 +37,7 @@ export default async function MenuPage({ params }: MenuPageProps) {
       slug: true,
       description: true,
       image: true,
+      whatsappPhone: true,
       config: true,
     },
   });

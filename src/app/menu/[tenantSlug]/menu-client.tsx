@@ -6,6 +6,7 @@ import { MenuHero } from "@/components/menu/menu-hero";
 import { MenuItemCard } from "@/components/menu/menu-item-card";
 import { MenuSearchBar } from "@/components/menu/menu-search-bar";
 import { useTenantBranding } from "@/hooks/use-tenant-branding";
+import { getSocialConfig } from "@/lib/tenant-social";
 import { useCartStore } from "@/stores/cart-store";
 import { Store } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -17,6 +18,7 @@ interface MenuClientProps {
     slug: string;
     description: string | null;
     image: string | null;
+    whatsappPhone: string | null;
     config: unknown;
   };
   categories: Array<{
@@ -62,6 +64,7 @@ export function MenuClient({ tenant, categories }: MenuClientProps) {
   const [cartOpen, setCartOpen] = useState(false);
 
   const colors = getBrandingColors(tenant.config);
+  const social = getSocialConfig(tenant.config, tenant);
   useTenantBranding(tenant.config, tenant.slug);
 
   const { addItem, setTenant, getTotalItems, getTotalPrice, getProductTotalCount } = useCartStore();
@@ -162,7 +165,7 @@ export function MenuClient({ tenant, categories }: MenuClientProps) {
 
   return (
     <div className="min-h-screen bg-background pb-32">
-      <MenuHero tenant={tenant} colors={colors} />
+      <MenuHero tenant={tenant} colors={colors} social={social} />
 
       <MenuSearchBar
         categories={filteredCategories.map((c) => ({ id: c.id, name: c.name }))}

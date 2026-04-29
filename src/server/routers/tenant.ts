@@ -59,6 +59,18 @@ const updateConfigSchema = z
         }),
       })
       .optional(),
+    social: z
+      .object({
+        instagram: z.string().optional(),
+        googleMapsUrl: z.string().url().optional().or(z.literal("")),
+        googleStars: z.number().min(0).max(5).optional(),
+        whatsapp: z.string().optional(),
+        deliveryTime: z.string().optional(),
+        address: z.string().optional(),
+        externalOrderUrl: z.string().url().optional().or(z.literal("")),
+      })
+      .partial()
+      .optional(),
   })
   .partial();
 
@@ -111,6 +123,7 @@ export const tenantRouter = router({
         slug: true,
         image: true,
         description: true,
+        whatsappPhone: true,
         isActive: true,
         config: true,
         memberships: {
@@ -246,6 +259,7 @@ export const tenantRouter = router({
       string,
       string
     >;
+    const social = (parsedConfig?.social as Record<string, unknown>) || null;
     return {
       branding: {
         logo: (parsedConfig?.branding as Record<string, string>)?.logo || null,
@@ -257,6 +271,15 @@ export const tenantRouter = router({
           primaryText: colors?.primaryText || "#ffffff",
           secondaryText: colors?.secondaryText || "#ffffff",
         },
+      },
+      social: {
+        instagram: (social?.instagram as string) || "",
+        googleMapsUrl: (social?.googleMapsUrl as string) || "",
+        googleStars: (social?.googleStars as number) ?? null,
+        whatsapp: (social?.whatsapp as string) || "",
+        deliveryTime: (social?.deliveryTime as string) || "",
+        address: (social?.address as string) || "",
+        externalOrderUrl: (social?.externalOrderUrl as string) || "",
       },
     };
   }),
@@ -289,6 +312,10 @@ export const tenantRouter = router({
           >),
           ...input.branding?.colors,
         },
+      },
+      social: {
+        ...(currentConfig.social as Record<string, unknown>),
+        ...input.social,
       },
     };
 
