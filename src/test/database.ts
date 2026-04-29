@@ -19,7 +19,7 @@ export async function resetDatabase() {
     "Product",
     "Category",
     "Membership",
-    "TenantInvitation",
+    "invites",
     "Session",
     "Account",
     "User",

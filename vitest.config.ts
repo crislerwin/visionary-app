@@ -10,6 +10,7 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     exclude: ["node_modules", ".next", "dist", ".opencode", ".git", ".worktrees"],
+    fileParallelism: false,
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],

@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/db";
 import {
   adminProcedure,
-  backofficeProcedure,
   protectedProcedure,
   publicProcedure,
   router,
@@ -232,7 +231,7 @@ export const tenantRouter = router({
     return tenant;
   }),
 
-  create: backofficeProcedure.input(createTenantSchema).mutation(async ({ ctx, input }) => {
+  create: protectedProcedure.input(createTenantSchema).mutation(async ({ ctx, input }) => {
     // Check if slug is already taken
     const existing = await prisma.tenant.findUnique({
       where: { slug: input.slug },

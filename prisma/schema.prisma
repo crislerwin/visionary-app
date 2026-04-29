@@ -87,6 +87,7 @@ model Tenant {
   owner       User         @relation("TenantOwner", fields: [ownerId], references: [id])
   memberships Membership[]
   sessions    Session[]
+  invites     Invite[]
 
   categories    Category[]
   products      Product[]
@@ -387,4 +388,22 @@ model CashRegisterTransaction {
   @@index([type])
   @@index([createdAt])
   @@map("cash_register_transactions")
+}
+
+model Invite {
+  id         String     @id @default(cuid())
+  email      String
+  token      String     @unique
+  tenantId   String     @map("tenant_id")
+  invitedBy  String     @map("invited_by")
+  role       MemberRole @default(MEMBER)
+  expiresAt  DateTime   @map("expires_at")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  acceptedAt DateTime?  @map("accepted_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([token])
+  @@map("invites")
 }

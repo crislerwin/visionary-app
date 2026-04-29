@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { prisma } from "@/lib/db";
 import { adminProcedure, router, tenantProcedure } from "@/lib/trpc/trpc";
 import { MemberRole } from "@prisma/client";
@@ -21,25 +22,47 @@ const removeMemberSchema = z.object({
   userId: z.string(),
 });
 
+const cancelInviteSchema = z.object({
+  tenantId: z.string(),
+  inviteId: z.string(),
+});
+
 export const teamRouter = router({
   list: tenantProcedure.input(z.object({ tenantId: z.string() })).query(async ({ ctx, input }) => {
-    const members = await prisma.membership.findMany({
-      where: { tenantId: input.tenantId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-            createdAt: true,
+    const [members, invites] = await Promise.all([
+      prisma.membership.findMany({
+        where: { tenantId: input.tenantId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              createdAt: true,
+            },
           },
         },
-      },
-      orderBy: {
-        joinedAt: "desc",
-      },
-    });
+        orderBy: {
+          joinedAt: "desc",
+        },
+      }),
+      prisma.invite.findMany({
+        where: {
+          tenantId: input.tenantId,
+          acceptedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          createdAt: true,
+          expiresAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
 
     // Check current user's permission for managing roles
     const currentUserMembership = members.find((m) => m.userId === ctx.user.id);
@@ -48,55 +71,23 @@ export const teamRouter = router({
       (currentUserMembership.role === MemberRole.OWNER ||
         currentUserMembership.role === MemberRole.ADMIN);
 
+    const isOwner = currentUserMembership?.role === MemberRole.OWNER;
+
     return {
       members,
+      pendingInvites: invites,
       currentUserRole: currentUserMembership?.role,
       canManageRoles,
+      isOwner,
     };
   }),
 
   invite: adminProcedure.input(inviteMemberSchema).mutation(async ({ ctx, input }) => {
-    const currentUserMembership = await prisma.membership.findUnique({
+    // Verifica se email já é membro
+    const existingMembership = await prisma.membership.findFirst({
       where: {
-        userId_tenantId: {
-          userId: ctx.user.id!,
-          tenantId: input.tenantId,
-        },
-      },
-    });
-
-    if (
-      !currentUserMembership ||
-      (currentUserMembership.role !== MemberRole.OWNER &&
-        currentUserMembership.role !== MemberRole.ADMIN)
-    ) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "You do not have permission to invite members",
-      });
-    }
-
-    // Find or create user by email
-    const user = await prisma.user.findUnique({
-      where: { email: input.email },
-    });
-
-    if (!user) {
-      // Create a placeholder user - they will need to sign up
-      // In production, you'd send an invitation email
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: "User not found. They need to sign up first.",
-      });
-    }
-
-    // Check if already a member
-    const existingMembership = await prisma.membership.findUnique({
-      where: {
-        userId_tenantId: {
-          userId: user.id,
-          tenantId: input.tenantId,
-        },
+        tenantId: input.tenantId,
+        user: { email: input.email },
       },
     });
 
@@ -107,25 +98,100 @@ export const teamRouter = router({
       });
     }
 
-    const membership = await prisma.membership.create({
-      data: {
-        userId: user.id,
+    // Verifica se já existe convite pendente
+    const existingInvite = await prisma.invite.findFirst({
+      where: {
         tenantId: input.tenantId,
-        role: input.role,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-          },
-        },
+        email: input.email,
+        acceptedAt: null,
+        expiresAt: { gt: new Date() },
       },
     });
 
-    return membership;
+    if (existingInvite) {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "Invite already sent to this email",
+      });
+    }
+
+    // Verifica se o usuário já tem conta (adiciona direto sem convite)
+    const existingUser = await prisma.user.findUnique({
+      where: { email: input.email },
+    });
+
+    if (existingUser) {
+      const membership = await prisma.membership.create({
+        data: {
+          userId: existingUser.id,
+          tenantId: input.tenantId,
+          role: input.role,
+          joinedAt: new Date(),
+        },
+        include: {
+          user: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+      });
+
+      return {
+        id: membership.id,
+        email: membership.user.email,
+        role: membership.role,
+        userId: membership.userId,
+        name: membership.user.name,
+        directMember: true,
+      };
+    }
+
+    // Usuário não tem conta — cria convite pendente
+    const token = crypto.randomBytes(32).toString("hex");
+
+    const invite = await prisma.invite.create({
+      data: {
+        email: input.email,
+        token,
+        tenantId: input.tenantId,
+        invitedBy: ctx.user.id!,
+        role: input.role,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 dias
+      },
+    });
+
+    console.log(`Invite link: ${process.env.NEXTAUTH_URL}/invite/${token}`);
+
+    return {
+      id: invite.id,
+      email: invite.email,
+      role: invite.role,
+      expiresAt: invite.expiresAt,
+      token: invite.token,
+      directMember: false,
+    };
+  }),
+
+  cancelInvite: adminProcedure.input(cancelInviteSchema).mutation(async ({ input }) => {
+    const invite = await prisma.invite.findFirst({
+      where: {
+        id: input.inviteId,
+        tenantId: input.tenantId,
+        acceptedAt: null,
+      },
+    });
+
+    if (!invite) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Invite not found",
+      });
+    }
+
+    await prisma.invite.delete({
+      where: { id: invite.id },
+    });
+
+    return { success: true };
   }),
 
   updateRole: adminProcedure.input(updateMemberSchema).mutation(async ({ ctx, input }) => {

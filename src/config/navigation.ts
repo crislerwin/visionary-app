@@ -7,6 +7,7 @@ import {
   Package,
   Settings,
   ShoppingBag,
+  Users,
 } from "lucide-react";
 
 export interface NavItem {
@@ -73,6 +74,12 @@ export const sidebarNavigation: NavSection[] = [
         title: "Marca",
         href: "/dashboard/settings/branding",
         icon: Settings,
+        requiredRole: "ADMIN",
+      },
+      {
+        title: "Equipe",
+        href: "/dashboard/team",
+        icon: Users,
         requiredRole: "ADMIN",
       },
     ],
