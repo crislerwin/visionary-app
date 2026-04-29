@@ -95,16 +95,12 @@ export function LoginForm({ className, showGoogle = false, ...props }: LoginForm
               className="h-11 rounded-xl border-border bg-card px-4 transition-colors focus-visible:ring-ring"
             />
           </div>
-          {error && (
-            <p className="text-sm font-medium text-destructive">{error}</p>
-          )}
+          {error && <p className="text-sm font-medium text-destructive">{error}</p>}
           <Button
             disabled={isLoading}
             className="h-11 w-full rounded-full bg-foreground text-background font-semibold shadow-[var(--shadow-elegant)] hover:translate-y-[-1px] transition-transform"
           >
-            {isLoading && (
-              <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-            )}
+            {isLoading && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
             Entrar
           </Button>
         </div>
@@ -117,9 +113,7 @@ export function LoginForm({ className, showGoogle = false, ...props }: LoginForm
               <span className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Ou continue com
-              </span>
+              <span className="bg-background px-2 text-muted-foreground">Ou continue com</span>
             </div>
           </div>
           <Button

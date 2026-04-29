@@ -34,6 +34,7 @@ interface CartActions {
   getTotalItems: () => number;
   getTotalPrice: () => number;
   getItemCount: (productId: string, variantId?: string | null) => number;
+  getProductTotalCount: (productId: string) => number;
 }
 
 const generateCartItemId = (productId: string, variantId?: string | null): string => {
@@ -134,6 +135,12 @@ export const useCartStore = create<CartState & CartActions>()(
           (i) => i.productId === productId && i.variantId === variantId,
         );
         return item?.quantity ?? 0;
+      },
+
+      getProductTotalCount: (productId) => {
+        return get()
+          .items.filter((i) => i.productId === productId)
+          .reduce((sum, item) => sum + item.quantity, 0);
       },
     }),
     {

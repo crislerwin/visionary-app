@@ -311,7 +311,7 @@ export default function ProductsPage() {
     setImageFile(null);
     setVariants(
       product.variants.map((v) => ({
-        id: generateVariantId(),
+        id: v.id,
         name: v.name,
         price: Number(v.price),
         stock: v.stock,
@@ -411,6 +411,15 @@ export default function ProductsPage() {
       stock: Number.parseInt(productStock) || 0,
       trackStock,
       isActive: true,
+      variants:
+        variants.length > 0
+          ? variants.map((v) => ({
+              id: v.id,
+              name: v.name,
+              price: v.price,
+              stock: v.stock,
+            }))
+          : undefined,
     });
   };
 

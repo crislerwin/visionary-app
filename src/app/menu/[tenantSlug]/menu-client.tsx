@@ -1,12 +1,14 @@
 "use client";
 
-import { EmptyState, PageContainer } from "@/components/layout/page-layout";
-import { CategorySection } from "@/components/menu/category-section";
-import { MenuHeader } from "@/components/menu/menu-header";
+import { MenuCartDrawer } from "@/components/menu/menu-cart-drawer";
+import { MenuCartFab } from "@/components/menu/menu-cart-fab";
+import { MenuHero } from "@/components/menu/menu-hero";
+import { MenuItemCard } from "@/components/menu/menu-item-card";
+import { MenuSearchBar } from "@/components/menu/menu-search-bar";
 import { useTenantBranding } from "@/hooks/use-tenant-branding";
 import { useCartStore } from "@/stores/cart-store";
-import { ShoppingCart, Store } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Store } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 interface MenuClientProps {
   tenant: {
@@ -55,87 +57,188 @@ function getBrandingColors(config: unknown) {
 
 export function MenuClient({ tenant, categories }: MenuClientProps) {
   const [mounted, setMounted] = useState(false);
-  const setTenant = useCartStore((state) => state.setTenant);
+  const [query, setQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState(categories[0]?.id ?? "");
+  const [cartOpen, setCartOpen] = useState(false);
 
   const colors = getBrandingColors(tenant.config);
   useTenantBranding(tenant.config, tenant.slug);
 
-  // Debug - log colors to verify they're being extracted
-  useEffect(() => {
-    console.log("[MenuClient] Tenant config:", tenant.config);
-    console.log("[MenuClient] Extracted colors:", colors);
-  }, [tenant.config, colors]);
+  const { addItem, setTenant, getTotalItems, getTotalPrice, getProductTotalCount } = useCartStore();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Set tenant when component mounts (always update to ensure tenantId is set)
   useEffect(() => {
     setTenant(tenant.slug, tenant.name, tenant.id);
   }, [tenant.slug, tenant.name, tenant.id, setTenant]);
 
-  const totalItems = useCartStore((state) => state.getTotalItems());
-  const totalPrice = useCartStore((state) => state.getTotalPrice());
-  const openCart = useCartStore((state) => state.openCart);
+  const totalItems = getTotalItems();
+  const totalPrice = getTotalPrice();
+
+  const filteredCategories = useMemo(() => {
+    if (!query.trim()) return categories;
+    const q = query.toLowerCase();
+    return categories
+      .map((cat) => ({
+        ...cat,
+        products: cat.products.filter(
+          (p) =>
+            p.name.toLowerCase().includes(q) || (p.description?.toLowerCase().includes(q) ?? false),
+        ),
+      }))
+      .filter((cat) => cat.products.length > 0);
+  }, [categories, query]);
+
+  // Scroll spy — detecta qual seção está visível e ativa a respectiva categoria
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const categoryIds = useMemo(() => filteredCategories.map((c) => c.id), [filteredCategories]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Pega a entrada que está mais próxima do topo da viewport
+        const visible = entries.filter((e) => e.isIntersecting);
+        if (visible.length > 0) {
+          const topmost = visible.reduce((prev, curr) =>
+            curr.boundingClientRect.top < prev.boundingClientRect.top ? curr : prev,
+          );
+          setActiveCategory(topmost.target.id);
+        }
+      },
+      { rootMargin: "-25% 0px -50% 0px", threshold: 0 },
+    );
+
+    for (const el of Object.values(sectionRefs.current)) {
+      if (el) observer.observe(el);
+    }
+
+    // Fallback: quando o usuário rola até o final da página,
+    // seleciona a última categoria se ela estiver visível
+    const handleScroll = () => {
+      const scrollBottom = window.innerHeight + window.scrollY;
+      const docHeight = document.documentElement.scrollHeight;
+      if (scrollBottom >= docHeight - 100 && categoryIds.length > 0) {
+        setActiveCategory(categoryIds[categoryIds.length - 1]);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [categoryIds]);
+
+  const scrollToCategory = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      const y = el.getBoundingClientRect().top + window.scrollY - 180;
+      window.scrollTo({ top: y, behavior: "smooth" });
+      setActiveCategory(id);
+    }
+  };
+
+  const handleAddToCart = (
+    product: MenuClientProps["categories"][number]["products"][number],
+    variantId?: string | null,
+  ) => {
+    const variant = product.variants.find((v) => v.id === variantId) ?? null;
+    const price = variant?.price ?? product.price;
+
+    addItem({
+      productId: product.id,
+      productName: product.name,
+      productImage: product.image,
+      variantId: variantId ?? null,
+      variantName: variant?.name ?? null,
+      price: Number(price),
+      quantity: 1,
+      notes: "",
+    });
+  };
 
   return (
-    <div
-      className="min-h-screen pb-24 md:pb-8"
-      style={{ backgroundColor: colors.background ?? undefined }}
-    >
-      <MenuHeader tenant={tenant} colors={colors} />
+    <div className="min-h-screen bg-background pb-32">
+      <MenuHero tenant={tenant} colors={colors} />
 
-      {/* Main Content */}
-      <PageContainer className="max-w-7xl mx-auto pt-4">
-        {categories.length === 0 ? (
-          <EmptyState
-            icon={<Store className="w-16 h-16 text-muted-foreground" />}
-            title="Cardápio vazio"
-            description="Este estabelecimento ainda não adicionou produtos."
-          />
-        ) : (
-          <div className="space-y-6" style={{ color: colors.text ?? undefined }}>
-            {categories.map((category) => (
-              <CategorySection
-                key={category.id}
-                category={category}
-                tenantSlug={tenant.slug}
-                tenantName={tenant.name}
-                tenantId={tenant.id}
-              />
-            ))}
+      <MenuSearchBar
+        categories={filteredCategories.map((c) => ({ id: c.id, name: c.name }))}
+        query={query}
+        onQueryChange={setQuery}
+        activeCategory={activeCategory}
+        onCategoryClick={scrollToCategory}
+        colors={colors}
+      />
+
+      <main className="mx-auto max-w-5xl px-4 sm:px-6 mt-8 space-y-14">
+        {filteredCategories.length === 0 ? (
+          <div className="text-center py-20 text-muted-foreground">
+            <Store className="w-16 h-16 mx-auto mb-4 opacity-50" />
+            <p className="text-lg font-medium">
+              {query.trim() ? `Nenhum item encontrado para "${query}"` : "Cardápio vazio"}
+            </p>
+            <p className="text-sm">
+              {query.trim()
+                ? "Tente buscar por outro termo."
+                : "Este estabelecimento ainda não adicionou produtos."}
+            </p>
           </div>
+        ) : (
+          filteredCategories.map((category) => (
+            <section
+              key={category.id}
+              id={category.id}
+              ref={(el) => {
+                sectionRefs.current[category.id] = el;
+              }}
+              className="scroll-mt-44"
+            >
+              <div className="flex items-end justify-between mb-5">
+                <h2
+                  className="text-2xl md:text-3xl font-bold text-foreground"
+                  style={{ fontFamily: "var(--font-fraunces), serif" }}
+                >
+                  {category.name}
+                </h2>
+                <span className="text-xs text-muted-foreground">
+                  {category.products.length} {category.products.length === 1 ? "item" : "itens"}
+                </span>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {category.products.map((product) => (
+                  <MenuItemCard
+                    key={product.id}
+                    item={product}
+                    onAdd={handleAddToCart}
+                    cartQuantity={getProductTotalCount(product.id)}
+                    colors={colors}
+                  />
+                ))}
+              </div>
+            </section>
+          ))
         )}
-      </PageContainer>
+      </main>
 
-      {/* Mobile Cart Bar */}
-      {mounted && totalItems > 0 && (
-        <div
-          className="fixed bottom-0 left-0 right-0 border-t p-4 md:hidden z-50"
-          style={{ backgroundColor: colors.background ?? "#fff" }}
-        >
-          <button
-            type="button"
-            onClick={openCart}
-            className="w-full rounded-lg py-3 px-4 flex items-center justify-between"
-            style={{
-              backgroundColor: colors.primary ?? undefined,
-              color: colors.primaryText ?? undefined,
-            }}
-          >
-            <div className="flex items-center gap-2">
-              <ShoppingCart className="w-5 h-5" />
-              <span>{totalItems} item(s)</span>
-            </div>
-            <span className="font-bold">
-              R${" "}
-              {totalPrice.toLocaleString("pt-BR", {
-                minimumFractionDigits: 2,
-              })}
-            </span>
-          </button>
-        </div>
+      {mounted && (
+        <>
+          <MenuCartFab
+            totalQty={totalItems}
+            totalPrice={totalPrice}
+            onClick={() => setCartOpen(true)}
+            colors={colors}
+          />
+          <MenuCartDrawer
+            open={cartOpen}
+            onClose={() => setCartOpen(false)}
+            tenantId={tenant.id}
+            tenantSlug={tenant.slug}
+            colors={colors}
+          />
+        </>
       )}
     </div>
   );

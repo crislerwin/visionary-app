@@ -21,9 +21,7 @@ export default async function SignInPage() {
     redirect("/setup");
   }
 
-  const showGoogle = Boolean(
-    process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
-  );
+  const showGoogle = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 
   return (
     <div className="landing-theme min-h-screen bg-background text-foreground">
@@ -64,9 +62,8 @@ export default async function SignInPage() {
               "O cardápio digital que seu restaurante merece."
             </blockquote>
             <p className="text-sm text-white/70">
-              Cardápio com QR Code, pedidos online e PDV — tudo em uma única
-              plataforma feita para restaurantes, lanchonetes e food trucks no
-              Brasil.
+              Cardápio com QR Code, pedidos online e PDV — tudo em uma única plataforma feita para
+              restaurantes, lanchonetes e food trucks no Brasil.
             </p>
           </div>
         </div>
@@ -88,17 +85,11 @@ export default async function SignInPage() {
             <LoginForm showGoogle={showGoogle} />
             <p className="px-8 text-center text-xs text-muted-foreground">
               Ao continuar, você concorda com nossos{" "}
-              <Link
-                href="/terms"
-                className="underline underline-offset-4 hover:text-primary"
-              >
+              <Link href="/terms" className="underline underline-offset-4 hover:text-primary">
                 Termos de Serviço
               </Link>{" "}
               e{" "}
-              <Link
-                href="/privacy"
-                className="underline underline-offset-4 hover:text-primary"
-              >
+              <Link href="/privacy" className="underline underline-offset-4 hover:text-primary">
                 Política de Privacidade
               </Link>
               .

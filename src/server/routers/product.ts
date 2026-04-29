@@ -27,6 +27,13 @@ const createProductSchema = z.object({
   ...productBaseSchema.shape,
 });
 
+const updateVariantSchema = z.object({
+  id: z.string(), // real DB id or temp prefixed id
+  name: z.string().min(1).max(50),
+  price: z.number().min(0).max(99999),
+  stock: z.number().int().min(0).optional(),
+});
+
 const updateProductSchema = z.object({
   id: z.string(),
   tenantId: z.string(),
@@ -38,6 +45,7 @@ const updateProductSchema = z.object({
   stock: z.number().int().min(0).optional(),
   trackStock: z.boolean().optional(),
   isActive: z.boolean().optional(),
+  variants: z.array(updateVariantSchema).optional(),
 });
 
 const deleteProductSchema = z.object({
@@ -208,6 +216,7 @@ export const productRouter = router({
         id: input.id,
         tenantId: input.tenantId,
       },
+      include: { variants: true },
     });
 
     if (!existing) {
@@ -230,6 +239,48 @@ export const productRouter = router({
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Category not found",
+        });
+      }
+    }
+
+    // Sync variants if provided
+    if (input.variants !== undefined) {
+      const existingVariantIds = new Set(existing.variants.map((v) => v.id));
+      const sentVariantIds = new Set(input.variants.map((v) => v.id));
+
+      // Determine which are new (temp id prefix) vs existing (real db id)
+      const toUpdate = input.variants.filter((v) => existingVariantIds.has(v.id));
+      const toCreate = input.variants.filter((v) => !existingVariantIds.has(v.id));
+      const toDelete = existing.variants.filter((v) => !sentVariantIds.has(v.id));
+
+      // Delete removed variants
+      if (toDelete.length > 0) {
+        await prisma.productVariant.deleteMany({
+          where: { id: { in: toDelete.map((v) => v.id) } },
+        });
+      }
+
+      // Update existing variants
+      for (const v of toUpdate) {
+        await prisma.productVariant.update({
+          where: { id: v.id },
+          data: {
+            name: v.name,
+            price: v.price,
+            ...(v.stock !== undefined && { stock: v.stock }),
+          },
+        });
+      }
+
+      // Create new variants
+      if (toCreate.length > 0) {
+        await prisma.productVariant.createMany({
+          data: toCreate.map((v) => ({
+            name: v.name,
+            price: v.price,
+            stock: v.stock ?? 0,
+            productId: input.id,
+          })),
         });
       }
     }

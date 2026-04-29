@@ -93,6 +93,20 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+
+  /* Lovable design system — torna variáveis customizadas disponíveis globalmente */
+  --gradient-hero: radial-gradient(
+      ellipse at top left,
+      oklch(0.74 0.14 165 / 0.18),
+      transparent 55%
+    ), radial-gradient(ellipse at bottom right, oklch(0.78 0.14 55 / 0.18), transparent 60%);
+  --gradient-primary: linear-gradient(135deg, oklch(0.32 0.09 260), oklch(0.45 0.14 250));
+  --gradient-accent: linear-gradient(135deg, oklch(0.74 0.14 165), oklch(0.82 0.12 150));
+  --shadow-elegant: 0 20px 60px -25px oklch(0.32 0.09 260 / 0.35);
+  --shadow-soft: 0 8px 30px -12px oklch(0.21 0.04 260 / 0.15);
+  --shadow-glow: 0 0 80px oklch(0.74 0.14 165 / 0.35);
+  --primary-glow: oklch(0.55 0.18 260);
+  --transition-smooth: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .dark {
