@@ -58,6 +58,9 @@ model User {
   sessions      Session[]
   memberships   Membership[]
   ownedTenants  Tenant[]     @relation("TenantOwner")
+  approvedLeads Lead[]       @relation("LeadApprovedBy")
+  rejectedLeads Lead[]       @relation("LeadRejectedBy")
+  assignedLeads Lead[]       @relation("LeadAssignedTo")
 
   @@map("users")
 }
@@ -94,6 +97,7 @@ model Tenant {
   customers     Customer[]
   orders        Order[]
   cashRegisters CashRegister[]
+  leads         Lead[]
 
   @@map("tenants")
 }
@@ -406,4 +410,47 @@ model Invite {
   @@index([tenantId])
   @@index([token])
   @@map("invites")
+}
+
+enum LeadStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BusinessSize {
+  SOLO
+  SMALL
+  MEDIUM
+  LARGE
+}
+
+model Lead {
+  id              String        @id @default(cuid())
+  name            String
+  email           String        @unique
+  phone           String?
+  status          LeadStatus    @default(PENDING)
+  businessSize    BusinessSize? @map("business_size")
+  employeeCount   Int?          @map("employee_count")
+  currentTool     String?       @map("current_tool")
+  notes           String?
+  assignedToId    String?       @map("assigned_to_id")
+  approvedById    String?       @map("approved_by_id")
+  approvedAt      DateTime?     @map("approved_at")
+  rejectedById    String?       @map("rejected_by_id")
+  rejectedAt      DateTime?     @map("rejected_at")
+  rejectionReason String?       @map("rejection_reason")
+  tenantId        String?       @map("tenant_id")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  approvedBy User?   @relation("LeadApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  rejectedBy User?   @relation("LeadRejectedBy", fields: [rejectedById], references: [id], onDelete: SetNull)
+  assignedTo User?   @relation("LeadAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  tenant     Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([email])
+  @@map("leads")
 }
