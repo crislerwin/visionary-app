@@ -68,7 +68,7 @@ export function MenuItemDetailSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[65dvh] rounded-t-2xl p-0 flex flex-col">
+      <SheetContent side="bottom" className="h-[85dvh] rounded-t-2xl p-0 flex flex-col">
         <SheetHeader className="sr-only">
           <SheetTitle>{item.name}</SheetTitle>
           <SheetDescription>Detalhes do produto</SheetDescription>
