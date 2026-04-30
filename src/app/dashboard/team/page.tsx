@@ -96,6 +96,7 @@ export default function TeamPage() {
       {
         accessorKey: "user.name",
         header: "Nome",
+        size: 320,
         cell: ({ row }) => {
           const member = row.original;
           return (
@@ -117,6 +118,7 @@ export default function TeamPage() {
       {
         accessorKey: "role",
         header: "Papel",
+        size: 120,
         cell: ({ row }) => (
           <Badge variant={roleColors[row.getValue("role") as MemberRole]}>
             {roleLabels[row.getValue("role") as MemberRole]}
@@ -126,6 +128,7 @@ export default function TeamPage() {
       {
         accessorKey: "joinedAt",
         header: "Entrou",
+        size: 160,
         cell: ({ row }) => {
           const date = row.original.joinedAt || row.original.createdAt;
           return (
@@ -138,6 +141,7 @@ export default function TeamPage() {
       {
         id: "actions",
         header: "Ações",
+        size: 80,
         cell: ({ row }) => {
           const member = row.original;
           if (!data?.canManageRoles) return null;
