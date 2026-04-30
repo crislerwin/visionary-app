@@ -34,9 +34,7 @@ import {
   Star,
   Store,
 } from "lucide-react";
-import { QrCode } from "lucide-react";
 import Image from "next/image";
-import { QRCodeSVG } from "qrcode.react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HexColorPicker } from "react-colorful";
 
@@ -368,11 +366,6 @@ export default function BrandingSettingsPage() {
               <CreditCard className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Checkout</span>
               <span className="sm:hidden">Pagto</span>
-            </TabsTrigger>
-            <TabsTrigger value="qrcode" className="text-xs sm:text-sm">
-              <QrCode className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">QR Code</span>
-              <span className="sm:hidden">QR</span>
             </TabsTrigger>
             <TabsTrigger value="preview" className="text-xs sm:text-sm">
               <Eye className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -766,67 +759,6 @@ export default function BrandingSettingsPage() {
                     }}
                   />
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="qrcode" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>QR Code do Cardápio</CardTitle>
-                <CardDescription>
-                  Gere o QR Code para seus clientes acessarem o cardápio digital
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {slug ? (
-                  <div className="flex flex-col items-center gap-6">
-                    <div className="rounded-xl border bg-white p-6">
-                      <QRCodeSVG
-                        id="menu-qrcode"
-                        value={`${typeof window !== "undefined" ? window.location.origin : ""}/menu/${slug}`}
-                        size={256}
-                        level="H"
-                        includeMargin={true}
-                      />
-                    </div>
-                    <div className="text-center space-y-2">
-                      <p className="text-sm text-muted-foreground">
-                        Escaneie para acessar:{" "}
-                        <span className="font-medium text-foreground">/menu/{slug}</span>
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Tamanho recomendado para impressão: 10cm x 10cm
-                      </p>
-                    </div>
-                    <Button
-                      onClick={() => {
-                        const svg = document.getElementById("menu-qrcode");
-                        if (!svg) return;
-                        const svgData = new XMLSerializer().serializeToString(svg);
-                        const canvas = document.createElement("canvas");
-                        const ctx = canvas.getContext("2d");
-                        const img = document.createElement("img");
-                        img.onload = () => {
-                          canvas.width = 1024;
-                          canvas.height = 1024;
-                          ctx?.drawImage(img, 0, 0, 1024, 1024);
-                          const link = document.createElement("a");
-                          link.download = `qrcode-cardapio-${slug}.png`;
-                          link.href = canvas.toDataURL("image/png");
-                          link.click();
-                        };
-                        img.src = `data:image/svg+xml;base64,${btoa(svgData)}`;
-                      }}
-                    >
-                      Baixar PNG (impressão)
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p>Salve o slug do estabelecimento primeiro</p>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </TabsContent>
