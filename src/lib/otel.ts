@@ -14,7 +14,7 @@ const otlpUrl = `${otlpBase}/v1/traces`;
 
 export const otelSDK = new NodeSDK({
   resource: resourceFromAttributes({
-    [ATTR_SERVICE_NAME]: "food-service",
+    [ATTR_SERVICE_NAME]: "meu-rango",
     [ATTR_SERVICE_VERSION]: process.env.npm_package_version || "0.1.0",
     environment: process.env.NODE_ENV || "development",
   }),

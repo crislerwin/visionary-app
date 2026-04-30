@@ -73,7 +73,7 @@ const loggingMiddleware = t.middleware(async ({ path, type, next, ctx }) => {
 // ────────────────────────────────────────────────────────────────
 
 const telemetryMiddleware = t.middleware(async ({ path, type, next, ctx }) => {
-  const tracer = trace.getTracer("food-service");
+  const tracer = trace.getTracer("meu-rango");
   const span = tracer.startSpan(`trpc.${type}.${path}`);
 
   span.setAttribute("trpc.path", path);
