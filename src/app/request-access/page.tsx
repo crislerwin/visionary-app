@@ -7,10 +7,13 @@ export default function RequestAccessPage() {
   return (
     <div className="landing-theme min-h-screen bg-background text-foreground">
       <div className="container relative h-screen flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
-        <div className="relative hidden h-full flex-col p-10 lg:flex text-foreground bg-white/10 backdrop-blur-sm border-r border-white/10">
+        <div
+          className="relative hidden h-full flex-col p-10 text-white lg:flex"
+          style={{ background: "var(--foreground)" }}
+        >
           <div
-            className="absolute inset-0 opacity-20"
-            style={{ background: "var(--gradient-hero)" }}
+            className="absolute inset-0 opacity-30"
+            style={{ background: "var(--gradient-hero)", backgroundAttachment: "fixed" }}
             aria-hidden
           />
           <div className="relative z-20 flex items-center gap-2 text-lg font-medium">
@@ -38,10 +41,10 @@ export default function RequestAccessPage() {
             </Link>
           </div>
           <div className="relative z-20 mt-auto space-y-4">
-            <blockquote className="text-xl font-medium leading-relaxed text-foreground">
+            <blockquote className="text-xl font-medium leading-relaxed">
               "Simplifique a gestão do seu restaurante."
             </blockquote>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-white/70">
               Preencha o formulário ao lado para solicitar acesso à plataforma. Nossa equipe
               analisará sua solicitação e entrará em contato em até 24 horas.
             </p>
