@@ -98,7 +98,7 @@ export function LoginForm({ className, showGoogle = false, ...props }: LoginForm
           {error && <p className="text-sm font-medium text-destructive">{error}</p>}
           <Button
             disabled={isLoading}
-            className="h-11 w-full rounded-full bg-foreground text-background font-semibold shadow-[var(--shadow-elegant)] hover:translate-y-[-1px] transition-transform"
+            className="h-11 w-full rounded-full bg-primary text-primary-foreground font-semibold shadow-[var(--shadow-elegant)] hover:translate-y-[-1px] transition-transform"
           >
             {isLoading && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
             Entrar
