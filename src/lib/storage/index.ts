@@ -1,8 +1,10 @@
+import { logger } from "@/lib/logger";
 import { LocalStorage } from "./local";
 import { S3Storage } from "./s3";
 import type { StorageConfig, StorageProvider } from "./types";
 
 export function createStorageProvider(config: StorageConfig): StorageProvider {
+  logger.info({ provider: config.provider }, "[createStorageProvider] creating storage");
   switch (config.provider) {
     case "s3":
       return new S3Storage(config);

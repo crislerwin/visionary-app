@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { logger } from "@/lib/logger";
 
 function loadEnv(): Record<string, string> {
   try {
@@ -55,6 +56,10 @@ export interface StorageConfig {
 
 export function getStorageConfig(): StorageConfig {
   const provider = env("STORAGE_PROVIDER", "local") as "s3" | "minio" | "local";
+  logger.info(
+    { provider, endpoint: env("MINIO_ENDPOINT", "not-set") },
+    "[getStorageConfig] resolved",
+  );
 
   if (provider === "s3") {
     return {
