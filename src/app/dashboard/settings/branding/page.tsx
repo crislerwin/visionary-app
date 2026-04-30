@@ -14,11 +14,13 @@ import {
 } from "@/components/settings/checkout-config-editor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ImageCropperDialog } from "@/components/ui/image-cropper-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCurrentTenant } from "@/hooks/use-current-tenant";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/lib/logger";
 import { api } from "@/lib/trpc/react";
 import {
   Clock,
@@ -30,11 +32,11 @@ import {
   MapPin,
   Palette,
   Phone,
+  QrCode,
   Share2,
   Star,
   Store,
 } from "lucide-react";
-import { QrCode } from "lucide-react";
 import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -63,19 +65,19 @@ function ColorPickerButton({ color, onChange, label }: ColorPickerButtonProps) {
   }, [isOpen]);
 
   return (
-    <div className="space-y-2">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
+    <div className="space-y-1.5">
+      <Label className="text-[11px] text-muted-foreground">{label}</Label>
       <div className="relative" ref={popoverRef}>
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 w-full rounded-md border px-3 py-2 bg-background hover:bg-accent transition-colors"
+          className="flex items-center gap-1.5 w-full rounded-md border px-2 py-1.5 bg-background hover:bg-accent transition-colors"
         >
           <div
-            className="h-6 w-6 rounded-full border shadow-sm flex-shrink-0"
+            className="h-4 w-4 rounded-full border shadow-sm flex-shrink-0"
             style={{ backgroundColor: color }}
           />
-          <span className="text-sm font-mono uppercase flex-1 text-left">{color}</span>
+          <span className="text-xs font-mono uppercase flex-1 text-left">{color}</span>
         </button>
 
         {isOpen && (
@@ -157,9 +159,11 @@ export default function BrandingSettingsPage() {
   const [paymentOptions, setPaymentOptions] = useState<PaymentOptions>({});
   const [customerForm, setCustomerForm] = useState<CustomerForm>({});
 
-  // Upload state
+  // Banner upload state
   const [isUploading, setIsUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [cropperImageSrc, setCropperImageSrc] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Only initialize from server data once on mount, don't overwrite user changes
   const tenantInitialized = useRef(false);
@@ -272,47 +276,64 @@ export default function BrandingSettingsPage() {
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-    }
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropperImageSrc(reader.result as string);
+      setCropperOpen(true);
+    };
+    reader.readAsDataURL(file);
+
+    // Reset input so the same file can be selected again
+    e.target.value = "";
   }, []);
 
-  const handleUpload = useCallback(async () => {
-    if (!selectedFile || !currentTenant) return;
+  const handleUpload = useCallback(
+    async (file: File) => {
+      if (!currentTenant) return;
 
-    setIsUploading(true);
-    try {
-      const compressedFile = await import("browser-image-compression").then((mod) =>
-        mod.default(selectedFile, { maxSizeMB: 0.5, maxWidthOrHeight: 512, useWebWorker: true }),
-      );
+      setIsUploading(true);
+      try {
+        const compressedFile = await import("browser-image-compression").then((mod) =>
+          mod.default(file, { maxSizeMB: 0.5, maxWidthOrHeight: 1024, useWebWorker: true }),
+        );
 
-      const formData = new FormData();
-      formData.append("file", compressedFile);
+        const formData = new FormData();
+        formData.append("file", compressedFile);
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
 
-      if (!response.ok) {
-        throw new Error("Upload failed");
+        if (!response.ok) {
+          throw new Error("Upload failed");
+        }
+
+        const { url } = await response.json();
+        setImageUrl(url);
+
+        // Auto-save the uploaded image to the tenant
+        await updateTenant.mutateAsync({
+          id: currentTenant.id,
+          image: url,
+        });
+      } catch (error) {
+        logger.error({ error }, "Upload error");
+      } finally {
+        setIsUploading(false);
       }
+    },
+    [currentTenant, updateTenant],
+  );
 
-      const { url } = await response.json();
-      setImageUrl(url);
-      setSelectedFile(null);
-
-      // Auto-save the uploaded image to the tenant
-      await updateTenant.mutateAsync({
-        id: currentTenant.id,
-        image: url,
-      });
-    } catch (error) {
-      console.error("Upload error:", error);
-    } finally {
-      setIsUploading(false);
-    }
-  }, [selectedFile, currentTenant, updateTenant]);
+  const handleCropComplete = useCallback(
+    (croppedFile: File) => {
+      void handleUpload(croppedFile);
+    },
+    [handleUpload],
+  );
 
   if (isLoadingTenant || isLoadingConfig) {
     return (
@@ -448,61 +469,55 @@ export default function BrandingSettingsPage() {
           </TabsContent>
 
           <TabsContent value="branding" className="space-y-4">
-            {/* Logo Section */}
+            {/* Banner Section */}
             <Card>
-              <CardHeader>
-                <CardTitle>Logo</CardTitle>
-                <CardDescription>Faça upload da logo do seu estabelecimento</CardDescription>
+              <CardHeader className="pb-2">
+                <CardTitle>Banner</CardTitle>
+                <CardDescription>Faça upload do banner do seu estabelecimento</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-                  <div className="relative h-24 w-24 sm:h-32 sm:w-32 rounded-lg border bg-muted overflow-hidden flex items-center justify-center shrink-0">
-                    {imageUrl ? (
-                      <Image
-                        src={imageUrl}
-                        alt="Logo preview"
-                        fill
-                        className="object-contain p-2"
-                      />
+              <CardContent className="space-y-2 pt-0">
+                {/* Banner Preview */}
+                <div className="relative w-full h-28 sm:h-36 rounded-lg border bg-muted overflow-hidden flex items-center justify-center">
+                  {imageUrl ? (
+                    <Image src={imageUrl} alt="Banner preview" fill className="object-cover" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-1.5 text-muted-foreground">
+                      <ImageIcon className="h-6 w-6 sm:h-8 sm:w-8" />
+                      <span className="text-xs sm:text-sm">Nenhum banner selecionado</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isUploading}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Enviando...
+                      </>
                     ) : (
-                      <ImageIcon className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
+                      <>
+                        <ImageIcon className="mr-2 h-4 w-4" />
+                        Escolher imagem
+                      </>
                     )}
-                  </div>
-                  <div className="space-y-2 w-full sm:w-auto">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileSelect}
-                      className="text-xs sm:text-sm"
-                    />
-                    {selectedFile && (
-                      <Button
-                        onClick={handleUpload}
-                        disabled={isUploading}
-                        size="sm"
-                        className="w-full sm:w-auto"
-                      >
-                        {isUploading ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Enviando...
-                          </>
-                        ) : (
-                          "Fazer upload"
-                        )}
-                      </Button>
-                    )}
-                    {imageUrl && (
-                      <Button
-                        variant="outline"
-                        onClick={() => setImageUrl("")}
-                        size="sm"
-                        className="w-full sm:w-auto"
-                      >
-                        Remover
-                      </Button>
-                    )}
-                  </div>
+                  </Button>
+                  {imageUrl && (
+                    <Button variant="outline" onClick={() => setImageUrl("")} size="sm">
+                      Remover
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -514,7 +529,7 @@ export default function BrandingSettingsPage() {
                 <CardDescription>Personalize as cores do seu cardápio</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                <div className="grid gap-3 grid-cols-2 sm:grid-cols-4 lg:grid-cols-6">
                   <ColorPickerButton
                     label="Cor Primária"
                     color={primaryColor}
@@ -832,6 +847,14 @@ export default function BrandingSettingsPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <ImageCropperDialog
+        open={cropperOpen}
+        onOpenChange={setCropperOpen}
+        imageSrc={cropperImageSrc}
+        onCrop={handleCropComplete}
+        aspectRatio={3}
+      />
     </PageContainer>
   );
 }

@@ -49,6 +49,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useCurrentTenant } from "@/hooks/use-current-tenant";
+import { logger } from "@/lib/logger";
 import { api } from "@/lib/trpc/react";
 import { useState } from "react";
 
@@ -274,7 +275,7 @@ export default function ProductsPage() {
       try {
         imageUrl = await uploadImage(newCategoryImageFile);
       } catch (error) {
-        console.error("Image upload failed:", error);
+        logger.error({ error }, "Image upload failed");
         return;
       }
     }
@@ -358,7 +359,7 @@ export default function ProductsPage() {
       try {
         imageUrl = await uploadImage(imageFile);
       } catch (error) {
-        console.error("Image upload failed:", error);
+        logger.error({ error }, "Image upload failed");
         setCreateError(error instanceof Error ? error.message : "Falha no upload da imagem.");
         return;
       }
@@ -391,7 +392,7 @@ export default function ProductsPage() {
       try {
         imageUrl = await uploadImage(imageFile);
       } catch (error) {
-        console.error("Image upload failed:", error);
+        logger.error({ error }, "Image upload failed");
         setEditError(error instanceof Error ? error.message : "Falha no upload da imagem.");
         return;
       }

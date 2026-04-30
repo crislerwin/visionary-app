@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { createStorageProvider, getStorageConfig } from "@/lib/storage";
 import { adminProcedure, router, tenantProcedure } from "@/lib/trpc/trpc";
 import { TRPCError } from "@trpc/server";
@@ -103,7 +104,7 @@ export const productImageRouter = router({
       await storage.delete(key);
     } catch (error) {
       // Log error but continue
-      console.error("Failed to delete image from storage:", error);
+      logger.error({ error, imageId: input.id }, "Failed to delete image from storage");
     }
 
     // Delete from database

@@ -1,4 +1,5 @@
 import { isBackofficeUser } from "@/lib/backoffice";
+import { logger } from "@/lib/logger";
 import bcrypt from "bcryptjs";
 import type { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
@@ -20,10 +21,10 @@ export const authConfig: NextAuthConfig = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        console.error("[AUTH DEBUG] Authorize called");
+        logger.debug("[AUTH] Authorize called");
 
         if (!credentials?.email || !credentials?.password) {
-          console.error("[AUTH DEBUG] Missing credentials");
+          logger.debug("[AUTH] Missing credentials");
           return null;
         }
 
@@ -34,14 +35,14 @@ export const authConfig: NextAuthConfig = {
             where: { email: credentials.email as string },
           });
 
-          console.error("[AUTH DEBUG] User found:", user ? "yes" : "no");
+          logger.debug({ userFound: !!user }, "[AUTH] User lookup");
 
           if (!user || !user.password) {
             return null;
           }
 
           const isValid = await bcrypt.compare(credentials.password as string, user.password);
-          console.error("[AUTH DEBUG] Password valid:", isValid);
+          logger.debug({ isValid }, "[AUTH] Password check");
 
           if (!isValid) {
             return null;
@@ -53,7 +54,7 @@ export const authConfig: NextAuthConfig = {
             name: user.name,
           };
         } catch (error) {
-          console.error("[AUTH DEBUG] Error:", error);
+          logger.error({ error }, "[AUTH] Authorize error");
           return null;
         }
       },

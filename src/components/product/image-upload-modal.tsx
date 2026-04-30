@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { logger } from "@/lib/logger";
 import imageCompression from "browser-image-compression";
 import { useState } from "react";
 import { Cropper } from "react-cropper";
@@ -45,7 +46,7 @@ export function ImageUploadModal({
       const objectUrl = URL.createObjectURL(compressedFile);
       setPreview(objectUrl);
     } catch (error) {
-      console.error("Error compressing image:", error);
+      logger.error({ error }, "Error compressing image");
     }
   };
 
@@ -70,7 +71,7 @@ export function ImageUploadModal({
       await onUpload(croppedFile);
       handleClose();
     } catch (error) {
-      console.error("Upload error:", error);
+      logger.error({ error }, "Upload error");
     } finally {
       setIsUploading(false);
     }

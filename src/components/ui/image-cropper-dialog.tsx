@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { logger } from "@/lib/logger";
 import { useRef, useState } from "react";
 import ReactCrop, {
   type Crop,
@@ -132,7 +133,7 @@ export function ImageCropperDialog({
         0.92,
       );
     } catch (error) {
-      console.error("Crop error:", error);
+      logger.error({ error }, "Crop error");
       setIsProcessing(false);
     }
   }

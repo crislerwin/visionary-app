@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { prisma } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { adminProcedure, router, tenantProcedure } from "@/lib/trpc/trpc";
 import { MemberRole } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
@@ -159,7 +160,7 @@ export const teamRouter = router({
       },
     });
 
-    console.log(`Invite link: ${process.env.NEXTAUTH_URL}/invite/${token}`);
+    logger.info({ token }, "Invite link generated");
 
     return {
       id: invite.id,
