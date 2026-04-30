@@ -1,6 +1,13 @@
 import { prisma } from "@/lib/db";
 import { publicProcedure, router, tenantProcedure } from "@/lib/trpc/trpc";
-import { OrderStatus, OrderType, PaymentMethod, PaymentStatus } from "@prisma/client";
+import {
+  CashRegisterStatus,
+  OrderStatus,
+  OrderType,
+  PaymentMethod,
+  PaymentStatus,
+  TransactionType,
+} from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -115,6 +122,51 @@ function getTimestampField(status: OrderStatus): string | null {
     default:
       return null;
   }
+}
+
+// Helper: cria transação no caixa aberto do tenant quando pedido é pago/entregue
+async function syncOrderWithCashRegister(
+  tenantId: string,
+  orderId: string,
+  amount: number,
+  paymentMethod: PaymentMethod | null,
+  description: string,
+  createdBy: string,
+) {
+  // Evita duplicatas
+  const existing = await prisma.cashRegisterTransaction.findFirst({
+    where: { orderId },
+  });
+  if (existing) return;
+
+  let cashRegister = await prisma.cashRegister.findFirst({
+    where: { tenantId, status: CashRegisterStatus.OPEN },
+    orderBy: { openedAt: "desc" },
+  });
+
+  // Se não houver caixa aberto, cria um automaticamente
+  if (!cashRegister) {
+    cashRegister = await prisma.cashRegister.create({
+      data: {
+        tenantId,
+        openedBy: createdBy,
+        initialAmount: 0,
+        status: CashRegisterStatus.OPEN,
+      },
+    });
+  }
+
+  await prisma.cashRegisterTransaction.create({
+    data: {
+      cashRegisterId: cashRegister.id,
+      type: TransactionType.SALE,
+      amount,
+      description,
+      paymentMethod: paymentMethod ?? undefined,
+      orderId,
+      createdBy,
+    },
+  });
 }
 
 export const orderRouter = router({
@@ -332,6 +384,18 @@ export const orderRouter = router({
         customer: true,
       },
     });
+
+    // Sincroniza com caixa quando pedido é confirmado (pago) ou entregue
+    if (newStatus === OrderStatus.CONFIRMED || newStatus === OrderStatus.DELIVERED) {
+      await syncOrderWithCashRegister(
+        tenantId,
+        updatedOrder.id,
+        Number(updatedOrder.total),
+        updatedOrder.paymentMethod,
+        `Pedido #${updatedOrder.orderNumber} - ${updatedOrder.type}`,
+        "system",
+      );
+    }
 
     return updatedOrder;
   }),
