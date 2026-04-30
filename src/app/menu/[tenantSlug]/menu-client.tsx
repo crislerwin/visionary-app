@@ -26,26 +26,26 @@ interface MenuClientProps {
     id: string;
     name: string;
     image: string | null;
-      products: Array<{
+    products: Array<{
+      id: string;
+      name: string;
+      description: string | null;
+      image: string | null;
+      price: number;
+      stock: number;
+      trackStock: boolean;
+      variants: Array<{
         id: string;
         name: string;
-        description: string | null;
-        image: string | null;
         price: number;
         stock: number;
-        trackStock: boolean;
-        variants: Array<{
-          id: string;
-          name: string;
-          price: number;
-          stock: number;
-        }>;
-        images: Array<{
-          id: string;
-          url: string;
-          thumbnailUrl: string | null;
-        }>;
       }>;
+      images: Array<{
+        id: string;
+        url: string;
+        thumbnailUrl: string | null;
+      }>;
+    }>;
   }>;
 }
 

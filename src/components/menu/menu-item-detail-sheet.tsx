@@ -68,7 +68,7 @@ export function MenuItemDetailSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom"         className="h-[65dvh] rounded-t-2xl p-0 flex flex-col">
+      <SheetContent side="bottom" className="h-[65dvh] rounded-t-2xl p-0 flex flex-col">
         <SheetHeader className="sr-only">
           <SheetTitle>{item.name}</SheetTitle>
           <SheetDescription>Detalhes do produto</SheetDescription>
@@ -125,9 +125,9 @@ function DetailContent({
   const allImages = useMemo(() => {
     const imgs: { url: string; alt: string }[] = [];
     if (item.image) imgs.push({ url: item.image, alt: item.name });
-    item.images.forEach((img) => {
+    for (const img of item.images) {
       if (img.url !== item.image) imgs.push({ url: img.url, alt: item.name });
-    });
+    }
     return imgs;
   }, [item]);
 
@@ -201,9 +201,9 @@ function DetailContent({
               <ChevronRight className="h-5 w-5" />
             </button>
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-              {allImages.map((_, idx) => (
+              {allImages.map((img, idx) => (
                 <button
-                  key={idx}
+                  key={img.url}
                   type="button"
                   onClick={() => setCurrentImageIndex(idx)}
                   className={cn(
@@ -249,7 +249,7 @@ function DetailContent({
 
         {item.variants.length > 1 && (
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Escolha uma opção</label>
+            <span className="text-sm font-medium text-foreground">Escolha uma opção</span>
             <div className="flex flex-wrap gap-2">
               {item.variants.map((variant) => (
                 <VariantButton
@@ -265,7 +265,10 @@ function DetailContent({
         )}
 
         {item.trackStock && (
-          <StockInfo stock={selectedVariant?.stock ?? item.stock} isVariant={item.variants.length > 1} />
+          <StockInfo
+            stock={selectedVariant?.stock ?? item.stock}
+            isVariant={item.variants.length > 1}
+          />
         )}
 
         <div className="pt-2">

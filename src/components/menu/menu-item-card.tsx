@@ -74,18 +74,10 @@ export function MenuItemCard({ item, onAdd, cartQuantity = 0, colors }: MenuItem
 
   return (
     <>
-      <motion.article
+      <motion.button
         whileHover={{ y: -2 }}
         onClick={handleCardClick}
-        className="group relative flex gap-4 p-3 rounded-2xl bg-card border border-border hover:border-foreground/20 hover:shadow-[var(--shadow-soft)] transition-all cursor-pointer"
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            handleCardClick();
-          }
-        }}
+        className="group relative flex gap-4 p-3 rounded-2xl bg-card border border-border hover:border-foreground/20 hover:shadow-[var(--shadow-soft)] transition-all cursor-pointer w-full text-left"
         aria-label={`Ver detalhes de ${item.name}`}
       >
         <div className="relative h-28 w-28 sm:h-32 sm:w-32 shrink-0 overflow-hidden rounded-xl bg-muted">
@@ -161,7 +153,7 @@ export function MenuItemCard({ item, onAdd, cartQuantity = 0, colors }: MenuItem
             </button>
           </div>
         </div>
-      </motion.article>
+      </motion.button>
 
       <MenuItemDetailSheet
         item={item}
