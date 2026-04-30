@@ -136,7 +136,11 @@ export function RequestAccessForm() {
           />
         </div>
         {error && <p className="text-sm font-medium text-destructive">{error}</p>}
-        <Button type="submit" disabled={isLoading} className="w-full rounded-full">
+        <Button
+          type="submit"
+          disabled={isLoading}
+          className="w-full rounded-full bg-foreground text-background font-semibold shadow-[var(--shadow-elegant)] hover:translate-y-[-1px] transition-transform"
+        >
           {isLoading && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
           Solicitar acesso
         </Button>
