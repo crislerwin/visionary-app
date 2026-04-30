@@ -25,13 +25,10 @@ export default async function SignUpPage() {
     <div className="landing-theme min-h-screen bg-background text-foreground">
       <div className="container relative h-screen flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
         {/* Left Panel — Brand */}
-        <div
-          className="relative hidden h-full flex-col p-10 text-white lg:flex"
-          style={{ background: "var(--foreground)" }}
-        >
+        <div className="relative hidden h-full flex-col p-10 lg:flex text-foreground bg-white/10 backdrop-blur-sm border-r border-white/10">
           <div
-            className="absolute inset-0 opacity-30"
-            style={{ background: "var(--gradient-hero)", backgroundAttachment: "fixed" }}
+            className="absolute inset-0 opacity-20"
+            style={{ background: "var(--gradient-hero)" }}
             aria-hidden
           />
           <div className="relative z-20 flex items-center gap-2 text-lg font-medium">
@@ -56,10 +53,10 @@ export default async function SignUpPage() {
             <span className="font-semibold tracking-tight">Meu Rango</span>
           </div>
           <div className="relative z-20 mt-auto space-y-4">
-            <blockquote className="text-xl font-medium leading-relaxed">
+            <blockquote className="text-xl font-medium leading-relaxed text-foreground">
               "Comece a vender online em minutos."
             </blockquote>
-            <p className="text-sm text-white/70">
+            <p className="text-sm text-muted-foreground">
               Crie sua conta gratuita e tenha acesso a um cardápio digital profissional, pedidos via
               WhatsApp e controle de caixa integrado.
             </p>
