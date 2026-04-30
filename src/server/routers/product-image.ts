@@ -1,11 +1,18 @@
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { createStorageProvider, getStorageConfig } from "@/lib/storage";
+import { type StorageProvider, createStorageProvider, getStorageConfig } from "@/lib/storage";
 import { adminProcedure, router, tenantProcedure } from "@/lib/trpc/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-const storage = createStorageProvider(getStorageConfig());
+let storageInstance: StorageProvider | null = null;
+
+function getStorage(): StorageProvider {
+  if (!storageInstance) {
+    storageInstance = createStorageProvider(getStorageConfig());
+  }
+  return storageInstance;
+}
 
 const generateKey = (tenantId: string, productId: string, filename: string) => {
   const timestamp = Date.now();
@@ -25,8 +32,8 @@ export const productImageRouter = router({
     .query(async ({ ctx, input }) => {
       const key = generateKey(ctx.tenantId, input.productId, input.filename);
 
-      const presignedUrl = await storage.getPresignedUrl(key);
-      const publicUrl = storage.getPublicUrl(key);
+      const presignedUrl = await getStorage().getPresignedUrl(key);
+      const publicUrl = getStorage().getPublicUrl(key);
 
       return { presignedUrl, publicUrl, key };
     }),
@@ -101,7 +108,7 @@ export const productImageRouter = router({
     // Delete from storage
     try {
       const key = image.url.split("/").slice(-3).join("/");
-      await storage.delete(key);
+      await getStorage().delete(key);
     } catch (error) {
       // Log error but continue
       logger.error({ error, imageId: input.id }, "Failed to delete image from storage");
