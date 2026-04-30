@@ -1,7 +1,9 @@
 "use client";
 
+import { PageContainer, PageHeader } from "@/components/layout/page-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import {
   Dialog,
@@ -29,6 +31,7 @@ import {
   CheckCircle,
   ChefHat,
   Clock,
+  DollarSign,
   Eye,
   Home,
   Loader2,
@@ -36,6 +39,7 @@ import {
   MessageCircle,
   Package,
   Phone,
+  Receipt,
   Truck,
   User,
 } from "lucide-react";
@@ -361,19 +365,21 @@ export default function OrdersPage() {
 
   const order = detailOrder;
 
+  const totalRevenue = filteredOrders.reduce((sum, o) => sum + Number(o.total), 0);
+  const confirmedCount = filteredOrders.filter(
+    (o) => o.status === OrderStatus.CONFIRMED || o.status === OrderStatus.PREPARING,
+  ).length;
+  const deliveredCount = filteredOrders.filter((o) => o.status === OrderStatus.DELIVERED).length;
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Gestão de Pedidos</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              {pendingCount > 0
-                ? `${pendingCount} pedido(s) pendente(s)`
-                : "Nenhum pedido pendente"}
-            </p>
-          </div>
-        </div>
+    <PageContainer>
+      <div className="space-y-6">
+        <PageHeader
+          title="Gestão de Pedidos"
+          description={
+            pendingCount > 0 ? `${pendingCount} pedido(s) pendente(s)` : "Nenhum pedido pendente"
+          }
+        />
 
         {!isLoading && !tenantId && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -385,42 +391,108 @@ export default function OrdersPage() {
         )}
 
         {tenantId && (
-          <DataTable
-            columns={columns}
-            data={filteredOrders}
-            totalItems={filteredOrders.length}
-            pageSize={filteredOrders.length || 10}
-            currentPage={1}
-            onPageChange={() => {}}
-            onPageSizeChange={() => {}}
-            isLoading={isLoading}
-            toolbarLeft={
-              <div className="flex items-center gap-2">
-                <Select
-                  value={statusFilter}
-                  onValueChange={(v) => setStatusFilter(v as OrderStatus | "ALL")}
-                >
-                  <SelectTrigger className="w-[180px] h-9 text-sm">
-                    <SelectValue placeholder="Filtrar por status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ALL">Todos os Status</SelectItem>
-                    {Object.values(OrderStatus).map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {orderStatusConfig[s].label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  placeholder="Buscar por cliente, telefone ou ID..."
-                  value={customerSearch}
-                  onChange={(e) => setCustomerSearch(e.target.value)}
-                  className="max-w-[260px] h-9 text-sm"
+          <>
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Card className="gap-0 p-0">
+                <CardHeader className="px-3 pt-3 pb-1 flex flex-row items-center justify-between space-y-0">
+                  <CardTitle className="text-xs font-medium text-muted-foreground">
+                    Total em Vendas
+                  </CardTitle>
+                  <DollarSign className="h-3.5 w-3.5 text-green-500" />
+                </CardHeader>
+                <CardContent className="px-3 pb-3 pt-0">
+                  {isLoading ? (
+                    <div className="h-7 w-28 bg-muted animate-pulse rounded" />
+                  ) : (
+                    <div className="text-xl font-bold text-green-600">
+                      R$ {totalRevenue.toFixed(2)}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="gap-0 p-0">
+                <CardHeader className="px-3 pt-3 pb-1 flex flex-row items-center justify-between space-y-0">
+                  <CardTitle className="text-xs font-medium text-muted-foreground">
+                    Em Preparo
+                  </CardTitle>
+                  <ChefHat className="h-3.5 w-3.5 text-orange-500" />
+                </CardHeader>
+                <CardContent className="px-3 pb-3 pt-0">
+                  {isLoading ? (
+                    <div className="h-7 w-16 bg-muted animate-pulse rounded" />
+                  ) : (
+                    <div className="text-xl font-bold">{confirmedCount}</div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="gap-0 p-0">
+                <CardHeader className="px-3 pt-3 pb-1 flex flex-row items-center justify-between space-y-0">
+                  <CardTitle className="text-xs font-medium text-muted-foreground">
+                    Entregues
+                  </CardTitle>
+                  <Receipt className="h-3.5 w-3.5 text-blue-500" />
+                </CardHeader>
+                <CardContent className="px-3 pb-3 pt-0">
+                  {isLoading ? (
+                    <div className="h-7 w-16 bg-muted animate-pulse rounded" />
+                  ) : (
+                    <div className="text-xl font-bold">{deliveredCount}</div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Orders Table */}
+            <Card className="gap-0 p-0 overflow-hidden">
+              <CardHeader className="px-3 pt-3 pb-0">
+                <CardTitle className="flex items-center gap-2 text-sm">
+                  <Receipt className="h-4 w-4" />
+                  Pedidos
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 pt-2">
+                <DataTable
+                  columns={columns}
+                  data={filteredOrders}
+                  totalItems={filteredOrders.length}
+                  pageSize={filteredOrders.length || 10}
+                  currentPage={1}
+                  onPageChange={() => {}}
+                  onPageSizeChange={() => {}}
+                  isLoading={isLoading}
+                  toolbarLeft={
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={statusFilter}
+                        onValueChange={(v) => setStatusFilter(v as OrderStatus | "ALL")}
+                      >
+                        <SelectTrigger className="w-[180px] h-9 text-sm">
+                          <SelectValue placeholder="Filtrar por status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ALL">Todos os Status</SelectItem>
+                          {Object.values(OrderStatus).map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {orderStatusConfig[s].label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        placeholder="Buscar por cliente, telefone ou ID..."
+                        value={customerSearch}
+                        onChange={(e) => setCustomerSearch(e.target.value)}
+                        className="max-w-[260px] h-9 text-sm"
+                      />
+                    </div>
+                  }
                 />
-              </div>
-            }
-          />
+              </CardContent>
+            </Card>
+          </>
         )}
       </div>
 
@@ -635,6 +707,6 @@ export default function OrdersPage() {
             })()}
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   );
 }

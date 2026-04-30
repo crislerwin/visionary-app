@@ -1,12 +1,12 @@
 "use client";
 
+import { PageContainer, PageHeader } from "@/components/layout/page-layout";
 import { useCurrentTenant } from "@/hooks/use-current-tenant";
 import { api } from "@/lib/trpc/react";
 import { MemberRole } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, MoreHorizontal, UserPlus } from "lucide-react";
-import Link from "next/link";
+import { MoreHorizontal, Shield, UserPlus, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { InviteMemberForm } from "@/components/team/invite-member-form";
@@ -96,7 +96,6 @@ export default function TeamPage() {
       {
         accessorKey: "user.name",
         header: "Nome",
-        size: 320,
         cell: ({ row }) => {
           const member = row.original;
           return (
@@ -118,7 +117,6 @@ export default function TeamPage() {
       {
         accessorKey: "role",
         header: "Papel",
-        size: 120,
         cell: ({ row }) => (
           <Badge variant={roleColors[row.getValue("role") as MemberRole]}>
             {roleLabels[row.getValue("role") as MemberRole]}
@@ -128,7 +126,6 @@ export default function TeamPage() {
       {
         accessorKey: "joinedAt",
         header: "Entrou",
-        size: 160,
         cell: ({ row }) => {
           const date = row.original.joinedAt || row.original.createdAt;
           return (
@@ -141,7 +138,6 @@ export default function TeamPage() {
       {
         id: "actions",
         header: "Ações",
-        size: 80,
         cell: ({ row }) => {
           const member = row.original;
           if (!data?.canManageRoles) return null;
@@ -279,80 +275,136 @@ export default function TeamPage() {
   const invites = (data?.pendingInvites ?? []) as Invite[];
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/dashboard">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Equipe</h1>
-            <p className="text-muted-foreground">Gerencie membros e convites do time</p>
-          </div>
+    <PageContainer>
+      <div className="space-y-6">
+        <PageHeader
+          title="Equipe"
+          description="Gerencie membros e convites do time"
+          action={
+            data?.canManageRoles ? (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <UserPlus className="mr-1.5 h-4 w-4" />
+                    Convidar membro
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Convidar membro</DialogTitle>
+                    <DialogDescription>
+                      Envie um convite por e-mail para adicionar alguém ao time.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <InviteMemberForm tenantId={tenantId} onSuccess={() => refetch()} />
+                </DialogContent>
+              </Dialog>
+            ) : undefined
+          }
+        />
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card className="gap-0 p-0">
+            <CardHeader className="px-3 pt-3 pb-1 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-xs font-medium text-muted-foreground">
+                Total de Membros
+              </CardTitle>
+              <Users className="h-3.5 w-3.5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent className="px-3 pb-3 pt-0">
+              {isLoading ? (
+                <div className="h-7 w-16 bg-muted animate-pulse rounded" />
+              ) : (
+                <div className="text-xl font-bold">{members.length}</div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="gap-0 p-0">
+            <CardHeader className="px-3 pt-3 pb-1 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-xs font-medium text-muted-foreground">
+                Administradores
+              </CardTitle>
+              <Shield className="h-3.5 w-3.5 text-blue-500" />
+            </CardHeader>
+            <CardContent className="px-3 pb-3 pt-0">
+              {isLoading ? (
+                <div className="h-7 w-16 bg-muted animate-pulse rounded" />
+              ) : (
+                <div className="text-xl font-bold">
+                  {
+                    members.filter(
+                      (m) => m.role === MemberRole.ADMIN || m.role === MemberRole.OWNER,
+                    ).length
+                  }
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="gap-0 p-0">
+            <CardHeader className="px-3 pt-3 pb-1 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-xs font-medium text-muted-foreground">
+                Convites Pendentes
+              </CardTitle>
+              <UserPlus className="h-3.5 w-3.5 text-yellow-500" />
+            </CardHeader>
+            <CardContent className="px-3 pb-3 pt-0">
+              {isLoading ? (
+                <div className="h-7 w-16 bg-muted animate-pulse rounded" />
+              ) : (
+                <div className="text-xl font-bold">{invites.length}</div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-        {data?.canManageRoles && (
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button>
-                <UserPlus className="mr-2 h-4 w-4" />
-                Convidar membro
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Convidar membro</DialogTitle>
-                <DialogDescription>
-                  Envie um convite por e-mail para adicionar alguém ao time.
-                </DialogDescription>
-              </DialogHeader>
-              <InviteMemberForm tenantId={tenantId} onSuccess={() => refetch()} />
-            </DialogContent>
-          </Dialog>
-        )}
-      </div>
-
-      {/* Members Table */}
-      <Card className="overflow-hidden">
-        <CardHeader className="px-6 py-4">
-          <CardTitle className="text-base">Membros</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <DataTable
-            columns={memberColumns}
-            data={members}
-            isLoading={isLoading}
-            totalItems={members.length}
-            currentPage={page}
-            pageSize={pageSize}
-            onPageChange={setPage}
-            onPageSizeChange={setPageSize}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Pending Invites Table */}
-      {invites.length > 0 && (
-        <Card className="overflow-hidden">
-          <CardHeader className="px-6 py-4">
-            <CardTitle className="text-base">Convites pendentes</CardTitle>
+        {/* Members Table */}
+        <Card className="gap-0 p-0 overflow-hidden">
+          <CardHeader className="px-3 pt-3 pb-0">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Users className="h-4 w-4" />
+              Membros
+            </CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="px-4 pb-4 pt-2">
             <DataTable
-              columns={inviteColumns}
-              data={invites}
-              totalItems={invites.length}
-              currentPage={1}
-              pageSize={invites.length}
-              onPageChange={() => {}}
-              onPageSizeChange={() => {}}
+              columns={memberColumns}
+              data={members}
+              isLoading={isLoading}
+              totalItems={members.length}
+              currentPage={page}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
             />
           </CardContent>
         </Card>
-      )}
-    </div>
+
+        {/* Pending Invites Table */}
+        {invites.length > 0 && (
+          <Card className="gap-0 p-0 overflow-hidden">
+            <CardHeader className="px-3 pt-3 pb-0">
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <UserPlus className="h-4 w-4" />
+                Convites pendentes
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4 pt-2">
+              <DataTable
+                columns={inviteColumns}
+                data={invites}
+                totalItems={invites.length}
+                currentPage={1}
+                pageSize={invites.length}
+                onPageChange={() => {}}
+                onPageSizeChange={() => {}}
+              />
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </PageContainer>
   );
 }
