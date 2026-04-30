@@ -65,6 +65,9 @@ export default async function MenuPage({ params }: MenuPageProps) {
             where: { isActive: true },
             orderBy: { price: "asc" },
           },
+          images: {
+            orderBy: { sortOrder: "asc" },
+          },
         },
       },
     },

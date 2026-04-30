@@ -26,21 +26,26 @@ interface MenuClientProps {
     id: string;
     name: string;
     image: string | null;
-    products: Array<{
-      id: string;
-      name: string;
-      description: string | null;
-      image: string | null;
-      price: number;
-      stock: number;
-      trackStock: boolean;
-      variants: Array<{
+      products: Array<{
         id: string;
         name: string;
+        description: string | null;
+        image: string | null;
         price: number;
         stock: number;
+        trackStock: boolean;
+        variants: Array<{
+          id: string;
+          name: string;
+          price: number;
+          stock: number;
+        }>;
+        images: Array<{
+          id: string;
+          url: string;
+          thumbnailUrl: string | null;
+        }>;
       }>;
-    }>;
   }>;
 }
 
@@ -152,6 +157,7 @@ export function MenuClient({ tenant, categories }: MenuClientProps) {
   const handleAddToCart = (
     product: MenuClientProps["categories"][number]["products"][number],
     variantId?: string | null,
+    quantity = 1,
   ) => {
     const variant = product.variants.find((v) => v.id === variantId) ?? null;
     const price = variant?.price ?? product.price;
@@ -163,7 +169,7 @@ export function MenuClient({ tenant, categories }: MenuClientProps) {
       variantId: variantId ?? null,
       variantName: variant?.name ?? null,
       price: Number(price),
-      quantity: 1,
+      quantity,
       notes: "",
     });
   };
