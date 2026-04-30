@@ -45,7 +45,7 @@ export function Navbar() {
             href="https://wa.me/5562981878663"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center rounded-full bg-foreground text-background px-4 py-2 text-sm font-semibold hover:bg-foreground/90 transition-colors"
+            className="inline-flex items-center rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
           >
             Fale conosco
           </a>
