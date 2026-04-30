@@ -27,11 +27,11 @@ export default async function SignUpPage() {
         {/* Left Panel — Brand */}
         <div
           className="relative hidden h-full flex-col p-10 text-white lg:flex"
-          style={{ background: "var(--gradient-hero)" }}
+          style={{ background: "var(--gradient-primary)" }}
         >
           <div
-            className="absolute inset-0 -z-10"
-            style={{ background: "var(--primary)" }}
+            className="absolute inset-0 opacity-30"
+            style={{ background: "var(--gradient-hero)", backgroundAttachment: "fixed" }}
             aria-hidden
           />
           <div className="relative z-20 flex items-center gap-2 text-lg font-medium">
