@@ -39,7 +39,7 @@ import {
   Truck,
   User,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { OrderAddress, OrderWithItemsAndTenant } from "./types";
 import { useOrderMutations } from "./use-order-mutations";
 
@@ -130,7 +130,31 @@ export default function OrdersPage() {
     refetch,
   } = api.order.list.useQuery(listInput, {
     enabled: !!tenantId,
+    refetchInterval: 10000,
   });
+
+  // Notificação sonora para novos pedidos pendentes
+  const lastPendingCount = useRef(0);
+  useEffect(() => {
+    const pendingOrders = (ordersRaw ?? []).filter((o) => o.status === OrderStatus.PENDING);
+    if (pendingOrders.length > lastPendingCount.current && lastPendingCount.current > 0) {
+      // Toca beep com Web Audio API (não depende de arquivo externo)
+      try {
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        gain.gain.value = 0.3;
+        osc.start();
+        osc.stop(ctx.currentTime + 0.2);
+      } catch {
+        // Ignora erro de áudio
+      }
+    }
+    lastPendingCount.current = pendingOrders.length;
+  }, [ordersRaw]);
 
   const orders = (ordersRaw ?? []) as unknown as OrderWithItemsAndTenant[];
 
