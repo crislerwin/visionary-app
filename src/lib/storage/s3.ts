@@ -1,6 +1,12 @@
 import https from "node:https";
 import { logger } from "@/lib/logger";
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  CreateBucketCommand,
+  DeleteObjectCommand,
+  HeadBucketCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NodeHttpHandler } from "@smithy/node-http-handler";
 import type { StorageConfig, StorageProvider } from "./types";
@@ -41,6 +47,31 @@ export class S3Storage implements StorageProvider {
     this.endpoint = config.endpoint;
     this.publicEndpoint = config.publicEndpoint;
     this.isMinio = isMinio;
+
+    // Cria o bucket automaticamente se não existir (não bloqueante)
+    void this.ensureBucket();
+  }
+
+  private async ensureBucket(): Promise<void> {
+    try {
+      await this.client.send(new HeadBucketCommand({ Bucket: this.bucket }));
+      logger.debug({ bucket: this.bucket }, "[S3Storage] Bucket exists");
+    } catch (err: unknown) {
+      const error = err as { name?: string };
+      if (error.name === "NotFound" || error.name === "NoSuchBucket") {
+        try {
+          await this.client.send(new CreateBucketCommand({ Bucket: this.bucket }));
+          logger.info({ bucket: this.bucket }, "[S3Storage] Bucket created automatically");
+        } catch (createErr) {
+          logger.warn(
+            { err: createErr, bucket: this.bucket },
+            "[S3Storage] Failed to create bucket",
+          );
+        }
+      } else {
+        logger.warn({ err, bucket: this.bucket }, "[S3Storage] Could not check bucket existence");
+      }
+    }
   }
 
   async upload(file: Buffer, key: string, contentType: string): Promise<string> {
