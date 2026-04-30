@@ -20,6 +20,9 @@ export const metadata: Metadata = {
   title: "Meu Rango - Cardapio Digital para Restaurantes",
   description:
     "Cardápio digital com QR Code, pedidos online e PDV — tudo em uma única plataforma feita para restaurantes, lanchonetes e food trucks no Brasil.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
