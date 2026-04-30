@@ -312,9 +312,9 @@ export default function TeamPage() {
       </div>
 
       {/* Members Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Membros</CardTitle>
+      <Card className="overflow-hidden">
+        <CardHeader className="px-6 py-4">
+          <CardTitle className="text-base">Membros</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <DataTable
@@ -332,9 +332,9 @@ export default function TeamPage() {
 
       {/* Pending Invites Table */}
       {invites.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Convites pendentes</CardTitle>
+        <Card className="overflow-hidden">
+          <CardHeader className="px-6 py-4">
+            <CardTitle className="text-base">Convites pendentes</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <DataTable

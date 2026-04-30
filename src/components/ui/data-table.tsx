@@ -152,7 +152,10 @@ export function DataTable<TData, TValue>({
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className="px-2 py-2">
+                    <TableHead
+                      key={header.id}
+                      className="px-4 py-3 bg-muted/40 font-semibold text-xs uppercase tracking-wider text-muted-foreground"
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(header.column.columnDef.header, header.getContext())}
@@ -169,7 +172,7 @@ export function DataTable<TData, TValue>({
                 <TableRow key={`skeleton-row-${i}`}>
                   {columns.map((_, j) => (
                     // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton cells
-                    <TableCell key={`skeleton-cell-${i}-${j}`} className="px-2 py-2">
+                    <TableCell key={`skeleton-cell-${i}-${j}`} className="px-4 py-3">
                       <div className="h-4 bg-muted animate-pulse rounded" />
                     </TableCell>
                   ))}
@@ -179,7 +182,7 @@ export function DataTable<TData, TValue>({
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="px-2 py-2">
+                    <TableCell key={cell.id} className="px-4 py-3">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
@@ -187,7 +190,7 @@ export function DataTable<TData, TValue>({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center px-2 py-2">
+                <TableCell colSpan={columns.length} className="h-24 text-center px-4 py-3">
                   Nenhum resultado encontrado.
                 </TableCell>
               </TableRow>
