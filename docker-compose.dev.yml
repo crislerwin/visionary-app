@@ -21,11 +21,11 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - food-service-net
+            - meu-rango-net
 
   app:
     image: node:22-alpine
-    container_name: food-service-app-dev
+    container_name: meu-rango-app-dev
     working_dir: /app
     # Volume do código fonte + volume anônimo para node_modules
     volumes:
@@ -41,7 +41,7 @@ services:
       HOSTNAME: 0.0.0.0
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-saas}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-lgtm:4318/v1/traces}
-      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-food-service}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-meu-rango}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       AUTH_URL: ${AUTH_URL:-http://localhost:3000}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
@@ -64,7 +64,7 @@ services:
     stdin_open: true
     tty: true
     networks:
-      - food-service-net
+            - meu-rango-net
 
 volumes:
   postgres_data:
@@ -72,5 +72,5 @@ volumes:
   bun_cache:
 
 networks:
-  food-service-net:
+  meu-rango-net:
     driver: bridge

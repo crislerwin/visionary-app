@@ -13,7 +13,7 @@ export function Footer() {
             >
               <UtensilsCrossed size={18} />
             </span>
-            Food Service
+            Meu Rango
           </div>
           <p className="mt-4 text-sm text-muted-foreground max-w-xs">
             Cardápio digital, pedidos e PDV — feito para o pequeno comércio alimentício brasileiro.
@@ -59,7 +59,7 @@ export function Footer() {
       </div>
       <div className="border-t border-border">
         <div className="mx-auto max-w-7xl px-6 lg:px-10 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-          <p>© {new Date().getFullYear()} Food Service. Todos os direitos reservados.</p>
+          <p>© {new Date().getFullYear()} Meu Rango. Todos os direitos reservados.</p>
           <p>
             Desenvolvido por{" "}
             <span className="font-semibold text-foreground">Reactive Software</span>

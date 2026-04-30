@@ -15,12 +15,12 @@ export async function generateMetadata({ params }: MenuPageProps): Promise<Metad
       select: { name: true, description: true },
     });
     return {
-      title: `${tenant?.name ?? "Cardápio"} - Cardápio`,
+      title: `${tenant?.name ?? "Cardápio"} - Meu Rango`,
       description: tenant?.description || `Cardápio de ${tenant?.name ?? ""}`,
     };
   } catch {
     return {
-      title: "Cardápio",
+      title: "Meu Rango",
       description: "Cardápio digital",
     };
   }

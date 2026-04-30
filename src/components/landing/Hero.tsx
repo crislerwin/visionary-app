@@ -35,7 +35,7 @@ export function Hero() {
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
               href="/request-access"
-              className="group inline-flex items-center gap-2 rounded-full bg-foreground text-background px-6 py-3.5 text-sm font-semibold shadow-[var(--shadow-elegant)] hover:translate-y-[-1px] transition-transform"
+              className="group inline-flex items-center gap-2 rounded-full border border-border bg-card px-6 py-3.5 text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
             >
               Solicitar acesso
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -78,7 +78,7 @@ export function Hero() {
           <div className="relative rounded-[2rem] overflow-hidden shadow-[var(--shadow-elegant)] border border-border bg-card">
             <img
               src="/images/landing/hero-phone.jpg"
-              alt="Cardápio digital Food Service em smartphone"
+              alt="Cardápio digital Meu Rango em smartphone"
               width={1024}
               height={1280}
               className="w-full h-auto object-cover"

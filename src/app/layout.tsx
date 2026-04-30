@@ -17,7 +17,7 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Food Service - Cardápio Digital, Pedidos e PDV",
+  title: "Meu Rango - Cardapio Digital para Restaurantes",
   description:
     "Cardápio digital com QR Code, pedidos online e PDV — tudo em uma única plataforma feita para restaurantes, lanchonetes e food trucks no Brasil.",
 };
