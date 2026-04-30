@@ -4,6 +4,7 @@ import {
   CreateBucketCommand,
   DeleteObjectCommand,
   HeadBucketCommand,
+  PutBucketPolicyCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -67,10 +68,34 @@ export class S3Storage implements StorageProvider {
             { err: createErr, bucket: this.bucket },
             "[S3Storage] Failed to create bucket",
           );
+          return;
         }
       } else {
         logger.warn({ err, bucket: this.bucket }, "[S3Storage] Could not check bucket existence");
+        return;
       }
+    }
+
+    // Aplica policy pública para leitura anônima (imagens acessíveis via URL)
+    try {
+      const policy = JSON.stringify({
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Effect: "Allow",
+            Principal: { AWS: "*" },
+            Action: ["s3:GetObject"],
+            Resource: [`arn:aws:s3:::${this.bucket}/*`],
+          },
+        ],
+      });
+      await this.client.send(new PutBucketPolicyCommand({ Bucket: this.bucket, Policy: policy }));
+      logger.info({ bucket: this.bucket }, "[S3Storage] Bucket policy applied (public read)");
+    } catch (policyErr) {
+      logger.warn(
+        { err: policyErr, bucket: this.bucket },
+        "[S3Storage] Failed to apply bucket policy",
+      );
     }
   }
 
