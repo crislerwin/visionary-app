@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: ".",
   },
+  serverExternalPackages: ["pino", "pino-pretty", "thread-stream"],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**" },
