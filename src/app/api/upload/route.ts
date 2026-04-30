@@ -3,9 +3,8 @@ import { logger } from "@/lib/logger";
 import { createStorageProvider, getStorageConfig } from "@/lib/storage";
 import { NextResponse } from "next/server";
 
-const storage = createStorageProvider(getStorageConfig());
-
 export async function POST(request: Request) {
+  const storage = createStorageProvider(getStorageConfig());
   const session = await auth();
 
   if (!session?.user) {

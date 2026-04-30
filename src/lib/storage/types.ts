@@ -23,6 +23,9 @@ export interface StorageConfig {
 export function getStorageConfig(): StorageConfig {
   const provider = (process.env.STORAGE_PROVIDER as "s3" | "minio" | "local") || "local";
 
+  // biome-ignore lint/suspicious/noConsole: temp debug
+  console.log("[getStorageConfig] STORAGE_PROVIDER =", process.env.STORAGE_PROVIDER, "=> provider =", provider);
+
   if (provider === "s3") {
     return {
       provider: "s3",
