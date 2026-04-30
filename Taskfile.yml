@@ -2,7 +2,7 @@
 version: "3"
 
 vars:
-  IMAGE_NAME: food-service
+  IMAGE_NAME: meu-rango
   DOCKER_HUB_USER:
     sh: grep "^DOCKER_HUB_USER=" .env 2>/dev/null | cut -d '=' -f2 || echo "seu-usuario-dockerhub"
   TAG: '{{.TAG | default "latest"}}'
@@ -252,7 +252,7 @@ tasks:
       - task db:seed
       - |
         echo ""
-        echo "🚀 Food Service está no ar!"
+        echo "🚀 Meu Rango está no ar!"
         echo "   App: http://localhost:3000"
         echo "   Grafana: http://localhost:3001"
         echo ""

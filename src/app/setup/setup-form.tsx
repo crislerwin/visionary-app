@@ -35,7 +35,7 @@ export function SetupForm() {
         </div>
         <CardTitle className="text-2xl text-center">Criar estabelecimento</CardTitle>
         <CardDescription className="text-center">
-          Crie seu primeiro estabelecimento para começar a usar o Food Service
+          Crie seu primeiro estabelecimento para começar a usar o Meu Rango
         </CardDescription>
       </CardHeader>
       <CardContent>

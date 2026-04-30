@@ -78,7 +78,7 @@ export function Hero() {
           <div className="relative rounded-[2rem] overflow-hidden shadow-[var(--shadow-elegant)] border border-border bg-card">
             <img
               src="/images/landing/hero-phone.jpg"
-              alt="Cardápio digital Food Service em smartphone"
+              alt="Cardápio digital Meu Rango em smartphone"
               width={1024}
               height={1280}
               className="w-full h-auto object-cover"

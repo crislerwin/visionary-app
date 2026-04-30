@@ -17,12 +17,12 @@ services:
             timeout: 5s
             retries: 5
         networks:
-            - food-service-net
+            - meu-rango-net
 
     # ─── LGTM Observability Stack (all-in-one) ───
     otel-lgtm:
         image: grafana/otel-lgtm:latest
-        container_name: food-service-otel-lgtm
+        container_name: meu-rango-otel-lgtm
         ports:
             - "3001:3000" # Grafana UI
             - "4318:4318" # OTLP HTTP (traces e métricas)
@@ -41,12 +41,12 @@ services:
                 tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
                 labels: "loki,service_name,logging"
         networks:
-            - food-service-net
+            - meu-rango-net
 
     # ─── Promtail (coleta logs dos containers Docker) ───
     promtail:
         image: grafana/promtail:3.2.0
-        container_name: food-service-promtail
+        container_name: meu-rango-promtail
         labels:
             loki: "true"
             service_name: "promtail"
@@ -60,21 +60,21 @@ services:
         depends_on:
             - otel-lgtm
         networks:
-            - food-service-net
+            - meu-rango-net
 
     # ─── Food Service Application ───
     app:
         build:
             context: .
             dockerfile: Dockerfile
-        container_name: food-service-app
+        container_name: meu-rango-app
         # Carrega todas as variáveis do arquivo .env automaticamente
         env_file:
             - .env
         labels:
             loki: "true"
-            service_name: "food-service"
-            logging: "food-service"
+            service_name: "meu-rango"
+            logging: "meu-rango"
         environment:
             NODE_ENV: ${NODE_ENV:-production}
             PORT: ${PORT:-3000}
@@ -83,7 +83,7 @@ services:
             DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-saas}
             # OpenTelemetry endpoint (LGTM container dentro da mesma rede)
             OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-lgtm:4318/v1/traces}
-            OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-food-service}
+            OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-meu-rango}
             LOG_LEVEL: ${LOG_LEVEL:-info}
             # NextAuth (sobrescreve NEXTAUTH_URL do .env para o container)
             NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
@@ -91,7 +91,7 @@ services:
             STORAGE_PROVIDER: ${STORAGE_PROVIDER:-minio}
             MINIO_ENDPOINT: http://192.168.3.55:9000
             MINIO_PUBLIC_ENDPOINT: http://192.168.3.55:9000
-            MINIO_BUCKET: ${MINIO_BUCKET:-food-service-images}
+            MINIO_BUCKET: ${MINIO_BUCKET:-meu-rango-images}
             MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
             MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
             MINIO_USE_SSL: "false"
@@ -108,7 +108,7 @@ services:
                 tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
                 labels: "loki,service_name,logging"
         networks:
-            - food-service-net
+            - meu-rango-net
 
 volumes:
     postgres_data:
@@ -116,5 +116,5 @@ volumes:
     promtail-positions:
 
 networks:
-    food-service-net:
+    meu-rango-net:
         driver: bridge

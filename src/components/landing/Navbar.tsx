@@ -12,7 +12,7 @@ export function Navbar() {
           >
             <UtensilsCrossed className="h-4.5 w-4.5" size={18} />
           </span>
-          Food Service
+          Meu Rango
         </Link>
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
           <a href="#funcionalidades" className="hover:text-foreground transition-colors">

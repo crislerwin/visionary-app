@@ -24,7 +24,7 @@ export function Showcase() {
           <div className="rounded-[2rem] overflow-hidden border border-border shadow-[var(--shadow-elegant)]">
             <img
               src="/images/landing/owner-dashboard.jpg"
-              alt="Dono de restaurante usando o painel Food Service"
+              alt="Dono de restaurante usando o painel Meu Rango"
               loading="lazy"
               width={1280}
               height={960}
