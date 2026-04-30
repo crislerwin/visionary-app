@@ -9,7 +9,7 @@ export default function RequestAccessPage() {
       <div className="container relative h-screen flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
         <div
           className="relative hidden h-full flex-col p-10 text-white lg:flex"
-          style={{ background: "var(--foreground)" }}
+          style={{ background: "var(--gradient-primary)" }}
         >
           <div
             className="absolute inset-0 opacity-30"

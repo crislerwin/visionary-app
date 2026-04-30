@@ -27,7 +27,7 @@ export default async function SignUpPage() {
         {/* Left Panel — Brand */}
         <div
           className="relative hidden h-full flex-col p-10 text-white lg:flex"
-          style={{ background: "var(--foreground)" }}
+          style={{ background: "var(--gradient-primary)" }}
         >
           <div
             className="absolute inset-0 opacity-30"
