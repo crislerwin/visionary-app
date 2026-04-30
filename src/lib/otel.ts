@@ -6,7 +6,11 @@ import { NodeSDK } from "@opentelemetry/sdk-node";
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from "@opentelemetry/semantic-conventions";
 import { PrismaInstrumentation } from "@prisma/instrumentation";
 
-const otlpEndpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || "http://localhost:4318";
+const otlpBase = (process.env.OTEL_EXPORTER_OTLP_ENDPOINT || "http://localhost:4318").replace(
+  /\/v1\/traces\/?$/,
+  "",
+);
+const otlpUrl = `${otlpBase}/v1/traces`;
 
 export const otelSDK = new NodeSDK({
   resource: resourceFromAttributes({
@@ -15,7 +19,7 @@ export const otelSDK = new NodeSDK({
     environment: process.env.NODE_ENV || "development",
   }),
   traceExporter: new OTLPTraceExporter({
-    url: `${otlpEndpoint}/v1/traces`,
+    url: otlpUrl,
   }),
   instrumentations: [
     getNodeAutoInstrumentations({
@@ -29,7 +33,7 @@ export const otelSDK = new NodeSDK({
 
 export function startOtel() {
   otelSDK.start();
-  logger.info({ otelEndpoint: otlpEndpoint }, "OpenTelemetry SDK started");
+  logger.info({ otelEndpoint: otlpUrl }, "OpenTelemetry SDK started");
 }
 
 export function stopOtel() {
