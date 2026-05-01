@@ -39,64 +39,8 @@ import {
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { HexColorPicker } from "react-colorful";
 
-interface ColorPickerButtonProps {
-  color: string;
-  onChange: (color: string) => void;
-  label: string;
-}
-
-function ColorPickerButton({ color, onChange, label }: ColorPickerButtonProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const popoverRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen]);
-
-  return (
-    <div className="space-y-1.5">
-      <Label className="text-[11px] text-muted-foreground">{label}</Label>
-      <div className="relative" ref={popoverRef}>
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-1.5 w-full rounded-md border px-2 py-1.5 bg-background hover:bg-accent transition-colors"
-        >
-          <div
-            className="h-4 w-4 rounded-full border shadow-sm flex-shrink-0"
-            style={{ backgroundColor: color }}
-          />
-          <span className="text-xs font-mono uppercase flex-1 text-left">{color}</span>
-        </button>
-
-        {isOpen && (
-          <div className="absolute z-50 mt-2 p-3 bg-background border rounded-lg shadow-lg space-y-2 w-[240px]">
-            <HexColorPicker
-              color={color}
-              onChange={onChange}
-              style={{ width: "100%", height: "120px" }}
-            />
-            <Input
-              value={color}
-              onChange={(e) => onChange(e.target.value)}
-              className="h-8 text-xs font-mono uppercase"
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+import { ColorPickerButton } from "@/components/ui/color-picker-button";
 
 export default function BrandingSettingsPage() {
   const { toast } = useToast();
