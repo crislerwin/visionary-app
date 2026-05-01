@@ -173,6 +173,18 @@ export const orderRouter = router({
   createOrder: publicProcedure.input(createOrderInputSchema).mutation(async ({ input }) => {
     const { tenantId } = input;
 
+    // Verificar se o tenant existe e está ativo
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
+
+    if (!tenant || !tenant.isActive) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Tenant not found or inactive",
+      });
+    }
+
     const customerPhone = input.customer.phone || "";
     const customerName = input.customer.name || "Cliente";
 
