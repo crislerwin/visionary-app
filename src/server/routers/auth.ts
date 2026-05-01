@@ -330,7 +330,7 @@ export const authRouter = router({
 
           await tx.invite.update({
             where: { id: invite.id },
-            data: { acceptedAt: new Date() },
+            data: { acceptedAt: new Date(), expiresAt: new Date() },
           });
         });
 
