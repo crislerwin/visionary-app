@@ -144,6 +144,7 @@ const updateConfigSchema = z
           .optional(),
       })
       .optional(),
+    deliveryFee: z.number().min(0).optional(),
   })
   .partial();
 
@@ -365,6 +366,7 @@ export const tenantRouter = router({
       timezone: (parsedConfig?.timezone as string) || "America/Sao_Paulo",
       paymentOptions: paymentOptions || null,
       customerForm: customerForm || null,
+      deliveryFee: (parsedConfig?.deliveryFee as number) ?? 0,
     };
   }),
 
@@ -481,6 +483,7 @@ export const tenantRouter = router({
       timezone: (parsedConfig.timezone as string) || "America/Sao_Paulo",
       paymentOptions: paymentOptions || null,
       customerForm: customerForm || null,
+      deliveryFee: (parsedConfig.deliveryFee as number) ?? 0,
     };
   }),
 

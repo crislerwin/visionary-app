@@ -157,6 +157,7 @@ export default function BrandingSettingsPage() {
   // Checkout config
   const [paymentOptions, setPaymentOptions] = useState<PaymentOptions>({});
   const [customerForm, setCustomerForm] = useState<CustomerForm>({});
+  const [deliveryFee, setDeliveryFee] = useState<string>("");
 
   // Banner upload state
   const [isUploading, setIsUploading] = useState(false);
@@ -198,6 +199,7 @@ export default function BrandingSettingsPage() {
       setTimezone((config.timezone as string) ?? "America/Sao_Paulo");
       setPaymentOptions((config.paymentOptions as PaymentOptions) ?? {});
       setCustomerForm((config.customerForm as CustomerForm) ?? {});
+      setDeliveryFee(config.deliveryFee?.toString() ?? "");
     }
   }, [config]);
 
@@ -259,6 +261,7 @@ export default function BrandingSettingsPage() {
       await updateConfig.mutateAsync({
         paymentOptions: Object.keys(paymentOptions).length > 0 ? paymentOptions : undefined,
         customerForm: Object.keys(customerForm).length > 0 ? customerForm : undefined,
+        deliveryFee: deliveryFee ? Number.parseFloat(deliveryFee) : undefined,
       });
       toast({
         title: "Configurações salvas",
@@ -749,6 +752,28 @@ export default function BrandingSettingsPage() {
                 />
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Taxa de Entrega</CardTitle>
+                <CardDescription>Valor cobrado para pedidos do tipo delivery</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label htmlFor="delivery-fee">Valor da taxa (R$)</Label>
+                  <Input
+                    id="delivery-fee"
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={deliveryFee}
+                    onChange={(e) => setDeliveryFee(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="flex justify-end">
               <Button
                 onClick={handleSaveCheckout}

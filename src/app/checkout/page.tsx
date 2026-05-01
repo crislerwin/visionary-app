@@ -256,6 +256,7 @@ export default function CheckoutPage() {
   const paymentOptions =
     (rawConfig.paymentOptions as Record<string, { enabled?: boolean }> | null) ?? null;
   const customerForm = (rawConfig.customerForm as CustomerForm | null) ?? null;
+  const tenantDeliveryFee = (rawConfig.deliveryFee as number | undefined) ?? 0;
 
   const enabledPaymentMethods = Object.values(PaymentMethod).filter((method) => {
     const map: Record<string, string> = {
@@ -286,7 +287,7 @@ export default function CheckoutPage() {
   const isDelivery = orderType === OrderType.DELIVERY;
 
   const subtotal = getTotalPrice();
-  const deliveryFee = isDelivery ? 5.0 : 0;
+  const deliveryFee = isDelivery ? tenantDeliveryFee : 0;
   const total = subtotal + deliveryFee;
 
   const nameConfig = getFieldConfig(customerForm, "name");
