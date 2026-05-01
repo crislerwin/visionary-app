@@ -215,42 +215,81 @@ export default function BrandingSettingsPage() {
 
   const handleSaveTenant = async () => {
     if (!currentTenant) return;
-    await updateTenant.mutateAsync({
-      id: currentTenant.id,
-      name: name || undefined,
-      slug: slug || undefined,
-      description: description || null,
-      whatsappPhone: whatsappPhone || null,
-      image: imageUrl || null,
-    });
+    try {
+      await updateTenant.mutateAsync({
+        id: currentTenant.id,
+        name: name || undefined,
+        slug: slug || undefined,
+        description: description || null,
+        whatsappPhone: whatsappPhone || null,
+        image: imageUrl || null,
+      });
+      toast({
+        title: "Configurações salvas",
+        description: "As configurações da loja foram atualizadas com sucesso.",
+      });
+    } catch (error) {
+      logger.error({ error }, "Erro ao salvar configurações da loja");
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar as configurações da loja.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSaveBranding = async () => {
-    await updateConfig.mutateAsync({
-      branding: {
-        colors: {
-          primary: primaryColor,
-          secondary: secondaryColor,
-          background: backgroundColor,
-          text: textColor,
-          primaryText: primaryTextColor,
-          secondaryText: secondaryTextColor,
+    try {
+      await updateConfig.mutateAsync({
+        branding: {
+          colors: {
+            primary: primaryColor,
+            secondary: secondaryColor,
+            background: backgroundColor,
+            text: textColor,
+            primaryText: primaryTextColor,
+            secondaryText: secondaryTextColor,
+          },
         },
-      },
-    });
+      });
+      toast({
+        title: "Configurações salvas",
+        description: "As configurações de branding foram atualizadas com sucesso.",
+      });
+    } catch (error) {
+      logger.error({ error }, "Erro ao salvar configurações de branding");
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar as configurações de branding.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSaveSocial = async () => {
-    await updateConfig.mutateAsync({
-      social: {
-        instagram: instagram || undefined,
-        googleMapsUrl: googleMapsUrl || undefined,
-        googleStars: googleStars ? Number.parseFloat(googleStars) : undefined,
-        deliveryTime: deliveryTime || undefined,
-        address: address || undefined,
-        externalOrderUrl: externalOrderUrl || undefined,
-      },
-    });
+    try {
+      await updateConfig.mutateAsync({
+        social: {
+          instagram: instagram || undefined,
+          googleMapsUrl: googleMapsUrl || undefined,
+          googleStars: googleStars ? Number.parseFloat(googleStars) : undefined,
+          deliveryTime: deliveryTime || undefined,
+          address: address || undefined,
+          externalOrderUrl: externalOrderUrl || undefined,
+        },
+      });
+      toast({
+        title: "Configurações salvas",
+        description: "As configurações sociais foram atualizadas com sucesso.",
+      });
+    } catch (error) {
+      logger.error({ error }, "Erro ao salvar configurações sociais");
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar as configurações sociais.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSaveHours = async () => {
@@ -260,10 +299,23 @@ export default function BrandingSettingsPage() {
         stripped[day as DayKey] = shifts.map(({ open, close }) => ({ open, close }));
       }
     }
-    await updateConfig.mutateAsync({
-      businessHours: Object.keys(stripped).length > 0 ? stripped : undefined,
-      timezone: timezone || undefined,
-    });
+    try {
+      await updateConfig.mutateAsync({
+        businessHours: Object.keys(stripped).length > 0 ? stripped : undefined,
+        timezone: timezone || undefined,
+      });
+      toast({
+        title: "Configurações salvas",
+        description: "As configurações de horário foram atualizadas com sucesso.",
+      });
+    } catch (error) {
+      logger.error({ error }, "Erro ao salvar configurações de horário");
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar as configurações de horário.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSaveCheckout = async () => {
@@ -277,7 +329,8 @@ export default function BrandingSettingsPage() {
         title: "Configurações salvas",
         description: "As configurações de checkout foram atualizadas com sucesso.",
       });
-    } catch {
+    } catch (error) {
+      logger.error({ error }, "Erro ao salvar configurações de checkout");
       toast({
         title: "Erro ao salvar",
         description: "Não foi possível salvar as configurações de checkout.",
