@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { prisma } from "@/lib/db";
-import { adminProcedure, publicProcedure, router } from "@/lib/trpc/trpc";
+import { backofficeProcedure, publicProcedure, router } from "@/lib/trpc/trpc";
 import { LeadStatus, MemberRole } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -86,7 +86,7 @@ export const leadRouter = router({
     return lead;
   }),
 
-  list: adminProcedure.input(listLeadsSchema).query(async ({ input }) => {
+  list: backofficeProcedure.input(listLeadsSchema).query(async ({ input }) => {
     const where: Record<string, unknown> = {};
     if (input.status) {
       where.status = input.status;
@@ -117,7 +117,7 @@ export const leadRouter = router({
     };
   }),
 
-  get: adminProcedure.input(z.object({ leadId: z.string() })).query(async ({ input }) => {
+  get: backofficeProcedure.input(z.object({ leadId: z.string() })).query(async ({ input }) => {
     const lead = await prisma.lead.findUnique({
       where: { id: input.leadId },
       include: {
@@ -138,7 +138,7 @@ export const leadRouter = router({
     return lead;
   }),
 
-  update: adminProcedure.input(updateLeadSchema).mutation(async ({ input }) => {
+  update: backofficeProcedure.input(updateLeadSchema).mutation(async ({ input }) => {
     const lead = await prisma.lead.findUnique({ where: { id: input.leadId } });
     if (!lead) {
       throw new TRPCError({ code: "NOT_FOUND", message: "Lead not found" });
@@ -153,7 +153,7 @@ export const leadRouter = router({
     });
   }),
 
-  approve: adminProcedure.input(approveLeadSchema).mutation(async ({ ctx, input }) => {
+  approve: backofficeProcedure.input(approveLeadSchema).mutation(async ({ ctx, input }) => {
     const lead = await prisma.lead.findUnique({ where: { id: input.leadId } });
     if (!lead) {
       throw new TRPCError({ code: "NOT_FOUND", message: "Lead not found" });
@@ -256,7 +256,7 @@ export const leadRouter = router({
     return result;
   }),
 
-  reject: adminProcedure.input(rejectLeadSchema).mutation(async ({ ctx, input }) => {
+  reject: backofficeProcedure.input(rejectLeadSchema).mutation(async ({ ctx, input }) => {
     const lead = await prisma.lead.findUnique({ where: { id: input.leadId } });
     if (!lead) {
       throw new TRPCError({ code: "NOT_FOUND", message: "Lead not found" });

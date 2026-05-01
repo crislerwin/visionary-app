@@ -37,7 +37,6 @@ import {
   Star,
   Store,
 } from "lucide-react";
-import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HexColorPicker } from "react-colorful";
@@ -479,7 +478,12 @@ export default function BrandingSettingsPage() {
                 {/* Banner Preview */}
                 <div className="relative w-full h-28 sm:h-36 rounded-lg border bg-muted overflow-hidden flex items-center justify-center">
                   {imageUrl ? (
-                    <Image src={imageUrl} alt="Banner preview" fill className="object-cover" />
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={imageUrl}
+                      alt="Banner preview"
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
                   ) : (
                     <div className="flex flex-col items-center gap-1.5 text-muted-foreground">
                       <ImageIcon className="h-6 w-6 sm:h-8 sm:w-8" />

@@ -17,6 +17,7 @@ export interface NavItem {
   icon: LucideIcon;
   disabled?: boolean;
   requiredRole?: MemberRole;
+  isBackofficeOnly?: boolean;
 }
 
 export interface NavSection {
@@ -75,7 +76,7 @@ export const sidebarNavigation: NavSection[] = [
         title: "Leads",
         href: "/dashboard/leads",
         icon: ClipboardList,
-        requiredRole: "ADMIN",
+        isBackofficeOnly: true,
       },
       {
         title: "Marca",

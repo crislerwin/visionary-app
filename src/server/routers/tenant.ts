@@ -1,3 +1,4 @@
+import { isBackofficeUser } from "@/lib/backoffice";
 import { prisma } from "@/lib/db";
 import {
   adminProcedure,
@@ -148,14 +149,18 @@ const updateConfigSchema = z
 
 export const tenantRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
+    const isBackoffice = isBackofficeUser(ctx.user.email);
+
     const tenants = await prisma.tenant.findMany({
-      where: {
-        memberships: {
-          some: {
-            userId: ctx.user.id!,
+      where: isBackoffice
+        ? {}
+        : {
+            memberships: {
+              some: {
+                userId: ctx.user.id!,
+              },
+            },
           },
-        },
-      },
       select: {
         id: true,
         name: true,
@@ -182,7 +187,7 @@ export const tenantRouter = router({
 
     return tenants.map((t) => ({
       ...t,
-      role: t.memberships[0]?.role,
+      role: t.memberships[0]?.role ?? (isBackoffice ? "ADMIN" : undefined),
     }));
   }),
 

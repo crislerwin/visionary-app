@@ -8,6 +8,7 @@ import { hasRole } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import type { MemberRole } from "@prisma/client";
 import { ChevronLeft, ChevronRight, Menu, Store } from "lucide-react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -52,13 +53,16 @@ function SidebarNavSection({
   role?: MemberRole;
 }) {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const isBackoffice = session?.user?.isBackoffice ?? false;
 
   const visibleItems = useMemo(() => {
     return section.items.filter((item: NavItem) => {
+      if (item.isBackofficeOnly && !isBackoffice) return false;
       if (!item.requiredRole) return true;
       return hasRole(role, item.requiredRole);
     });
-  }, [section.items, role]);
+  }, [section.items, role, isBackoffice]);
 
   if (visibleItems.length === 0) return null;
 

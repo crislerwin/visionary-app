@@ -5,7 +5,7 @@ import { prisma, resetDatabase, setupTestData } from "../database";
 
 describe("Lead Router", () => {
   let caller: ReturnType<typeof appRouter.createCaller>;
-  let adminCaller: ReturnType<typeof appRouter.createCaller>;
+  let backofficeCaller: ReturnType<typeof appRouter.createCaller>;
   let testData: { tenant: { id: string }; user: { id: string; email: string } };
 
   beforeAll(async () => {
@@ -27,7 +27,27 @@ describe("Lead Router", () => {
       tenantId: testData.tenant.id,
       user: null,
     });
-    adminCaller = caller;
+
+    const backofficeUser = await prisma.user.create({
+      data: {
+        email: `backoffice-${Date.now()}@reactivesoftware.com.br`,
+        name: "Backoffice User",
+      },
+    });
+
+    backofficeCaller = appRouter.createCaller({
+      session: {
+        user: {
+          id: backofficeUser.id,
+          email: backofficeUser.email,
+          name: "Backoffice User",
+          image: null,
+        },
+        expires: new Date(Date.now() + 86400000).toISOString(),
+      },
+      tenantId: testData.tenant.id,
+      user: null,
+    });
   });
 
   describe("create", () => {
@@ -81,7 +101,7 @@ describe("Lead Router", () => {
         },
       });
 
-      const result = await adminCaller.lead.list({
+      const result = await backofficeCaller.lead.list({
         status: LeadStatus.PENDING,
         page: 1,
         pageSize: 20,
@@ -100,7 +120,7 @@ describe("Lead Router", () => {
         },
       });
 
-      const result = await adminCaller.lead.get({ leadId: lead.id });
+      const result = await backofficeCaller.lead.get({ leadId: lead.id });
       expect(result.name).toBe("Detail Lead");
     });
   });
@@ -114,7 +134,7 @@ describe("Lead Router", () => {
         },
       });
 
-      const result = await adminCaller.lead.update({
+      const result = await backofficeCaller.lead.update({
         leadId: lead.id,
         notes: "Updated notes",
       });
@@ -132,7 +152,7 @@ describe("Lead Router", () => {
         },
       });
 
-      const result = await adminCaller.lead.approve({
+      const result = await backofficeCaller.lead.approve({
         leadId: lead.id,
         tenantName: "Approve Test",
         role: "MEMBER",
@@ -158,9 +178,9 @@ describe("Lead Router", () => {
         },
       });
 
-      await expect(adminCaller.lead.approve({ leadId: lead.id, role: "MEMBER" })).rejects.toThrow(
-        "not in PENDING",
-      );
+      await expect(
+        backofficeCaller.lead.approve({ leadId: lead.id, role: "MEMBER" }),
+      ).rejects.toThrow("not in PENDING");
     });
   });
 
@@ -173,7 +193,7 @@ describe("Lead Router", () => {
         },
       });
 
-      const result = await adminCaller.lead.reject({
+      const result = await backofficeCaller.lead.reject({
         leadId: lead.id,
         reason: "Does not fit criteria",
       });
