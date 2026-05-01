@@ -57,9 +57,11 @@ export function MenuPreview({ name, description, imageUrl, colors }: MenuPreview
             src={imageUrl}
             alt={name}
             fill
+            sizes="100vw"
             className="absolute inset-0 h-full w-full object-cover"
             onError={() => setImgError(true)}
             unoptimized
+            crossOrigin="anonymous"
           />
         ) : (
           <div className="absolute inset-0 h-full w-full" style={{ background: colors.primary }} />

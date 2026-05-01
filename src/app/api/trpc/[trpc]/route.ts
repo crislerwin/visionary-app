@@ -6,8 +6,11 @@ import type { NextRequest } from "next/server";
 const handler = async (req: NextRequest) => {
   const session = await auth();
 
-  // Get tenantId from session (user's active tenant)
-  const tenantId = session?.user?.id ? await getUserTenantId(session.user.id) : null;
+  // Priority 1: tenantId from header (frontend selection)
+  const headerTenantId = req.headers.get("x-tenant-id");
+  // Priority 2: user's default tenant from session
+  const fallbackTenantId = session?.user?.id ? await getUserTenantId(session.user.id) : null;
+  const tenantId = headerTenantId || fallbackTenantId;
 
   return fetchRequestHandler({
     endpoint: "/api/trpc",

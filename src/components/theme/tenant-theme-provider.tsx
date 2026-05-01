@@ -65,23 +65,3 @@ export function TenantThemeProvider({ children, tenantSlug }: TenantThemeProvide
 
   return <>{children}</>;
 }
-
-export function DashboardThemeProvider({ children }: { children: ReactNode }) {
-  const { data: tenants } = api.tenant.list.useQuery();
-  const currentTenant = tenants?.[0];
-
-  useEffect(() => {
-    if (currentTenant) {
-      const config = (currentTenant as unknown as Record<string, unknown>).config;
-      const cfg = (config ?? null) as BrandingConfig | null;
-      if (cfg?.branding?.colors) {
-        applyColors(cfg.branding.colors);
-      } else {
-        resetColors();
-      }
-    }
-    return () => resetColors();
-  }, [currentTenant]);
-
-  return <>{children}</>;
-}

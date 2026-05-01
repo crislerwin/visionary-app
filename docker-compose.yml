@@ -87,14 +87,20 @@ services:
             LOG_LEVEL: ${LOG_LEVEL:-info}
             # NextAuth (sobrescreve NEXTAUTH_URL do .env para o container)
             NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
-            # Storage (MinIO local via IP)
-            STORAGE_PROVIDER: ${STORAGE_PROVIDER:-minio}
-            MINIO_ENDPOINT: http://192.168.3.55:9000
-            MINIO_PUBLIC_ENDPOINT: http://192.168.3.55:9000
-            MINIO_BUCKET: ${MINIO_BUCKET:-meu-rango-images}
-            MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
-            MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
-            MINIO_USE_SSL: "false"
+            # Storage (S3 or MinIO)
+            STORAGE_PROVIDER: ${STORAGE_PROVIDER:-s3}
+            AWS_REGION: ${AWS_REGION:-us-east-1}
+            AWS_S3_BUCKET: ${AWS_S3_BUCKET:-meu-rango-images}
+            AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+            AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+            # AWS_S3_ENDPOINT: ${AWS_S3_ENDPOINT}
+            # MinIO fallback — comente as linhas S3 acima e descomente abaixo para usar MinIO
+            # MINIO_ENDPOINT: ${MINIO_ENDPOINT:-http://minio:9000}
+            # MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://minio:9000}
+            # MINIO_BUCKET: ${MINIO_BUCKET:-meu-rango-images}
+            # MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+            # MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+            # MINIO_USE_SSL: "false"
         ports:
             - "${PORT:-3000}:3000"
         depends_on:

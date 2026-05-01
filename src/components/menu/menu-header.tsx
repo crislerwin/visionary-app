@@ -45,6 +45,7 @@ export function MenuHeader({ tenant, colors }: MenuHeaderProps) {
               className="w-10 h-10 rounded-full object-cover"
               onError={() => setImgError(true)}
               unoptimized
+              crossOrigin="anonymous"
             />
           ) : (
             <div

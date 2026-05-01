@@ -75,6 +75,7 @@ export function ProductCard({
             src={product.image}
             alt={product.name}
             className="absolute inset-0 w-full h-full object-cover"
+            crossOrigin="anonymous"
           />
         ) : (
           <div className="flex items-center justify-center h-full text-muted-foreground">

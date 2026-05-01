@@ -116,6 +116,7 @@ export default function BrandingSettingsPage() {
   const updateConfig = api.tenant.updateConfig.useMutation({
     onSuccess: () => {
       utils.tenant.getConfig.invalidate();
+      utils.tenant.list.invalidate();
     },
   });
 
@@ -165,9 +166,18 @@ export default function BrandingSettingsPage() {
   const [cropperImageSrc, setCropperImageSrc] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Only initialize from server data once on mount, don't overwrite user changes
+  // Only initialize from server data once per tenant, don't overwrite user changes
   const tenantInitialized = useRef(false);
   const configInitialized = useRef(false);
+  const lastTenantId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (currentTenant?.id !== lastTenantId.current) {
+      lastTenantId.current = currentTenant?.id ?? null;
+      tenantInitialized.current = false;
+      configInitialized.current = false;
+    }
+  }, [currentTenant?.id]);
 
   useEffect(() => {
     if (currentTenant && !tenantInitialized.current) {
@@ -293,7 +303,7 @@ export default function BrandingSettingsPage() {
 
   const handleUpload = useCallback(
     async (file: File) => {
-      if (!currentTenant) return;
+      if (!currentTenant?.id) return;
 
       setIsUploading(true);
       try {
@@ -303,6 +313,7 @@ export default function BrandingSettingsPage() {
 
         const formData = new FormData();
         formData.append("file", compressedFile);
+        formData.append("tenantId", currentTenant.id);
 
         const response = await fetch("/api/upload", {
           method: "POST",
@@ -486,6 +497,7 @@ export default function BrandingSettingsPage() {
                       src={imageUrl}
                       alt="Banner preview"
                       className="absolute inset-0 h-full w-full object-cover"
+                      crossOrigin="anonymous"
                     />
                   ) : (
                     <div className="flex flex-col items-center gap-1.5 text-muted-foreground">

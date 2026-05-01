@@ -113,10 +113,12 @@ export default function CategoriesPage() {
   };
 
   const uploadImage = async (file: File): Promise<string> => {
+    if (!currentTenant?.id) throw new Error("Nenhum tenant selecionado");
     setIsUploadingImage(true);
     try {
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("tenantId", currentTenant.id);
 
       const response = await fetch("/api/upload", {
         method: "POST",
@@ -298,6 +300,7 @@ export default function CategoriesPage() {
                           }
                           alt="Preview"
                           className="h-full w-full object-cover"
+                          crossOrigin="anonymous"
                         />
                         <button
                           type="button"
@@ -359,6 +362,7 @@ export default function CategoriesPage() {
                     src={category.image}
                     alt={category.name}
                     className="h-full w-full object-cover"
+                    crossOrigin="anonymous"
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center text-muted-foreground">
@@ -466,6 +470,7 @@ export default function CategoriesPage() {
                           }
                           alt="Preview"
                           className="h-full w-full object-cover"
+                          crossOrigin="anonymous"
                         />
                         <button
                           type="button"

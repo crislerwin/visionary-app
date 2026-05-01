@@ -15,6 +15,13 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
       links: [
         httpBatchLink({
           url: "/api/trpc",
+          headers() {
+            const raw = localStorage.getItem("tenant-storage");
+            const tenantId = raw
+              ? (JSON.parse(raw).state?.currentTenantId as string | undefined)
+              : undefined;
+            return tenantId ? { "x-tenant-id": tenantId } : {};
+          },
           fetch(url, options) {
             return fetch(url, {
               ...(options as RequestInit),

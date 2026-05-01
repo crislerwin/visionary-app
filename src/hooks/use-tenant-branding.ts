@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 interface BrandingColors {
   primary?: string;
@@ -187,15 +187,18 @@ export function extractColors(config: unknown): BrandingColors {
 }
 
 export function useTenantBranding(config: unknown, tenantSlug?: string) {
-  // Apply from cache immediately on first render to avoid flicker
-  if (tenantSlug) {
-    const cached = getCachedBranding(tenantSlug);
-    if (cached) {
-      applyTenantColors(cached);
-    }
-  }
+  const didApplyCache = useRef(false);
 
   useEffect(() => {
+    // Apply from cache once on mount to avoid flicker before server data arrives
+    if (tenantSlug && !didApplyCache.current) {
+      const cached = getCachedBranding(tenantSlug);
+      if (cached) {
+        applyTenantColors(cached);
+      }
+      didApplyCache.current = true;
+    }
+
     const colors = extractColors(config);
     if (colors.primary || colors.secondary || colors.background || colors.text) {
       applyTenantColors(colors);

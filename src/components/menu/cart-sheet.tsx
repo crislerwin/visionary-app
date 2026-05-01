@@ -114,6 +114,7 @@ export function CartSheet({ tenantId, tenantSlug, colors }: CartSheetProps) {
                           src={item.productImage}
                           alt={item.productName}
                           className="absolute inset-0 w-full h-full object-cover"
+                          crossOrigin="anonymous"
                         />
                       ) : (
                         <div className="flex items-center justify-center h-full text-muted-foreground">

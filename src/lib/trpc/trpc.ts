@@ -165,6 +165,9 @@ export const tenantProcedure = protectedProcedure.use(async (opts) => {
   }
 
   // 3. Verifica se o usuário é membro do tenant solicitado
+  // Backoffice users podem acessar qualquer tenant sem membership
+  const isBackoffice = isBackofficeUser(ctx.user.email);
+
   const userId = ctx.user.id ?? "";
   if (!userId) {
     throw new TRPCError({
@@ -183,7 +186,7 @@ export const tenantProcedure = protectedProcedure.use(async (opts) => {
     },
   });
 
-  if (!membership) {
+  if (!membership && !isBackoffice) {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "You do not have access to this tenant",
@@ -194,7 +197,13 @@ export const tenantProcedure = protectedProcedure.use(async (opts) => {
     ctx: {
       ...ctx,
       tenantId,
-      membership,
+      membership: membership ?? {
+        id: "backoffice",
+        userId,
+        tenantId,
+        role: MemberRole.ADMIN,
+        joinedAt: new Date(),
+      },
     },
   });
 });

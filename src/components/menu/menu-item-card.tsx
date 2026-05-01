@@ -95,10 +95,12 @@ export function MenuItemCard({ item, onAdd, cartQuantity = 0, colors }: MenuItem
               src={item.image}
               alt={item.name}
               fill
+              sizes="128px"
               className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
               onError={() => setImgError(true)}
               unoptimized
               loading="lazy"
+              crossOrigin="anonymous"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-muted-foreground text-xs">

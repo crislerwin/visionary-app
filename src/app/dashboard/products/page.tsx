@@ -210,10 +210,12 @@ export default function ProductsPage() {
   };
 
   const uploadImage = async (file: File): Promise<string> => {
+    if (!currentTenant?.id) throw new Error("Nenhum tenant selecionado");
     setIsUploadingImage(true);
     try {
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("tenantId", currentTenant.id);
 
       const response = await fetch("/api/upload", {
         method: "POST",
@@ -490,6 +492,7 @@ export default function ProductsPage() {
                           }
                           alt="Preview"
                           className="h-full w-full object-cover"
+                          crossOrigin="anonymous"
                         />
                         <button
                           type="button"
@@ -844,6 +847,7 @@ export default function ProductsPage() {
                           }
                           alt="Preview"
                           className="h-full w-full object-cover"
+                          crossOrigin="anonymous"
                         />
                         <button
                           type="button"
@@ -1167,6 +1171,7 @@ export default function ProductsPage() {
                         }
                         alt="Preview"
                         className="h-full w-full object-cover"
+                        crossOrigin="anonymous"
                       />
                       <button
                         type="button"

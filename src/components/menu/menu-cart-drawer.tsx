@@ -153,9 +153,11 @@ export function MenuCartDrawer({
                           src={line.productImage}
                           alt={line.productName}
                           fill
+                          sizes="64px"
                           className="object-cover"
                           unoptimized
                           loading="lazy"
+                          crossOrigin="anonymous"
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-muted-foreground text-[10px]">

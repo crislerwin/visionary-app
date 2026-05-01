@@ -167,9 +167,11 @@ function DetailContent({
                 src={allImages[currentImageIndex].url}
                 alt={allImages[currentImageIndex].alt}
                 fill
+                sizes="(max-width: 640px) 100vw, 512px"
                 className="object-cover"
                 unoptimized
                 priority
+                crossOrigin="anonymous"
                 onError={() =>
                   setImgError((prev) => ({ ...prev, [allImages[currentImageIndex].url]: true }))
                 }

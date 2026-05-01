@@ -4,6 +4,7 @@ import {
   CreateBucketCommand,
   DeleteObjectCommand,
   HeadBucketCommand,
+  PutBucketCorsCommand,
   PutBucketPolicyCommand,
   PutObjectCommand,
   S3Client,
@@ -18,6 +19,7 @@ export class S3Storage implements StorageProvider {
   private endpoint: string | undefined;
   private publicEndpoint: string | undefined;
   private isMinio: boolean;
+  private region: string;
 
   constructor(config: StorageConfig) {
     const isMinio = config.provider === "minio";
@@ -31,8 +33,9 @@ export class S3Storage implements StorageProvider {
           })
         : undefined;
 
+    const region = config.region || "us-east-1";
     this.client = new S3Client({
-      region: config.region || "us-east-1",
+      region,
       endpoint: config.endpoint,
       credentials:
         config.accessKeyId && config.secretAccessKey
@@ -48,6 +51,7 @@ export class S3Storage implements StorageProvider {
     this.endpoint = config.endpoint;
     this.publicEndpoint = config.publicEndpoint;
     this.isMinio = isMinio;
+    this.region = region;
 
     // Cria o bucket automaticamente se não existir (não bloqueante)
     void this.ensureBucket();
@@ -96,6 +100,28 @@ export class S3Storage implements StorageProvider {
         { err: policyErr, bucket: this.bucket },
         "[S3Storage] Failed to apply bucket policy",
       );
+    }
+
+    // Aplica configuração CORS para permitir acesso cross-origin (necessário para Safari)
+    try {
+      await this.client.send(
+        new PutBucketCorsCommand({
+          Bucket: this.bucket,
+          CORSConfiguration: {
+            CORSRules: [
+              {
+                AllowedHeaders: ["*"],
+                AllowedMethods: ["GET", "HEAD"],
+                AllowedOrigins: ["*"],
+                MaxAgeSeconds: 3600,
+              },
+            ],
+          },
+        }),
+      );
+      logger.info({ bucket: this.bucket }, "[S3Storage] Bucket CORS configured");
+    } catch (corsErr) {
+      logger.warn({ err: corsErr, bucket: this.bucket }, "[S3Storage] Failed to apply bucket CORS");
     }
   }
 
@@ -148,6 +174,6 @@ export class S3Storage implements StorageProvider {
       );
       return `${base}/${this.bucket}/${key}`;
     }
-    return `https://${this.bucket}.s3.${process.env.AWS_REGION || "us-east-1"}.amazonaws.com/${key}`;
+    return `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`;
   }
 }

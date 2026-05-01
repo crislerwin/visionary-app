@@ -120,13 +120,7 @@ function MobileMenu({
       <SheetContent side="left" className="w-72 p-0">
         <div className="flex h-full flex-col">
           <div className="flex h-14 items-center border-b px-4">
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-2 font-semibold"
-              onClick={() => setOpen(false)}
-            >
-              <span className="text-lg">Meu Rango</span>
-            </Link>
+            <TenantSwitcher />
           </div>
           <div className="flex-1 overflow-y-auto py-4">
             {sidebarNavigation.map((section) => (
@@ -239,9 +233,7 @@ export function MobileSidebarTrigger() {
       <SheetContent side="left" className="w-72 p-0">
         <div className="flex h-full flex-col">
           <div className="flex h-14 items-center border-b px-4">
-            <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-              <span className="text-lg">Meu Rango</span>
-            </Link>
+            <TenantSwitcher />
           </div>
           <div className="flex-1 overflow-y-auto py-4">
             {sidebarNavigation.map((section) => (

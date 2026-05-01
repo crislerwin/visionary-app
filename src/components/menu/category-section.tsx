@@ -28,6 +28,7 @@ export function CategorySection({
             src={category.image}
             alt={category.name}
             className="h-6 w-6 rounded-full object-cover"
+            crossOrigin="anonymous"
           />
         ) : (
           <Tag className="h-5 w-5 text-muted-foreground" />
