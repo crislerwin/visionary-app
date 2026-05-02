@@ -1,11 +1,10 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { MessageCircle, Minus, Plus, Trash2, X } from "lucide-react";
+import { Minus, Plus, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-import type { CustomerForm, PaymentOptions } from "@/components/settings/checkout-config-editor";
 import { useCartStore } from "@/stores/cart-store";
 
 interface MenuCartDrawerProps {
@@ -17,46 +16,6 @@ interface MenuCartDrawerProps {
     primary?: string;
     primaryText?: string;
   };
-  paymentOptions?: PaymentOptions;
-  whatsappPhone?: string | null;
-  customerForm?: CustomerForm;
-}
-
-function buildWhatsAppMessage(
-  items: Array<{
-    productName: string;
-    variantName?: string | null;
-    quantity: number;
-    price: number;
-    notes?: string;
-  }>,
-  total: number,
-): string {
-  let message = "Olá! Gostaria de fazer um pedido:\n\n";
-  for (const item of items) {
-    const line = `${item.quantity}x ${item.productName}${item.variantName ? ` (${item.variantName})` : ""}`;
-    const price = (item.price * item.quantity).toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-    message += `${line} - ${price}\n`;
-    if (item.notes) {
-      message += `   Obs: ${item.notes}\n`;
-    }
-  }
-  message += `\n*Total: ${total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}*`;
-  return message;
-}
-
-function getEnabledPaymentMethods(paymentOptions?: PaymentOptions): string[] {
-  if (!paymentOptions) return [];
-  const methods: string[] = [];
-  if (paymentOptions.pix?.enabled) methods.push("pix");
-  if (paymentOptions.creditCard?.enabled) methods.push("creditCard");
-  if (paymentOptions.debitCard?.enabled) methods.push("debitCard");
-  if (paymentOptions.cash?.enabled) methods.push("cash");
-  if (paymentOptions.whatsappOrder?.enabled) methods.push("whatsappOrder");
-  return methods;
 }
 
 export function MenuCartDrawer({
@@ -65,39 +24,15 @@ export function MenuCartDrawer({
   tenantId,
   tenantSlug,
   colors,
-  paymentOptions,
-  whatsappPhone,
-  customerForm,
 }: MenuCartDrawerProps) {
   const router = useRouter();
-  const { items, updateQuantity, removeItem, getTotalPrice, clearCart } = useCartStore();
+  const { items, updateQuantity, removeItem, getTotalPrice } = useCartStore();
   const total = getTotalPrice();
-
-  const enabledMethods = getEnabledPaymentMethods(paymentOptions);
-  const hasWhatsAppOnly = enabledMethods.length === 1 && enabledMethods[0] === "whatsappOrder";
-  const hasWhatsAppHybrid = enabledMethods.includes("whatsappOrder") && enabledMethods.length > 1;
-
-  const hasAnyCustomerField =
-    customerForm != null && Object.values(customerForm).some((field) => field?.enabled === true);
-
-  const skipCheckout =
-    !hasAnyCustomerField && paymentOptions?.whatsappOrder?.enabled === true && !!whatsappPhone;
 
   const handleCheckout = () => {
     router.push(
       `/checkout?tenantId=${encodeURIComponent(tenantId)}&tenantSlug=${encodeURIComponent(tenantSlug)}`,
     );
-  };
-
-  const handleWhatsAppOrder = () => {
-    if (!whatsappPhone) return;
-    const cleanPhone = whatsappPhone.replace(/\D/g, "");
-    if (!cleanPhone) return;
-    const message = buildWhatsAppMessage(items, total);
-    const url = `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
-    clearCart();
-    onClose();
   };
 
   return (
@@ -225,58 +160,17 @@ export function MenuCartDrawer({
                   </div>
                 </div>
 
-                {(hasWhatsAppOnly || skipCheckout) && whatsappPhone ? (
-                  <button
-                    type="button"
-                    onClick={handleWhatsAppOrder}
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-full py-3.5 font-semibold transition-colors hover:opacity-90"
-                    style={{
-                      backgroundColor: "#25d366",
-                      color: "#ffffff",
-                    }}
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                    Enviar pedido pelo WhatsApp
-                  </button>
-                ) : hasWhatsAppHybrid && whatsappPhone ? (
-                  <div className="space-y-2">
-                    <button
-                      type="button"
-                      onClick={handleCheckout}
-                      className="w-full inline-flex items-center justify-center gap-2 rounded-full py-3.5 font-semibold transition-colors hover:opacity-90"
-                      style={{
-                        backgroundColor: colors?.primary ?? "var(--foreground)",
-                        color: colors?.primaryText ?? "var(--background)",
-                      }}
-                    >
-                      Finalizar pedido
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleWhatsAppOrder}
-                      className="w-full inline-flex items-center justify-center gap-2 rounded-full py-3 font-semibold transition-colors hover:opacity-90 border-2"
-                      style={{
-                        borderColor: "#25d366",
-                        color: "#25d366",
-                      }}
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                      Enviar pelo WhatsApp
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleCheckout}
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-full py-3.5 font-semibold transition-colors hover:opacity-90"
-                    style={{
-                      backgroundColor: colors?.primary ?? "var(--foreground)",
-                      color: colors?.primaryText ?? "var(--background)",
-                    }}
-                  >
-                    Finalizar pedido
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={handleCheckout}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-full py-3.5 font-semibold transition-colors hover:opacity-90"
+                  style={{
+                    backgroundColor: colors?.primary ?? "var(--foreground)",
+                    color: colors?.primaryText ?? "var(--background)",
+                  }}
+                >
+                  Finalizar pedido
+                </button>
               </footer>
             )}
           </motion.aside>

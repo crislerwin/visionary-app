@@ -474,6 +474,11 @@ export const orderRouter = router({
         });
       }
 
+      // Não gera mensagem para pedidos DINE_IN
+      if (order.type === OrderType.DINE_IN) {
+        return { message: null };
+      }
+
       // Format order type
       const orderTypeLabels: Record<OrderType, string> = {
         [OrderType.DELIVERY]: "Delivery",
@@ -491,10 +496,10 @@ export const orderRouter = router({
       };
 
       // Build the message
-      let message = `🍽️ *NOVO PEDIDO #${order.orderNumber}*\n\n`;
+      let message = `*NOVO PEDIDO #${order.orderNumber}*\n\n`;
 
       // Customer info
-      message += "👤 *Cliente:*\n";
+      message += "*Cliente:*\n";
       message += `Nome: ${order.customer.name || "Não informado"}\n`;
       message += `Telefone: ${order.customer.phone}\n`;
       if (order.customer.email) {
@@ -503,7 +508,7 @@ export const orderRouter = router({
       message += "\n";
 
       // Order type and address
-      message += `📦 *Tipo:* ${orderTypeLabels[order.type]}\n`;
+      message += `*Tipo:* ${orderTypeLabels[order.type]}\n`;
       if (order.type === OrderType.DELIVERY && order.address) {
         const address = order.address as {
           street: string;
@@ -515,7 +520,7 @@ export const orderRouter = router({
           zipCode: string;
           reference?: string;
         };
-        message += "\n📍 *Endereço:*\n";
+        message += "\n*Endereço:*\n";
         message += `${address.street}, ${address.number}\n`;
         if (address.complement) {
           message += `Complemento: ${address.complement}\n`;
@@ -530,7 +535,7 @@ export const orderRouter = router({
       message += "\n";
 
       // Items
-      message += "📝 *Itens:*\n";
+      message += "*Itens:*\n";
       for (const item of order.items) {
         const _unitPrice = Number(item.unitPrice).toFixed(2);
         const totalPrice = Number(item.totalPrice).toFixed(2);
@@ -543,7 +548,7 @@ export const orderRouter = router({
       message += "\n";
 
       // Totals
-      message += "💰 *Valores:*\n";
+      message += "*Valores:*\n";
       message += `Subtotal: R$ ${Number(order.subtotal).toFixed(2)}\n`;
       if (order.deliveryFee) {
         message += `Taxa de Entrega: R$ ${Number(order.deliveryFee).toFixed(2)}\n`;
@@ -556,12 +561,12 @@ export const orderRouter = router({
 
       // Payment
       if (order.paymentMethod) {
-        message += `💳 *Pagamento:* ${paymentMethodLabels[order.paymentMethod]}\n`;
+        message += `*Pagamento:* ${paymentMethodLabels[order.paymentMethod]}\n`;
       }
 
       // Notes
       if (order.customerNotes) {
-        message += `\n🗒️ *Observações:* ${order.customerNotes}\n`;
+        message += `\n*Observações:* ${order.customerNotes}\n`;
       }
 
       return { message };

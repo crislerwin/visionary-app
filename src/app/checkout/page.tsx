@@ -4,25 +4,42 @@ import type { CustomerForm } from "@/components/settings/checkout-config-editor"
 import { useTenantBranding } from "@/hooks/use-tenant-branding";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { OrderType, PaymentMethod } from "@prisma/client";
+import { motion } from "framer-motion";
 import {
+  ArrowLeft,
   Banknote,
+  Bike,
+  Check,
   ChevronDown,
+  Clock,
   CreditCard,
   Loader2,
   MapPin,
   MessageCircle,
   Minus,
+  Phone,
   Plus,
   QrCode,
+  ShieldCheck,
+  Sparkles,
+  Store,
+  Tag,
   Trash2,
+  User,
+  UtensilsCrossed,
+  Wallet,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { api } from "@/lib/trpc/react";
+import { useCartStore } from "@/stores/cart-store";
+
 import {
   Form,
   FormControl,
@@ -32,18 +49,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-import { api } from "@/lib/trpc/react";
-import { useCartStore } from "@/stores/cart-store";
 
 type CheckoutFormValues = {
   orderType: OrderType;
@@ -86,9 +92,11 @@ function buildCheckoutSchema(customerForm: CustomerForm | null) {
     orderType: z.nativeEnum(OrderType, {
       errorMap: () => ({ message: "Selecione o tipo de pedido" }),
     }),
-    paymentMethod: z.nativeEnum(PaymentMethod, {
-      errorMap: () => ({ message: "Selecione um método de pagamento" }),
-    }),
+    paymentMethod: z
+      .nativeEnum(PaymentMethod, {
+        errorMap: () => ({ message: "Selecione um método de pagamento" }),
+      })
+      .nullish(),
   };
 
   const addField = (key: keyof CustomerForm, fieldName: string, base: z.ZodTypeAny) => {
@@ -123,7 +131,11 @@ function buildCheckoutSchema(customerForm: CustomerForm | null) {
         config.required &&
         (!value || (typeof value === "string" && value.trim() === ""))
       ) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: msg, path });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: msg,
+          path,
+        });
       }
     };
 
@@ -143,6 +155,17 @@ function buildCheckoutSchema(customerForm: CustomerForm | null) {
     }
 
     check("tableNumber", data.tableNumber, "Número da mesa é obrigatório", ["tableNumber"]);
+
+    if (
+      data.orderType !== OrderType.DINE_IN &&
+      (!data.paymentMethod || data.paymentMethod === null)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Selecione um método de pagamento",
+        path: ["paymentMethod"],
+      });
+    }
   }) as unknown as z.ZodSchema<CheckoutFormValues>;
 }
 
@@ -182,13 +205,25 @@ const paymentMethodIcons: Record<PaymentMethod, typeof Banknote> = {
   [PaymentMethod.PIX]: QrCode,
   [PaymentMethod.CREDIT_CARD]: CreditCard,
   [PaymentMethod.DEBIT_CARD]: CreditCard,
-  [PaymentMethod.OTHERS]: CreditCard,
+  [PaymentMethod.OTHERS]: Wallet,
 };
 
 const orderTypeLabels: Record<OrderType, string> = {
-  [OrderType.DELIVERY]: "Delivery",
+  [OrderType.DELIVERY]: "Entrega",
   [OrderType.PICKUP]: "Retirada",
   [OrderType.DINE_IN]: "Comer no Local",
+};
+
+const orderTypeSubtitles: Record<OrderType, string> = {
+  [OrderType.DELIVERY]: "Receba em casa",
+  [OrderType.PICKUP]: "Retire no balcão",
+  [OrderType.DINE_IN]: "Mesa do restaurante",
+};
+
+const orderTypeIcons: Record<OrderType, typeof Bike> = {
+  [OrderType.DELIVERY]: Bike,
+  [OrderType.PICKUP]: Store,
+  [OrderType.DINE_IN]: UtensilsCrossed,
 };
 
 function buildWhatsAppMessage(
@@ -215,6 +250,181 @@ function buildWhatsAppMessage(
   }
   message += `\n*Total: ${total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}*`;
   return message;
+}
+
+function formatBRL(v: number) {
+  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function Stepper({ step }: { step: 1 | 2 | 3 }) {
+  const items = [
+    { n: 1, label: "Itens" },
+    { n: 2, label: "Dados" },
+    { n: 3, label: "Pagamento" },
+  ];
+  return (
+    <div className="border-t border-border">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-3 flex items-center gap-2">
+        {items.map((it, i) => {
+          const active = step === it.n;
+          const completed = step > it.n;
+          return (
+            <div key={it.n} className="flex items-center gap-2 flex-1">
+              <div
+                className={`h-7 w-7 rounded-full inline-flex items-center justify-center text-xs font-bold transition-colors ${
+                  completed
+                    ? "bg-primary text-primary-foreground"
+                    : active
+                      ? "bg-foreground text-background"
+                      : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {completed ? <Check className="h-3.5 w-3.5" /> : it.n}
+              </div>
+              <span
+                className={`text-xs sm:text-sm font-medium ${active || completed ? "text-foreground" : "text-muted-foreground"}`}
+              >
+                {it.label}
+              </span>
+              {i < items.length - 1 && (
+                <div className={`flex-1 h-px ${completed ? "bg-primary" : "bg-border"}`} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function CheckoutCard({
+  title,
+  badge,
+  children,
+}: {
+  title: string;
+  badge?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="rounded-3xl bg-card border border-border p-6 shadow-[var(--shadow-soft)]"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-semibold text-xl">{title}</h2>
+        {badge && (
+          <span className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground bg-muted rounded-full px-3 py-1">
+            {badge}
+          </span>
+        )}
+      </div>
+      {children}
+    </motion.section>
+  );
+}
+
+function ModeOption({
+  active,
+  onClick,
+  icon,
+  title,
+  subtitle,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`text-left rounded-2xl border p-4 transition-all ${
+        active
+          ? "border-foreground bg-foreground/5 shadow-[var(--shadow-soft)]"
+          : "border-border hover:border-foreground/30"
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className={`h-10 w-10 rounded-xl inline-flex items-center justify-center ${
+            active ? "bg-foreground text-background" : "bg-muted text-muted-foreground"
+          }`}
+        >
+          {icon}
+        </div>
+        <div className="flex-1">
+          <p className="font-semibold text-sm">{title}</p>
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
+        </div>
+        {active && <Check className="h-4 w-4 text-primary" />}
+      </div>
+    </button>
+  );
+}
+
+function PayOption({
+  active,
+  onClick,
+  icon,
+  title,
+  subtitle,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`text-left rounded-2xl border p-4 transition-all ${
+        active
+          ? "border-foreground bg-foreground/5 shadow-[var(--shadow-soft)]"
+          : "border-border hover:border-foreground/30"
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className={`h-10 w-10 rounded-xl inline-flex items-center justify-center ${
+            active ? "bg-foreground text-background" : "bg-muted text-muted-foreground"
+          }`}
+        >
+          {icon}
+        </div>
+        <div className="flex-1">
+          <p className="font-semibold text-sm">{title}</p>
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
+        </div>
+        {active && <Check className="h-4 w-4 text-primary" />}
+      </div>
+    </button>
+  );
+}
+
+function Row({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="flex justify-between text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={accent ? "text-primary font-semibold" : "text-foreground font-medium"}>
+        {value}
+      </span>
+    </div>
+  );
 }
 
 export default function CheckoutPage() {
@@ -418,174 +628,304 @@ export default function CheckoutPage() {
 
   if (items.length === 0) {
     return (
-      <div className="mx-auto w-full max-w-4xl px-3 py-6 sm:px-4 sm:py-8">
-        <Card className="text-center py-6 sm:py-8">
-          <CardContent className="px-4 py-2">
-            <p className="text-muted-foreground mb-4 text-sm">Seu carrinho está vazio</p>
-            <Button onClick={() => router.push(queryTenantSlug ? `/menu/${queryTenantSlug}` : "/")}>
-              Continuar Comprando
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-background pb-32">
+        <header className="sticky top-0 z-30 bg-background/85 backdrop-blur-xl border-b border-border">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 h-16 flex items-center justify-between">
+            <Link
+              href={queryTenantSlug ? `/menu/${queryTenantSlug}` : "/"}
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" /> Voltar ao cardápio
+            </Link>
+            <div className="font-semibold text-foreground">Finalizar pedido</div>
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
+              <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Pagamento seguro
+            </div>
+          </div>
+        </header>
+        <main className="mx-auto max-w-6xl px-4 sm:px-6 mt-8">
+          <CheckoutCard title="Carrinho">
+            <div className="py-10 text-center text-sm text-muted-foreground">
+              Seu carrinho está vazio.{" "}
+              <Link
+                href={queryTenantSlug ? `/menu/${queryTenantSlug}` : "/"}
+                className="text-foreground font-semibold underline"
+              >
+                Voltar ao cardápio
+              </Link>
+            </div>
+          </CheckoutCard>
+        </main>
       </div>
     );
   }
 
   if (showWhatsAppOnly) {
     return (
-      <div className="mx-auto w-full max-w-4xl px-3 py-2 sm:px-4 sm:py-8">
-        <h1 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-6">Finalizar Pedido</h1>
+      <div className="min-h-screen bg-background pb-32">
+        <header className="sticky top-0 z-30 bg-background/85 backdrop-blur-xl border-b border-border">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 h-16 flex items-center justify-between">
+            <Link
+              href={queryTenantSlug ? `/menu/${queryTenantSlug}` : "/"}
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" /> Voltar ao cardápio
+            </Link>
+            <div className="font-semibold text-foreground">Finalizar pedido</div>
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
+              <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Pagamento seguro
+            </div>
+          </div>
+        </header>
+        <main className="mx-auto max-w-6xl px-4 sm:px-6 mt-8 grid lg:grid-cols-[1fr_380px] gap-8">
+          <div className="space-y-6">
+            <CheckoutCard
+              title="Resumo do Pedido"
+              badge={`${items.length} ${items.length === 1 ? "item" : "itens"}`}
+            >
+              <ul className="divide-y divide-border">
+                {items.map((item) => (
+                  <li key={item.id} className="py-4 flex gap-4">
+                    {item.productImage ? (
+                      <img
+                        src={item.productImage}
+                        alt={item.productName}
+                        loading="lazy"
+                        className="h-20 w-20 rounded-xl object-cover"
+                      />
+                    ) : (
+                      <div className="h-20 w-20 rounded-xl bg-muted flex items-center justify-center">
+                        <Store className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="font-semibold leading-tight text-sm">
+                          {item.productName}
+                          {item.variantName ? ` (${item.variantName})` : ""}
+                        </h3>
+                        <span className="font-bold text-sm">
+                          {formatBRL(item.price * item.quantity)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {formatBRL(item.price)} / un
+                      </p>
+                      <div className="mt-3 inline-flex items-center gap-1 rounded-full border border-border">
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          aria-label="Diminuir"
+                          className="h-7 w-7 inline-flex items-center justify-center hover:bg-muted rounded-l-full"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </button>
+                        <span className="w-7 text-center text-sm font-semibold">
+                          {item.quantity}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          aria-label="Aumentar"
+                          className="h-7 w-7 inline-flex items-center justify-center hover:bg-muted rounded-r-full"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </CheckoutCard>
+          </div>
 
-        <div className="flex flex-col gap-3">
-          {/* Resumo do Pedido */}
-          <Card className="overflow-hidden rounded-md">
-            <CardContent className="px-3 py-3 space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Resumo do Pedido
-              </p>
-              {items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between text-sm">
-                  <span>
-                    {item.quantity}x {item.productName}
-                    {item.variantName ? ` (${item.variantName})` : ""}
-                  </span>
-                  <span className="font-medium">R$ {(item.price * item.quantity).toFixed(2)}</span>
-                </div>
-              ))}
-              <Separator />
-              <div className="flex justify-between font-bold text-sm">
-                <span>Total</span>
-                <span>R$ {total.toFixed(2)}</span>
+          <aside className="lg:sticky lg:top-32 h-fit">
+            <div className="rounded-3xl bg-card border border-border p-6 shadow-[var(--shadow-soft)]">
+              <h2 className="text-xl font-bold">Resumo</h2>
+              <div className="mt-4 space-y-2.5 text-sm">
+                <Row label="Subtotal" value={formatBRL(subtotal)} />
+                {isDelivery && <Row label="Taxa de entrega" value={formatBRL(deliveryFee)} />}
               </div>
-            </CardContent>
-          </Card>
-
-          <button
-            type="button"
-            onClick={handleWhatsAppOrder}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-full py-3.5 font-semibold transition-colors hover:opacity-90"
-            style={{
-              backgroundColor: "#25d366",
-              color: "#ffffff",
-            }}
-          >
-            <MessageCircle className="h-4 w-4" />
-            Enviar pedido pelo WhatsApp
-          </button>
-        </div>
+              <div className="mt-4 pt-4 border-t border-border flex items-end justify-between">
+                <span className="text-sm text-muted-foreground">Total</span>
+                <span className="text-3xl font-bold tracking-tight">{formatBRL(total)}</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleWhatsAppOrder}
+                className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-full py-3.5 font-semibold transition-colors hover:opacity-90"
+                style={{ backgroundColor: "#25d366", color: "#ffffff" }}
+              >
+                <MessageCircle className="h-4 w-4" />
+                Enviar pedido pelo WhatsApp
+              </button>
+            </div>
+          </aside>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-3 py-2 sm:px-4 sm:py-8">
-      <h1 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-6">Finalizar Pedido</h1>
-
-      <div className="flex flex-col gap-3">
-        {/* Resumo do Pedido - Mobile (topo, colapsado) */}
-        <div className="lg:hidden">
-          <Card className="overflow-hidden rounded-md">
-            <CardContent className="px-3 py-2 space-y-1">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-                Resumo
-              </p>
-              {items.slice(0, 3).map((item) => (
-                <div key={item.id} className="flex items-center gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-medium truncate leading-tight">
-                      {item.productName}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <span className="text-[11px] text-muted-foreground mr-1">x{item.quantity}</span>
-                    <span className="text-[11px] font-medium">
-                      R$ {(item.price * item.quantity).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-              {items.length > 3 && (
-                <p className="text-[10px] text-muted-foreground">+{items.length - 3} itens</p>
-              )}
-              <Separator className="my-1" />
-              <div className="flex justify-between text-[11px]">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span>R$ {subtotal.toFixed(2)}</span>
-              </div>
-              {isDelivery && (
-                <div className="flex justify-between text-[11px]">
-                  <span className="text-muted-foreground">Entrega</span>
-                  <span>R$ {deliveryFee.toFixed(2)}</span>
-                </div>
-              )}
-              <div className="flex justify-between font-bold text-xs">
-                <span>Total</span>
-                <span>R$ {total.toFixed(2)}</span>
-              </div>
-            </CardContent>
-          </Card>
+    <div className="min-h-screen bg-background pb-32">
+      {/* TOP BAR */}
+      <header className="sticky top-0 z-30 bg-background/85 backdrop-blur-xl border-b border-border">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 h-16 flex items-center justify-between">
+          <Link
+            href={queryTenantSlug ? `/menu/${queryTenantSlug}` : "/"}
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" /> Voltar ao cardápio
+          </Link>
+          <div className="font-semibold text-foreground">Finalizar pedido</div>
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
+            <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Pagamento seguro
+          </div>
         </div>
+        <Stepper step={2} />
+      </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-3">
-          {/* Formulário de Checkout */}
-          <Card className="gap-0 py-0 px-3 pt-3 pb-3 border-0 shadow-none lg:border lg:shadow">
-            <CardHeader className="px-0 pt-0 pb-0 lg:px-4 lg:pt-3">
-              <CardTitle className="text-base sm:text-lg">Dados do Pedido</CardTitle>
-            </CardHeader>
-            <CardContent className="px-0 pt-2 pb-0 lg:px-4 lg:pb-3">
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2 sm:space-y-4">
-                  {/* Tipo de Pedido */}
-                  <FormField
-                    control={form.control}
-                    name="orderType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs sm:text-sm">Tipo de Pedido</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="h-9 text-xs sm:text-sm">
-                              <SelectValue placeholder="Selecione o tipo" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {Object.values(OrderType).map((type) => (
-                              <SelectItem key={type} value={type} className="text-xs sm:text-sm">
-                                {orderTypeLabels[type]}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage className="text-xs" />
-                      </FormItem>
-                    )}
-                  />
+      <main className="mx-auto max-w-6xl px-4 sm:px-6 mt-8 grid lg:grid-cols-[1fr_380px] gap-8">
+        {/* LEFT — FORM */}
+        <div className="space-y-6">
+          <Form {...form}>
+            <form id="checkout-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* STEP 1: ITENS */}
+              <CheckoutCard
+                title="1. Revise seus itens"
+                badge={`${items.length} ${items.length === 1 ? "item" : "itens"}`}
+              >
+                <ul className="divide-y divide-border">
+                  {items.map((item) => (
+                    <li key={item.id} className="py-4 flex gap-4">
+                      {item.productImage ? (
+                        <img
+                          src={item.productImage}
+                          alt={item.productName}
+                          loading="lazy"
+                          className="h-20 w-20 rounded-xl object-cover"
+                        />
+                      ) : (
+                        <div className="h-20 w-20 rounded-xl bg-muted flex items-center justify-center">
+                          <Store className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-3">
+                          <h3 className="font-semibold leading-tight text-sm">
+                            {item.productName}
+                            {item.variantName ? ` (${item.variantName})` : ""}
+                          </h3>
+                          <span className="font-bold text-sm">
+                            {formatBRL(item.price * item.quantity)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {formatBRL(item.price)} / un
+                        </p>
+                        <div className="mt-3 inline-flex items-center gap-1 rounded-full border border-border">
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            aria-label="Diminuir"
+                            className="h-7 w-7 inline-flex items-center justify-center hover:bg-muted rounded-l-full"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <span className="w-7 text-center text-sm font-semibold">
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            aria-label="Aumentar"
+                            className="h-7 w-7 inline-flex items-center justify-center hover:bg-muted rounded-r-full"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeItem(item.id)}
+                            aria-label="Remover"
+                            className="h-7 w-7 inline-flex items-center justify-center hover:bg-destructive/10 text-destructive rounded-r-full"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                        {item.notes && (
+                          <p className="text-[11px] text-muted-foreground mt-1">
+                            Obs: {item.notes}
+                          </p>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </CheckoutCard>
 
-                  {/* Dados do Cliente */}
-                  {(nameConfig.enabled || phoneConfig.enabled || emailConfig.enabled) && (
-                    <div className="space-y-3">
-                      <h3 className="font-medium text-xs text-muted-foreground uppercase tracking-wide">
-                        Dados do Cliente
-                      </h3>
+              {/* STEP 2: DADOS */}
+              <CheckoutCard title="2. Dados do pedido">
+                {/* Tipo de Pedido */}
+                <FormField
+                  control={form.control}
+                  name="orderType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Tipo de Pedido
+                      </FormLabel>
+                      <FormControl>
+                        <div className="grid sm:grid-cols-3 gap-3 mt-2">
+                          {Object.values(OrderType).map((type) => {
+                            const Icon = orderTypeIcons[type];
+                            return (
+                              <ModeOption
+                                key={type}
+                                active={field.value === type}
+                                onClick={() => field.onChange(type)}
+                                icon={<Icon className="h-5 w-5" />}
+                                title={orderTypeLabels[type]}
+                                subtitle={orderTypeSubtitles[type]}
+                              />
+                            );
+                          })}
+                        </div>
+                      </FormControl>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  )}
+                />
 
+                {/* Dados do Cliente */}
+                {(nameConfig.enabled || phoneConfig.enabled || emailConfig.enabled) && (
+                  <div className="mt-6 space-y-3">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Dados do Cliente
+                    </h3>
+                    <div className="grid sm:grid-cols-2 gap-3">
                       {nameConfig.enabled && (
                         <FormField
                           control={form.control}
                           name="customerName"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs sm:text-sm">
+                              <FormLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                 {nameConfig.label || "Nome Completo"}
                                 {nameConfig.required && (
                                   <span className="text-destructive ml-0.5">*</span>
                                 )}
                               </FormLabel>
                               <FormControl>
-                                <Input
-                                  placeholder={nameConfig.placeholder || "Seu nome"}
-                                  className="h-9 text-xs sm:text-sm"
-                                  {...field}
-                                />
+                                <div className="relative mt-1.5">
+                                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground">
+                                    <User className="h-4 w-4" />
+                                  </span>
+                                  <Input
+                                    placeholder={nameConfig.placeholder || "Seu nome"}
+                                    className="pl-10 rounded-xl h-10"
+                                    {...field}
+                                  />
+                                </div>
                               </FormControl>
                               <FormMessage className="text-xs" />
                             </FormItem>
@@ -593,248 +933,259 @@ export default function CheckoutPage() {
                         />
                       )}
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {phoneConfig.enabled && (
-                          <FormField
-                            control={form.control}
-                            name="customerPhone"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-xs sm:text-sm">
-                                  {phoneConfig.label || "Telefone / WhatsApp"}
-                                  {phoneConfig.required && (
-                                    <span className="text-destructive ml-0.5">*</span>
-                                  )}
-                                </FormLabel>
-                                <FormControl>
+                      {phoneConfig.enabled && (
+                        <FormField
+                          control={form.control}
+                          name="customerPhone"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                {phoneConfig.label || "Telefone / WhatsApp"}
+                                {phoneConfig.required && (
+                                  <span className="text-destructive ml-0.5">*</span>
+                                )}
+                              </FormLabel>
+                              <FormControl>
+                                <div className="relative mt-1.5">
+                                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground">
+                                    <Phone className="h-4 w-4" />
+                                  </span>
                                   <Input
                                     placeholder={phoneConfig.placeholder || "(11) 99999-9999"}
-                                    className="h-9 text-xs sm:text-sm"
+                                    className="pl-10 rounded-xl h-10"
                                     {...field}
                                   />
-                                </FormControl>
-                                <FormMessage className="text-xs" />
-                              </FormItem>
-                            )}
-                          />
-                        )}
-
-                        {emailConfig.enabled && (
-                          <FormField
-                            control={form.control}
-                            name="customerEmail"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-xs sm:text-sm">
-                                  {emailConfig.label || "Email"}
-                                  {emailConfig.required && (
-                                    <span className="text-destructive ml-0.5">*</span>
-                                  )}
-                                </FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="email"
-                                    placeholder={emailConfig.placeholder || "seu@email.com"}
-                                    className="h-9 text-xs sm:text-sm"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage className="text-xs" />
-                              </FormItem>
-                            )}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Endereço (apenas para Delivery) */}
-                  {isDelivery && addressConfig.enabled && (
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() => setIsAddressOpen(!isAddressOpen)}
-                        className="flex items-center justify-between w-full group"
-                      >
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                          <h3 className="font-medium text-xs text-muted-foreground uppercase tracking-wide">
-                            {addressConfig.label || "Endereço de Entrega"}
-                            {addressConfig.required && (
-                              <span className="text-destructive ml-0.5">*</span>
-                            )}
-                          </h3>
-                        </div>
-                        <ChevronDown
-                          className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isAddressOpen ? "rotate-180" : ""}`}
+                                </div>
+                              </FormControl>
+                              <FormMessage className="text-xs" />
+                            </FormItem>
+                          )}
                         />
-                      </button>
-                      {isAddressOpen && (
-                        <div className="space-y-3 pt-3">
-                          <FormField
-                            control={form.control}
-                            name="addressZipCode"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-xs sm:text-sm">CEP</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="00000-000"
-                                    className="h-9 text-xs sm:text-sm"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage className="text-xs" />
-                              </FormItem>
-                            )}
-                          />
-
-                          <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
-                            <FormField
-                              control={form.control}
-                              name="addressStreet"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="text-xs sm:text-sm">Rua</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Nome da rua"
-                                      className="h-9 text-xs sm:text-sm"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage className="text-xs" />
-                                </FormItem>
-                              )}
-                            />
-
-                            <FormField
-                              control={form.control}
-                              name="addressNumber"
-                              render={({ field }) => (
-                                <FormItem className="sm:w-28">
-                                  <FormLabel className="text-xs sm:text-sm">Número</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="123"
-                                      className="h-9 text-xs sm:text-sm"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage className="text-xs" />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-
-                          <FormField
-                            control={form.control}
-                            name="addressComplement"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-xs sm:text-sm">
-                                  Complemento (opcional)
-                                </FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="Apto, sala, etc."
-                                    className="h-9 text-xs sm:text-sm"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage className="text-xs" />
-                              </FormItem>
-                            )}
-                          />
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <FormField
-                              control={form.control}
-                              name="addressNeighborhood"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="text-xs sm:text-sm">Bairro</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Bairro"
-                                      className="h-9 text-xs sm:text-sm"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage className="text-xs" />
-                                </FormItem>
-                              )}
-                            />
-
-                            <FormField
-                              control={form.control}
-                              name="addressCity"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="text-xs sm:text-sm">Cidade</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Cidade"
-                                      className="h-9 text-xs sm:text-sm"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage className="text-xs" />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-3">
-                            <FormField
-                              control={form.control}
-                              name="addressState"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="text-xs sm:text-sm">Estado</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="UF"
-                                      className="h-9 text-xs sm:text-sm"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage className="text-xs" />
-                                </FormItem>
-                              )}
-                            />
-
-                            <FormField
-                              control={form.control}
-                              name="addressReference"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="text-xs sm:text-sm">Referência</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Próximo a..."
-                                      className="h-9 text-xs sm:text-sm"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage className="text-xs" />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                        </div>
                       )}
                     </div>
-                  )}
 
-                  {/* Número da Mesa */}
-                  {tableNumberConfig.enabled && (
+                    {emailConfig.enabled && (
+                      <FormField
+                        control={form.control}
+                        name="customerEmail"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              {emailConfig.label || "Email"}
+                              {emailConfig.required && (
+                                <span className="text-destructive ml-0.5">*</span>
+                              )}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="email"
+                                placeholder={emailConfig.placeholder || "seu@email.com"}
+                                className="rounded-xl h-10"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Endereço */}
+                {isDelivery && addressConfig.enabled && (
+                  <div className="mt-6">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddressOpen(!isAddressOpen)}
+                      className="flex items-center justify-between w-full group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          {addressConfig.label || "Endereço de Entrega"}
+                          {addressConfig.required && (
+                            <span className="text-destructive ml-0.5">*</span>
+                          )}
+                        </h3>
+                      </div>
+                      <ChevronDown
+                        className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isAddressOpen ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                    {isAddressOpen && (
+                      <div className="space-y-3 pt-3">
+                        <FormField
+                          control={form.control}
+                          name="addressZipCode"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                CEP
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="00000-000"
+                                  className="rounded-xl h-10"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage className="text-xs" />
+                            </FormItem>
+                          )}
+                        />
+
+                        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
+                          <FormField
+                            control={form.control}
+                            name="addressStreet"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                  Rua
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Nome da rua"
+                                    className="rounded-xl h-10"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage className="text-xs" />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="addressNumber"
+                            render={({ field }) => (
+                              <FormItem className="sm:w-28">
+                                <FormLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                  Número
+                                </FormLabel>
+                                <FormControl>
+                                  <Input placeholder="123" className="rounded-xl h-10" {...field} />
+                                </FormControl>
+                                <FormMessage className="text-xs" />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <FormField
+                          control={form.control}
+                          name="addressComplement"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                Complemento (opcional)
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Apto, sala, etc."
+                                  className="rounded-xl h-10"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage className="text-xs" />
+                            </FormItem>
+                          )}
+                        />
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <FormField
+                            control={form.control}
+                            name="addressNeighborhood"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                  Bairro
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Bairro"
+                                    className="rounded-xl h-10"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage className="text-xs" />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="addressCity"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                  Cidade
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Cidade"
+                                    className="rounded-xl h-10"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage className="text-xs" />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <FormField
+                            control={form.control}
+                            name="addressState"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                  Estado
+                                </FormLabel>
+                                <FormControl>
+                                  <Input placeholder="UF" className="rounded-xl h-10" {...field} />
+                                </FormControl>
+                                <FormMessage className="text-xs" />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="addressReference"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                  Referência
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Próximo a..."
+                                    className="rounded-xl h-10"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage className="text-xs" />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Número da Mesa */}
+                {tableNumberConfig.enabled && (
+                  <div className="mt-6">
                     <FormField
                       control={form.control}
                       name="tableNumber"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-xs sm:text-sm">
+                          <FormLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                             {tableNumberConfig.label || "Número da Mesa"}
                             {tableNumberConfig.required && (
                               <span className="text-destructive ml-0.5">*</span>
@@ -843,7 +1194,7 @@ export default function CheckoutPage() {
                           <FormControl>
                             <Input
                               placeholder={tableNumberConfig.placeholder || "Ex: 12"}
-                              className="h-9 text-xs sm:text-sm"
+                              className="rounded-xl h-10"
                               {...field}
                             />
                           </FormControl>
@@ -851,52 +1202,63 @@ export default function CheckoutPage() {
                         </FormItem>
                       )}
                     />
-                  )}
+                  </div>
+                )}
 
-                  {/* Método de Pagamento */}
-                  <FormField
-                    control={form.control}
-                    name="paymentMethod"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs sm:text-sm">Pagamento</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                {/* Pagamento - oculto para DINE_IN */}
+                {orderType !== OrderType.DINE_IN && (
+                  <div className="mt-6">
+                    <FormField
+                      control={form.control}
+                      name="paymentMethod"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+                            <Tag className="h-3.5 w-3.5" /> Pagamento
+                          </FormLabel>
                           <FormControl>
-                            <SelectTrigger className="h-9 text-xs sm:text-sm">
-                              <SelectValue placeholder="Selecione" />
-                            </SelectTrigger>
+                            <div className="grid sm:grid-cols-2 gap-3 mt-2">
+                              {enabledPaymentMethods.map((method) => {
+                                const Icon = paymentMethodIcons[method];
+                                return (
+                                  <PayOption
+                                    key={method}
+                                    active={field.value === method}
+                                    onClick={() => field.onChange(method)}
+                                    icon={<Icon className="h-5 w-5" />}
+                                    title={paymentMethodLabels[method]}
+                                    subtitle={
+                                      method === PaymentMethod.PIX
+                                        ? "Aprovação imediata"
+                                        : method === PaymentMethod.CASH
+                                          ? "Pagar na entrega"
+                                          : method === PaymentMethod.CREDIT_CARD
+                                            ? "Visa, Master, Elo"
+                                            : method === PaymentMethod.DEBIT_CARD
+                                              ? "Pagamento à vista"
+                                              : "Outra forma"
+                                    }
+                                  />
+                                );
+                              })}
+                            </div>
                           </FormControl>
-                          <SelectContent>
-                            {enabledPaymentMethods.map((method) => {
-                              const Icon = paymentMethodIcons[method];
-                              return (
-                                <SelectItem
-                                  key={method}
-                                  value={method}
-                                  className="text-xs sm:text-sm"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <Icon className="h-3.5 w-3.5" />
-                                    {paymentMethodLabels[method]}
-                                  </div>
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage className="text-xs" />
-                      </FormItem>
-                    )}
-                  />
+                          <FormMessage className="text-xs" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
 
-                  {/* Observações */}
-                  {notesConfig.enabled && (
+                {/* Observações */}
+                {notesConfig.enabled && (
+                  <div className="mt-6">
                     <FormField
                       control={form.control}
                       name="customerNotes"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-xs sm:text-sm">
+                          <FormLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                             {notesConfig.label || "Observações"}
                             {notesConfig.required && (
                               <span className="text-destructive ml-0.5">*</span>
@@ -907,7 +1269,7 @@ export default function CheckoutPage() {
                               placeholder={
                                 notesConfig.placeholder || "Alguma observação sobre o pedido?"
                               }
-                              className="text-xs sm:text-sm min-h-[60px]"
+                              className="rounded-xl text-sm min-h-[60px]"
                               {...field}
                             />
                           </FormControl>
@@ -915,97 +1277,101 @@ export default function CheckoutPage() {
                         </FormItem>
                       )}
                     />
-                  )}
-
-                  <Button type="submit" className="w-full h-11" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processando...
-                      </>
-                    ) : (
-                      `Finalizar - R$ ${total.toFixed(2)}`
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-
-          {/* Sidebar Resumo do Pedido - Desktop */}
-          <div className="hidden lg:block">
-            <div className="lg:sticky lg:top-4 space-y-4">
-              <Card className="overflow-hidden">
-                <CardHeader className="pb-1.5 px-3 pt-3">
-                  <CardTitle className="text-xs font-semibold">Resumo do Pedido</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-1.5 px-3 pb-3">
-                  {items.map((item) => (
-                    <div key={item.id} className="flex items-start gap-2 py-1">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate">{item.productName}</p>
-                        {item.variantName && (
-                          <p className="text-[10px] text-muted-foreground">{item.variantName}</p>
-                        )}
-                        <p className="text-[10px] text-muted-foreground">
-                          R$ {item.price.toFixed(2)} x {item.quantity}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-5 w-5"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        >
-                          <Minus className="h-2.5 w-2.5" />
-                        </Button>
-                        <span className="w-4 text-center text-xs">{item.quantity}</span>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-5 w-5"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        >
-                          <Plus className="h-2.5 w-2.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-5 w-5 text-destructive"
-                          onClick={() => removeItem(item.id)}
-                        >
-                          <Trash2 className="h-2.5 w-2.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-
-                  <Separator />
-
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Subtotal</span>
-                      <span>R$ {subtotal.toFixed(2)}</span>
-                    </div>
-                    {isDelivery && (
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Entrega</span>
-                        <span>R$ {deliveryFee.toFixed(2)}</span>
-                      </div>
-                    )}
-                    <Separator />
-                    <div className="flex justify-between font-bold text-sm">
-                      <span>Total</span>
-                      <span>R$ {total.toFixed(2)}</span>
-                    </div>
                   </div>
-                </CardContent>
-              </Card>
+                )}
+              </CheckoutCard>
+            </form>
+          </Form>
+        </div>
+
+        {/* RIGHT — RESUMO */}
+        <aside className="lg:sticky lg:top-32 h-fit">
+          <div className="rounded-3xl bg-card border border-border p-6 shadow-[var(--shadow-soft)]">
+            <h2 className="text-xl font-bold">Resumo</h2>
+            <div className="mt-4 space-y-3">
+              {items.map((item) => (
+                <div key={item.id} className="flex items-start gap-3">
+                  {item.productImage ? (
+                    <img
+                      src={item.productImage}
+                      alt={item.productName}
+                      loading="lazy"
+                      className="h-12 w-12 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <Store className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {item.productName}
+                      {item.variantName ? ` (${item.variantName})` : ""}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatBRL(item.price)} x {item.quantity}
+                    </p>
+                  </div>
+                  <span className="text-sm font-semibold">
+                    {formatBRL(item.price * item.quantity)}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-border space-y-2.5 text-sm">
+              <Row label="Subtotal" value={formatBRL(subtotal)} />
+              <Row
+                label={isDelivery ? "Taxa de entrega" : "Retirada"}
+                value={deliveryFee === 0 ? "Grátis" : formatBRL(deliveryFee)}
+              />
+            </div>
+            <div className="mt-4 pt-4 border-t border-border flex items-end justify-between">
+              <span className="text-sm text-muted-foreground">Total</span>
+              <span className="text-3xl font-bold tracking-tight">{formatBRL(total)}</span>
+            </div>
+
+            <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Clock className="h-3.5 w-3.5" />
+              {isDelivery ? "Entrega em breve" : "Pronto para retirada em breve"}
+            </div>
+
+            <Button
+              type="submit"
+              form="checkout-form"
+              disabled={isSubmitting}
+              className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-full py-3.5 font-semibold disabled:opacity-40 hover:scale-[1.01] transition-transform h-auto"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Finalizar pedido
+                </>
+              )}
+            </Button>
+
+            <div className="mt-4 grid grid-cols-3 gap-2 text-[10px] text-muted-foreground text-center">
+              <div className="rounded-lg bg-muted/50 py-2">
+                <ShieldCheck className="h-3.5 w-3.5 mx-auto mb-1 text-primary" />
+                Seguro
+              </div>
+              <div className="rounded-lg bg-muted/50 py-2">
+                <Clock className="h-3.5 w-3.5 mx-auto mb-1 text-primary" />
+                Rápido
+              </div>
+              <div className="rounded-lg bg-muted/50 py-2">
+                <Check className="h-3.5 w-3.5 mx-auto mb-1 text-primary" />
+                Garantido
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </aside>
+      </main>
     </div>
   );
 }
