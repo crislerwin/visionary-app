@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { TableRowActions } from "@/components/ui/table-row-actions";
 import { useCurrentTenant } from "@/hooks/use-current-tenant";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/trpc/react";
@@ -286,77 +287,47 @@ export default function OrdersPage() {
           const nextAction = statusActionLabels[order.status];
           const canCancel =
             order.status === OrderStatus.PENDING || order.status === OrderStatus.CONFIRMED;
+          const nextIcon = orderStatusConfig[order.status]?.icon ?? CheckCircle;
 
-          return (
-            <div className="flex items-center gap-1 flex-wrap">
-              {nextAction !== "—" && (
-                <Button
-                  size="sm"
-                  className="h-7 px-2 text-xs"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleNextStatus(order.id, order.status, order.type);
-                  }}
-                  disabled={isUpdating}
-                >
-                  {isUpdating ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                  )}
-                  {nextAction}
-                </Button>
-              )}
+          const actions = [
+            ...(nextAction !== "—"
+              ? [
+                  {
+                    label: nextAction,
+                    icon: nextIcon,
+                    onClick: () => handleNextStatus(order.id, order.status, order.type),
+                    disabled: isUpdating,
+                  },
+                ]
+              : []),
+            {
+              label: "Detalhes",
+              icon: Eye,
+              onClick: () => setDetailOrder(order),
+            },
+            ...(order.tenant?.whatsappPhone
+              ? [
+                  {
+                    label: "WhatsApp",
+                    icon: MessageCircle,
+                    onClick: () => handleWhatsApp(order.id, order.tenant?.whatsappPhone),
+                  },
+                ]
+              : []),
+            ...(canCancel
+              ? [
+                  {
+                    label: "Cancelar",
+                    icon: Ban,
+                    onClick: () => handleCancel(order.id),
+                    disabled: isCancelling,
+                    destructive: true,
+                  },
+                ]
+              : []),
+          ];
 
-              {canCancel && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 px-2 text-xs"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCancel(order.id);
-                  }}
-                  disabled={isCancelling}
-                >
-                  {isCancelling ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <Ban className="h-3 w-3 mr-1" />
-                  )}
-                  Cancelar
-                </Button>
-              )}
-
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 px-2 text-xs"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDetailOrder(order);
-                }}
-              >
-                <Eye className="h-3 w-3 mr-1" />
-                Detalhes
-              </Button>
-
-              {order.tenant?.whatsappPhone && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 px-2 text-xs"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleWhatsApp(order.id, order.tenant?.whatsappPhone);
-                  }}
-                >
-                  <MessageCircle className="h-3 w-3 mr-1" />
-                  WhatsApp
-                </Button>
-              )}
-            </div>
-          );
+          return <TableRowActions actions={actions} />;
         },
       },
     ],

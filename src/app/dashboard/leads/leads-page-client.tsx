@@ -5,13 +5,12 @@ import { api } from "@/lib/trpc/react";
 import { LeadStatus } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckCircle, ClipboardList, Clock } from "lucide-react";
+import { CheckCircle, ClipboardList, Clock, ThumbsDown, ThumbsUp } from "lucide-react";
 import * as React from "react";
 
 import { ApproveLeadDialog } from "@/components/leads/approve-lead-dialog";
 import { RejectLeadDialog } from "@/components/leads/reject-lead-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import {
@@ -21,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TableRowActions } from "@/components/ui/table-row-actions";
 import type { ColumnDef } from "@tanstack/react-table";
 
 const statusLabels: Record<LeadStatus, string> = {
@@ -138,36 +138,40 @@ export default function LeadsPageClient() {
         header: "Ações",
         cell: ({ row }) => {
           const lead = row.original;
-          return (
-            <div className="text-right">
-              {lead.status === LeadStatus.PENDING && (
-                <div className="flex items-center justify-end gap-2">
-                  <Button
-                    size="sm"
-                    variant="default"
-                    onClick={() => handleAction(lead.id, "approve")}
-                  >
-                    Aprovar
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => handleAction(lead.id, "reject")}
-                  >
-                    Rejeitar
-                  </Button>
-                </div>
-              )}
-              {lead.status === LeadStatus.APPROVED && lead.tenant && (
-                <span className="text-sm text-muted-foreground">{lead.tenant.name}</span>
-              )}
-              {lead.status === LeadStatus.REJECTED && lead.rejectionReason && (
-                <span className="text-sm text-muted-foreground max-w-[200px] truncate inline-block">
-                  {lead.rejectionReason}
-                </span>
-              )}
-            </div>
-          );
+
+          if (lead.status === LeadStatus.PENDING) {
+            return (
+              <TableRowActions
+                actions={[
+                  {
+                    label: "Aprovar",
+                    icon: ThumbsUp,
+                    onClick: () => handleAction(lead.id, "approve"),
+                  },
+                  {
+                    label: "Rejeitar",
+                    icon: ThumbsDown,
+                    onClick: () => handleAction(lead.id, "reject"),
+                    destructive: true,
+                  },
+                ]}
+              />
+            );
+          }
+
+          if (lead.status === LeadStatus.APPROVED && lead.tenant) {
+            return <span className="text-sm text-muted-foreground">{lead.tenant.name}</span>;
+          }
+
+          if (lead.status === LeadStatus.REJECTED && lead.rejectionReason) {
+            return (
+              <span className="text-sm text-muted-foreground max-w-[200px] truncate inline-block">
+                {lead.rejectionReason}
+              </span>
+            );
+          }
+
+          return null;
         },
       },
     ],
