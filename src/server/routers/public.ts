@@ -19,6 +19,7 @@ export const publicRouter = router({
           slug: true,
           description: true,
           image: true,
+          config: true,
         },
       });
 

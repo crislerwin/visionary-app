@@ -23,7 +23,7 @@ describe("Menu Router", () => {
 
   describe("getTenantBySlug", () => {
     it("should return tenant by slug", async () => {
-      const result = await caller.menu.getTenantBySlug({
+      const result = await caller.public.getTenantBySlug({
         slug: testData.tenant.slug,
       });
 
@@ -33,7 +33,7 @@ describe("Menu Router", () => {
     });
 
     it("should throw NOT_FOUND for non-existent slug", async () => {
-      await expect(caller.menu.getTenantBySlug({ slug: "non-existent-slug" })).rejects.toThrow(
+      await expect(caller.public.getTenantBySlug({ slug: "non-existent-slug" })).rejects.toThrow(
         "Tenant not found",
       );
     });
@@ -44,7 +44,7 @@ describe("Menu Router", () => {
         data: { isActive: false },
       });
 
-      await expect(caller.menu.getTenantBySlug({ slug: testData.tenant.slug })).rejects.toThrow(
+      await expect(caller.public.getTenantBySlug({ slug: testData.tenant.slug })).rejects.toThrow(
         "Tenant not found",
       );
     });
@@ -118,7 +118,7 @@ describe("Menu Router", () => {
     });
 
     it("should return categories with active products", async () => {
-      const result = await caller.menu.getCategoriesWithProducts({
+      const result = await caller.public.getCategoriesWithProducts({
         tenantSlug: testData.tenant.slug,
       });
 
@@ -128,7 +128,7 @@ describe("Menu Router", () => {
     });
 
     it("should include products in categories", async () => {
-      const result = await caller.menu.getCategoriesWithProducts({
+      const result = await caller.public.getCategoriesWithProducts({
         tenantSlug: testData.tenant.slug,
       });
 
@@ -139,7 +139,7 @@ describe("Menu Router", () => {
     });
 
     it("should include product variants sorted by price", async () => {
-      const result = await caller.menu.getCategoriesWithProducts({
+      const result = await caller.public.getCategoriesWithProducts({
         tenantSlug: testData.tenant.slug,
       });
 
@@ -150,7 +150,7 @@ describe("Menu Router", () => {
     });
 
     it("should filter out categories without active products", async () => {
-      const result = await caller.menu.getCategoriesWithProducts({
+      const result = await caller.public.getCategoriesWithProducts({
         tenantSlug: testData.tenant.slug,
       });
 
@@ -160,7 +160,7 @@ describe("Menu Router", () => {
 
     it("should throw NOT_FOUND for non-existent tenant", async () => {
       await expect(
-        caller.menu.getCategoriesWithProducts({ tenantSlug: "non-existent" }),
+        caller.public.getCategoriesWithProducts({ tenantSlug: "non-existent" }),
       ).rejects.toThrow("Tenant not found");
     });
 
@@ -170,7 +170,7 @@ describe("Menu Router", () => {
         data: { isDeleted: true, isActive: false },
       });
 
-      const result = await caller.menu.getCategoriesWithProducts({
+      const result = await caller.public.getCategoriesWithProducts({
         tenantSlug: testData.tenant.slug,
       });
 
@@ -183,7 +183,7 @@ describe("Menu Router", () => {
         data: { isDeleted: true, isActive: false },
       });
 
-      const result = await caller.menu.getCategoriesWithProducts({
+      const result = await caller.public.getCategoriesWithProducts({
         tenantSlug: testData.tenant.slug,
       });
 
