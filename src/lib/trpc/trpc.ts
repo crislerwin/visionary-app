@@ -17,6 +17,7 @@ export const createTRPCContext = (opts: CreateContextOptions) => {
     session: opts.session,
     tenantId: opts.tenantId,
     user: opts.session?.user ?? null,
+    headers: opts.headers,
   };
 };
 
@@ -94,13 +95,39 @@ const telemetryMiddleware = t.middleware(async ({ path, type, next, ctx }) => {
   }
 });
 
+// ─── Rate Limiting Middleware ──────────────────────────────────
+// Protege rotas publicProcedure contra brute-force / spam.
+// In-memory (single-node); migrar para Redis para multi-node.
+// ────────────────────────────────────────────────────────────────
+
+import { getRateLimitConfig, globalRateLimiter } from "@/lib/rate-limit";
+
+const rateLimitMiddleware = t.middleware(async ({ path, ctx, next }) => {
+  const ip =
+    ctx.headers?.get("x-forwarded-for")?.split(",")[0].trim() ??
+    ctx.headers?.get("x-real-ip") ??
+    "unknown";
+  const key = `${ip}:${path}`;
+  const config = getRateLimitConfig(path);
+
+  if (!globalRateLimiter.isAllowed(key, config)) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "Too many requests. Please try again later.",
+    });
+  }
+
+  return next();
+});
+
 // ─── Base Procedures ────────────────────────────────────────────
 // Todas as procedures incluem logging + telemetry por padrão.
+// publicProcedure também inclui rate limiting.
 // ────────────────────────────────────────────────────────────────
 
 const baseProcedure = t.procedure.use(loggingMiddleware).use(telemetryMiddleware);
 
-export const publicProcedure = baseProcedure;
+export const publicProcedure = baseProcedure.use(rateLimitMiddleware);
 
 export const protectedProcedure = baseProcedure.use(async ({ ctx, next }) => {
   if (!ctx.session) {
