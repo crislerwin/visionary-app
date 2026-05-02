@@ -571,4 +571,47 @@ export const orderRouter = router({
 
       return { message };
     }),
+
+  generateReceiptMessage: publicProcedure
+    .input(generateWhatsAppMessageInputSchema)
+    .query(async ({ input }) => {
+      const { id, tenantId } = input;
+
+      const order = await prisma.order.findFirst({
+        where: { id, tenantId },
+        include: {
+          items: true,
+          tenant: true,
+        },
+      });
+
+      if (!order) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Pedido não encontrado",
+        });
+      }
+
+      if (order.type === OrderType.DINE_IN) {
+        return { message: null };
+      }
+
+      const paymentMethodLabels: Record<PaymentMethod, string> = {
+        [PaymentMethod.CASH]: "Dinheiro",
+        [PaymentMethod.PIX]: "PIX",
+        [PaymentMethod.CREDIT_CARD]: "Cartão de Crédito",
+        [PaymentMethod.DEBIT_CARD]: "Cartão de Débito",
+        [PaymentMethod.OTHERS]: "Outros",
+      };
+
+      let message = "*COMPROVANTE DE PAGAMENTO* 🧾\n\n";
+      message += `Pedido: #${order.orderNumber}\n`;
+      message += `Valor: R$ ${Number(order.total).toFixed(2)}\n`;
+      if (order.paymentMethod) {
+        message += `Método: ${paymentMethodLabels[order.paymentMethod]}\n`;
+      }
+      message += "\nSegue o comprovante de pagamento em anexo. ✅";
+
+      return { message };
+    }),
 });

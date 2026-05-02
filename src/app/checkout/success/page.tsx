@@ -86,6 +86,7 @@ function SuccessContent() {
   const orderId = searchParams.get("orderId");
   const [hasOpenedWhatsApp, setHasOpenedWhatsApp] = useState(false);
   const [whatsAppUrl, setWhatsAppUrl] = useState<string | null>(null);
+  const [receiptWhatsAppUrl, setReceiptWhatsAppUrl] = useState<string | null>(null);
 
   const tenantId = searchParams.get("tenantId");
 
@@ -95,6 +96,11 @@ function SuccessContent() {
   );
 
   const { data: whatsAppData } = api.order.generateWhatsAppMessage.useQuery(
+    { id: orderId || "", tenantId: tenantId || "" },
+    { enabled: !!orderId && !!tenantId },
+  );
+
+  const { data: receiptWhatsAppData } = api.order.generateReceiptMessage.useQuery(
     { id: orderId || "", tenantId: tenantId || "" },
     { enabled: !!orderId && !!tenantId },
   );
@@ -112,6 +118,13 @@ function SuccessContent() {
       const url = whatsappUrl(order.tenant.whatsappPhone, whatsAppData.message);
       if (!url) return;
       setWhatsAppUrl(url);
+
+      // Gerar URL separada para comprovante (PIX)
+      if (receiptWhatsAppData?.message) {
+        const receiptUrl = whatsappUrl(order.tenant.whatsappPhone, receiptWhatsAppData.message);
+        if (receiptUrl) setReceiptWhatsAppUrl(receiptUrl);
+      }
+
       window.open(url, "_blank");
       sessionStorage.setItem(storageKey, "true");
 
@@ -124,6 +137,7 @@ function SuccessContent() {
     }
   }, [
     whatsAppData?.message,
+    receiptWhatsAppData?.message,
     order?.tenant?.whatsappPhone,
     hasOpenedWhatsApp,
     toast,
@@ -134,6 +148,12 @@ function SuccessContent() {
   const handleOpenWhatsApp = () => {
     if (whatsAppUrl) {
       window.open(whatsAppUrl, "_blank");
+    }
+  };
+
+  const handleOpenReceiptWhatsApp = () => {
+    if (receiptWhatsAppUrl) {
+      window.open(receiptWhatsAppUrl, "_blank");
     }
   };
 
@@ -271,9 +291,9 @@ function SuccessContent() {
               <p className="text-xs text-blue-800 mb-3">
                 Envie o comprovante de pagamento via WhatsApp.
               </p>
-              {whatsAppUrl && (
+              {receiptWhatsAppUrl && (
                 <Button
-                  onClick={handleOpenWhatsApp}
+                  onClick={handleOpenReceiptWhatsApp}
                   className="w-full h-11 rounded-full bg-green-600 hover:bg-green-700 text-white"
                 >
                   <MessageCircle className="mr-2 h-4 w-4" />
