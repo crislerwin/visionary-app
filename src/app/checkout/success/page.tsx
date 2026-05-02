@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/trpc/react";
+import { whatsappUrl } from "@/lib/whatsapp";
 import { OrderStatus, OrderType, PaymentMethod } from "@prisma/client";
 
 type OrderStatusConfig = {
@@ -108,9 +109,8 @@ function SuccessContent() {
       const storageKey = `whatsapp-opened-${orderId}`;
       if (sessionStorage.getItem(storageKey)) return;
 
-      const encodedMessage = encodeURIComponent(whatsAppData.message);
-      const phone = order.tenant.whatsappPhone.replace(/\D/g, "");
-      const url = `https://wa.me/${phone}?text=${encodedMessage}`;
+      const url = whatsappUrl(order.tenant.whatsappPhone, whatsAppData.message);
+      if (!url) return;
       setWhatsAppUrl(url);
       window.open(url, "_blank");
       sessionStorage.setItem(storageKey, "true");

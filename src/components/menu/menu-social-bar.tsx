@@ -1,6 +1,7 @@
 "use client";
 
 import type { TenantSocialConfig } from "@/lib/tenant-social";
+import { whatsappUrl } from "@/lib/whatsapp";
 import { FaGoogle, FaInstagram, FaWhatsapp } from "react-icons/fa";
 import { FiExternalLink } from "react-icons/fi";
 
@@ -24,12 +25,6 @@ function cleanInstagram(value: string): string {
 
 function instagramUrl(handle: string): string {
   return `https://instagram.com/${cleanInstagram(handle)}`;
-}
-
-function whatsappUrl(number: string): string {
-  const cleaned = number.replace(/\D/g, "");
-  const withCountry = cleaned.startsWith("55") ? cleaned : `55${cleaned}`;
-  return `https://wa.me/${withCountry}`;
 }
 
 const ICON_SIZE = 16;
@@ -79,7 +74,7 @@ export function MenuSocialBar({ social, primaryColor }: MenuSocialBarProps) {
   if (social.whatsapp) {
     orderActions.push({
       icon: <FaWhatsapp size={ICON_SIZE} />,
-      href: whatsappUrl(social.whatsapp),
+      href: whatsappUrl(social.whatsapp) ?? "#",
       label: "WhatsApp",
       color: WHATSAPP_GREEN,
     });

@@ -2,6 +2,7 @@
 
 import { isOpenNow } from "@/lib/business-hours";
 import type { TenantSocialConfig } from "@/lib/tenant-social";
+import { whatsappUrl } from "@/lib/whatsapp";
 import { Clock, MapPin, Star } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
@@ -119,7 +120,7 @@ export function MenuHero({ tenant, colors, social, businessHours, timezone }: Me
           )}
           {social?.whatsapp && (
             <a
-              href={`https://wa.me/${social.whatsapp.replace(/\D/g, "").startsWith("55") ? social.whatsapp.replace(/\D/g, "") : `55${social.whatsapp.replace(/\D/g, "")}`}`}
+              href={whatsappUrl(social.whatsapp) ?? "#"}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="WhatsApp"

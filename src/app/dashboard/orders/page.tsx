@@ -25,6 +25,7 @@ import { TableRowActions } from "@/components/ui/table-row-actions";
 import { useCurrentTenant } from "@/hooks/use-current-tenant";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/trpc/react";
+import { whatsappUrl } from "@/lib/whatsapp";
 import { OrderStatus, type PaymentMethod } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
@@ -189,9 +190,8 @@ export default function OrdersPage() {
   });
 
   const handleWhatsApp = useCallback((_orderId: string, phone: string | null | undefined) => {
-    if (!phone) return;
-    const cleanPhone = phone.replace(/\D/g, "");
-    const url = `https://wa.me/${cleanPhone}`;
+    const url = whatsappUrl(phone);
+    if (!url) return;
     window.open(url, "_blank");
   }, []);
 

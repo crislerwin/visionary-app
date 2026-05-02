@@ -38,6 +38,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/trpc/react";
+import { whatsappUrl } from "@/lib/whatsapp";
 import { useCartStore } from "@/stores/cart-store";
 
 import {
@@ -539,10 +540,8 @@ export default function CheckoutPage() {
 
   const handleWhatsAppOrder = () => {
     if (!whatsappPhone) return;
-    const cleanPhone = whatsappPhone.replace(/\D/g, "");
-    if (!cleanPhone) return;
-    const message = buildWhatsAppMessage(items, total);
-    const url = `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`;
+    const url = whatsappUrl(whatsappPhone, buildWhatsAppMessage(items, total));
+    if (!url) return;
     window.open(url, "_blank", "noopener,noreferrer");
     clearCart();
     router.push(queryTenantSlug ? `/menu/${queryTenantSlug}` : "/");
