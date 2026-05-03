@@ -10,6 +10,7 @@ import { useTenantBranding } from "@/hooks/use-tenant-branding";
 import { getSocialConfig } from "@/lib/tenant-social";
 import { useCartStore } from "@/stores/cart-store";
 import { Store } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 interface MenuClientProps {
@@ -34,6 +35,7 @@ interface MenuClientProps {
       price: number;
       stock: number;
       trackStock: boolean;
+      likeCount: number;
       variants: Array<{
         id: string;
         name: string;
@@ -64,6 +66,7 @@ function getBrandingColors(config: unknown) {
 }
 
 export function MenuClient({ tenant, categories }: MenuClientProps) {
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState(categories[0]?.id ?? "");
@@ -231,9 +234,15 @@ export function MenuClient({ tenant, categories }: MenuClientProps) {
                   <MenuItemCard
                     key={product.id}
                     item={product}
+                    tenantId={tenant.id}
                     onAdd={handleAddToCart}
                     cartQuantity={getProductTotalCount(product.id)}
                     colors={colors}
+                    isFavorite={category.id === "__favorites__"}
+                    onLikeToggle={() => {
+                      // Revalida dados do servidor para atualizar categoria favoritos
+                      setTimeout(() => router.refresh(), 300);
+                    }}
                   />
                 ))}
               </div>

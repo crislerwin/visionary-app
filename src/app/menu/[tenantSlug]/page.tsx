@@ -46,6 +46,11 @@ export default async function MenuPage({ params }: MenuPageProps) {
     return notFound();
   }
 
+  const config = tenant.config as Record<string, unknown> | null;
+  const favoritesConfig = config?.favorites as Record<string, unknown> | undefined;
+  const favoriteCategoryName = (favoritesConfig?.categoryName as string) || "Favoritos";
+  const favoriteThreshold = (favoritesConfig?.threshold as number) || 1;
+
   const categories = await prisma.category.findMany({
     where: {
       tenantId: tenant.id,
@@ -73,6 +78,51 @@ export default async function MenuPage({ params }: MenuPageProps) {
     },
   });
 
+  // Build favorite products category dynamically
+  const favoriteProducts = await prisma.product.findMany({
+    where: {
+      tenantId: tenant.id,
+      isActive: true,
+      isDeleted: false,
+      likeCount: { gte: favoriteThreshold },
+    },
+    orderBy: { likeCount: "desc" },
+    include: {
+      variants: {
+        where: { isActive: true },
+        orderBy: { price: "asc" },
+      },
+      images: {
+        orderBy: { sortOrder: "asc" },
+      },
+    },
+  });
+
+  const favoriteCategory =
+    favoriteProducts.length > 0
+      ? {
+          id: "__favorites__",
+          name: favoriteCategoryName,
+          image: null,
+          description: null,
+          slug: "favoritos",
+          sortOrder: -1,
+          isActive: true,
+          isDeleted: false,
+          tenantId: tenant.id,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          products: favoriteProducts.map((product) => ({
+            ...product,
+            price: Number(product.price),
+            variants: product.variants.map((variant) => ({
+              ...variant,
+              price: Number(variant.price),
+            })),
+          })),
+        }
+      : null;
+
   // Filter out categories with no products
   const categoriesWithProducts = categories.filter((cat) => cat.products.length > 0);
 
@@ -89,10 +139,14 @@ export default async function MenuPage({ params }: MenuPageProps) {
     })),
   }));
 
+  const allCategories = favoriteCategory
+    ? [favoriteCategory, ...serializedCategories]
+    : serializedCategories;
+
   const serializedTenant = {
     ...tenant,
     config: tenant.config as Record<string, unknown> | null,
   };
 
-  return <MenuClient tenant={serializedTenant} categories={serializedCategories} />;
+  return <MenuClient tenant={serializedTenant} categories={allCategories} />;
 }

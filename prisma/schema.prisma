@@ -158,6 +158,7 @@ model Product {
 
   stock      Int     @default(0)
   trackStock Boolean @default(false) @map("track_stock")
+  likeCount  Int     @default(0) @map("like_count")
 
   categoryId String @map("category_id")
   tenantId   String @map("tenant_id")

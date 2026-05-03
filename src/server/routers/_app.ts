@@ -3,6 +3,7 @@ import { authRouter } from "./auth";
 import { cashRegisterRouter } from "./cash-register";
 import { categoryRouter } from "./category";
 import { leadRouter } from "./lead";
+import { likeRouter } from "./like";
 import { orderRouter } from "./order";
 import { productRouter } from "./product";
 import { productImageRouter } from "./product-image";
@@ -16,6 +17,7 @@ export const appRouter = router({
   tenant: tenantRouter,
   team: teamRouter,
   lead: leadRouter,
+  like: likeRouter,
   user: userRouter,
   category: categoryRouter,
   product: productRouter,

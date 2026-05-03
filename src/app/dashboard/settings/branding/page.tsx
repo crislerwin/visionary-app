@@ -27,6 +27,7 @@ import {
   CreditCard,
   ExternalLink,
   Eye,
+  Heart,
   Image as ImageIcon,
   Loader2,
   MapPin,
@@ -104,6 +105,10 @@ export default function BrandingSettingsPage() {
   const [customerForm, setCustomerForm] = useState<CustomerForm>({});
   const [deliveryFee, setDeliveryFee] = useState<string>("");
 
+  // Favorites config
+  const [favoriteCategoryName, setFavoriteCategoryName] = useState("Favoritos");
+  const [favoriteThreshold, setFavoriteThreshold] = useState<string>("1");
+
   // Banner upload state
   const [isUploading, setIsUploading] = useState(false);
   const [cropperOpen, setCropperOpen] = useState(false);
@@ -154,6 +159,8 @@ export default function BrandingSettingsPage() {
       setPaymentOptions((config.paymentOptions as PaymentOptions) ?? {});
       setCustomerForm((config.customerForm as CustomerForm) ?? {});
       setDeliveryFee(config.deliveryFee?.toString() ?? "");
+      setFavoriteCategoryName(config.favorites?.categoryName ?? "Favoritos");
+      setFavoriteThreshold(config.favorites?.threshold?.toString() ?? "1");
     }
   }, [config]);
 
@@ -283,6 +290,28 @@ export default function BrandingSettingsPage() {
     }
   };
 
+  const handleSaveFavorites = async () => {
+    try {
+      await updateConfig.mutateAsync({
+        favorites: {
+          categoryName: favoriteCategoryName.trim() || undefined,
+          threshold: favoriteThreshold ? Number.parseInt(favoriteThreshold) : undefined,
+        },
+      });
+      toast({
+        title: "Configurações salvas",
+        description: "As configurações de favoritos foram atualizadas com sucesso.",
+      });
+    } catch (error) {
+      logger.error({ error }, "Erro ao salvar configurações de favoritos");
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar as configurações de favoritos.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -399,6 +428,11 @@ export default function BrandingSettingsPage() {
               <CreditCard className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Checkout</span>
               <span className="sm:hidden">Pagto</span>
+            </TabsTrigger>
+            <TabsTrigger value="favorites" className="text-xs sm:text-sm">
+              <Heart className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Favoritos</span>
+              <span className="sm:hidden">Favs</span>
             </TabsTrigger>
             <TabsTrigger value="qrcode" className="text-xs sm:text-sm">
               <QrCode className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -791,6 +825,56 @@ export default function BrandingSettingsPage() {
                 className="w-full sm:w-auto"
               >
                 {updateConfig.isPending ? "Salvando..." : "Salvar checkout"}
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="favorites" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Categoria de Favoritos</CardTitle>
+                <CardDescription>
+                  Configure como os produtos mais curtidos aparecem no cardápio
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="fav-name">Nome da categoria</Label>
+                    <Input
+                      id="fav-name"
+                      value={favoriteCategoryName}
+                      onChange={(e) => setFavoriteCategoryName(e.target.value)}
+                      placeholder="Ex: Favoritos, Mais Curtidos, Top Produtos..."
+                      maxLength={50}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fav-threshold">Mínimo de curtidas</Label>
+                    <Input
+                      id="fav-threshold"
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={favoriteThreshold}
+                      onChange={(e) => setFavoriteThreshold(e.target.value)}
+                      placeholder="1"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Produtos com esta quantidade de curtidas ou mais serão exibidos na categoria.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <div className="flex justify-end">
+              <Button
+                onClick={handleSaveFavorites}
+                disabled={updateConfig.isPending}
+                size="lg"
+                className="w-full sm:w-auto"
+              >
+                {updateConfig.isPending ? "Salvando..." : "Salvar favoritos"}
               </Button>
             </div>
           </TabsContent>

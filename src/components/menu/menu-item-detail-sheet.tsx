@@ -14,16 +14,19 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { useLikedProducts } from "@/hooks/use-liked-products";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { api } from "@/lib/trpc/react";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Minus, Plus, ShoppingBag } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, Minus, Plus, ShoppingBag } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { MenuItem, MenuItemVariant } from "./menu-item-card";
 
 interface MenuItemDetailSheetProps {
   item: MenuItem | null;
+  tenantId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAdd: (item: MenuItem, variantId?: string | null, quantity?: number) => void;
@@ -32,15 +35,24 @@ interface MenuItemDetailSheetProps {
     primary?: string;
     primaryText?: string;
   };
+  isFavorite?: boolean;
+  likeCount?: number;
+  onLikeCountChange?: (count: number) => void;
+  onLikeToggle?: () => void;
 }
 
 export function MenuItemDetailSheet({
   item,
+  tenantId,
   open,
   onOpenChange,
   onAdd,
   cartQuantity = 0,
   colors,
+  isFavorite = false,
+  likeCount,
+  onLikeCountChange,
+  onLikeToggle,
 }: MenuItemDetailSheetProps) {
   const isDesktop = useMediaQuery("(min-width: 640px)");
 
@@ -56,10 +68,15 @@ export function MenuItemDetailSheet({
           </DialogHeader>
           <DetailContent
             item={item}
+            tenantId={tenantId}
             onAdd={onAdd}
             cartQuantity={cartQuantity}
             colors={colors}
             onClose={() => onOpenChange(false)}
+            isFavorite={isFavorite}
+            likeCount={likeCount}
+            onLikeCountChange={onLikeCountChange}
+            onLikeToggle={onLikeToggle}
           />
         </DialogContent>
       </Dialog>
@@ -75,10 +92,15 @@ export function MenuItemDetailSheet({
         </SheetHeader>
         <DetailContent
           item={item}
+          tenantId={tenantId}
           onAdd={onAdd}
           cartQuantity={cartQuantity}
           colors={colors}
           onClose={() => onOpenChange(false)}
+          isFavorite={isFavorite}
+          likeCount={likeCount}
+          onLikeCountChange={onLikeCountChange}
+          onLikeToggle={onLikeToggle}
         />
       </SheetContent>
     </Sheet>
@@ -89,21 +111,48 @@ export function MenuItemDetailSheet({
 
 function DetailContent({
   item,
+  tenantId,
   onAdd,
   cartQuantity,
   colors,
   onClose,
+  isFavorite,
+  likeCount,
+  onLikeCountChange,
+  onLikeToggle,
 }: {
   item: MenuItem;
+  tenantId: string;
   onAdd: (item: MenuItem, variantId?: string | null, quantity?: number) => void;
   cartQuantity: number;
   colors?: MenuItemDetailSheetProps["colors"];
   onClose: () => void;
+  isFavorite: boolean;
+  likeCount?: number;
+  onLikeCountChange?: (count: number) => void;
+  onLikeToggle?: () => void;
 }) {
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [imgError, setImgError] = useState<Record<string, boolean>>({});
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const { isLiked, toggleLike } = useLikedProducts();
+
+  const liked = isLiked(item.id);
+
+  const addMutation = api.like.add.useMutation({
+    onSuccess: (data) => {
+      onLikeCountChange?.(data.likeCount);
+      onLikeToggle?.();
+    },
+  });
+
+  const removeMutation = api.like.remove.useMutation({
+    onSuccess: (data) => {
+      onLikeCountChange?.(data.likeCount);
+      onLikeToggle?.();
+    },
+  });
 
   useEffect(() => {
     setSelectedVariantId(item.variants.length > 0 ? item.variants[0].id : null);
@@ -121,6 +170,8 @@ function DetailContent({
   const isOutOfStock = item.trackStock && item.stock <= 0;
   const variantOutOfStock = selectedVariant && item.trackStock && selectedVariant.stock <= 0;
   const disabled = Boolean(isOutOfStock || variantOutOfStock);
+
+  const isPending = addMutation.isPending || removeMutation.isPending;
 
   const allImages = useMemo(() => {
     const imgs: { url: string; alt: string }[] = [];
@@ -148,6 +199,18 @@ function DetailContent({
   const handleQuantityChange = (delta: number) => {
     setQuantity((prev) => Math.max(1, prev + delta));
   };
+
+  const handleLike = () => {
+    if (isPending) return;
+    const willBeLiked = toggleLike(item.id);
+    if (willBeLiked) {
+      addMutation.mutate({ productId: item.id, tenantId });
+    } else {
+      removeMutation.mutate({ productId: item.id, tenantId });
+    }
+  };
+
+  const currentLikeCount = likeCount ?? item.likeCount;
 
   return (
     <div className="flex flex-col h-full">
@@ -236,11 +299,26 @@ function DetailContent({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">{item.name}</h2>
-          {item.variants.length === 1 && (
-            <p className="text-sm text-muted-foreground mt-1">{item.variants[0].name}</p>
-          )}
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">{item.name}</h2>
+            {item.variants.length === 1 && (
+              <p className="text-sm text-muted-foreground mt-1">{item.variants[0].name}</p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleLike}
+            disabled={isPending}
+            aria-label={liked ? `Descurtir ${item.name}` : `Curtir ${item.name}`}
+            className="shrink-0 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-rose-500 transition-colors disabled:opacity-60 px-2 py-1 rounded-lg hover:bg-rose-50"
+            title={liked ? "Você curtiu" : "Curtir"}
+          >
+            <Heart
+              className={`h-5 w-5 transition-all ${liked ? "fill-rose-500 text-rose-500 scale-110" : ""} ${isFavorite ? "text-rose-400" : ""}`}
+            />
+            <span className="tabular-nums font-medium">{currentLikeCount}</span>
+          </button>
         </div>
 
         {item.description && (

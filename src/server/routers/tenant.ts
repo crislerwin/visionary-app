@@ -145,6 +145,12 @@ const updateConfigSchema = z
       })
       .optional(),
     deliveryFee: z.number().min(0).optional(),
+    favorites: z
+      .object({
+        categoryName: z.string().min(1).max(50).optional(),
+        threshold: z.number().int().min(0).optional(),
+      })
+      .optional(),
   })
   .partial();
 
@@ -341,6 +347,7 @@ export const tenantRouter = router({
     const businessHours = (parsedConfig?.businessHours as Record<string, unknown>) || null;
     const paymentOptions = (parsedConfig?.paymentOptions as Record<string, unknown>) || null;
     const customerForm = (parsedConfig?.customerForm as Record<string, unknown>) || null;
+    const favorites = (parsedConfig?.favorites as Record<string, unknown>) || null;
     return {
       branding: {
         logo: (parsedConfig?.branding as Record<string, string>)?.logo || null,
@@ -367,6 +374,10 @@ export const tenantRouter = router({
       paymentOptions: paymentOptions || null,
       customerForm: customerForm || null,
       deliveryFee: (parsedConfig?.deliveryFee as number) ?? 0,
+      favorites: {
+        categoryName: (favorites?.categoryName as string) || "Favoritos",
+        threshold: (favorites?.threshold as number) ?? 1,
+      },
     };
   }),
 
@@ -433,6 +444,10 @@ export const tenantRouter = router({
         ...(currentConfig.social as Record<string, unknown>),
         ...input.social,
       },
+      favorites: {
+        ...(currentConfig.favorites as Record<string, unknown>),
+        ...input.favorites,
+      },
       paymentOptions: mergeDeep(
         currentConfig.paymentOptions as Record<string, unknown> | undefined,
         input.paymentOptions as Record<string, unknown> | undefined,
@@ -457,6 +472,7 @@ export const tenantRouter = router({
     const businessHours = (parsedConfig.businessHours as Record<string, unknown>) || null;
     const paymentOptions = (parsedConfig.paymentOptions as Record<string, unknown>) || null;
     const customerForm = (parsedConfig.customerForm as Record<string, unknown>) || null;
+    const favorites = (parsedConfig.favorites as Record<string, unknown>) || null;
 
     return {
       branding: {
@@ -484,6 +500,10 @@ export const tenantRouter = router({
       paymentOptions: paymentOptions || null,
       customerForm: customerForm || null,
       deliveryFee: (parsedConfig.deliveryFee as number) ?? 0,
+      favorites: {
+        categoryName: (favorites?.categoryName as string) || "Favoritos",
+        threshold: (favorites?.threshold as number) ?? 1,
+      },
     };
   }),
 
