@@ -1,184 +1,89 @@
-# SaaS Boilerplate
+# 💰 Finally — Plataforma SaaS de Gestão Financeira Integrada
 
-A complete, production-ready SaaS starter built with modern web technologies. Features multi-tenancy, authentication, team management, and a beautiful UI.
+Plataforma SaaS focada em gestão financeira integrada e conexão entre parceiros de negócio. Multi-tenant, com painel financeiro, conciliação, fluxo de caixa e colaboração entre empresas parceiras.
 
-## Features
+## ✨ Stack Tecnológico
 
-- **Next.js 15** - App Router with Turbopack for fast development
-- **TypeScript 5.7** - Full type safety
-- **Tailwind CSS 4.0** - Modern styling with CSS variables
-- **shadcn/ui** - Beautiful, accessible components
-- **NextAuth.js v5** - Complete authentication with credentials and OAuth
-- **Prisma** - Type-safe ORM with PostgreSQL
-- **tRPC** - End-to-end type-safe APIs
-- **Multi-tenancy** - Full tenant isolation and switching
-- **Team Management** - Invite members with role-based access
-- **i18n Ready** - Pre-configured for internationalization
-- **Docker Support** - Complete development environment
+| Camada | Tecnologia |
+|--------|------------|
+| **Framework** | Next.js 15 (App Router + Turbopack) |
+| **Linguagem** | TypeScript 5.7 (strict mode) |
+| **Estilos** | Tailwind CSS 4.0 + shadcn/ui |
+| **Banco de Dados** | PostgreSQL 16 (Prisma ORM) |
+| **Cache / Sessão** | Redis 7 |
+| **APIs** | tRPC 11 — end-to-end type-safe |
+| **Autenticação** | NextAuth.js v5 (Auth.js) |
+| **Testes** | Vitest (unitários) |
+| **Observabilidade** | OpenTelemetry + Pino (structured logging) |
+| **Qualidade** | Biome (lint + format) |
 
-## Quick Start
+## 🚀 Quick Start
 
-### Prerequisites
+### Pré-requisitos
+- Node.js 22+
+- Docker + Docker Compose
 
-- Node.js 20+
-- PostgreSQL 14+ (or use Docker)
-- npm or pnpm
-
-### 1. Clone and Install
+### Setup
 
 ```bash
-git clone https://github.com/crislerwin/boilerplate-saas.git
-cd boilerplate-saas
+# 1. Instalar dependências
 npm install
-```
 
-### 2. Setup Environment
+# 2. Subir banco e redis
+npm run docker:up
 
-```bash
-cp .env.example .env
-# Edit .env with your credentials
-```
-
-### 3. Setup Database
-
-```bash
-# Using Docker (recommended)
-docker-compose up -d db
-
-# Or use your own PostgreSQL
-# Then run migrations
-npm run db:migrate
+# 3. Rodar migrations e seed
+npm run db:push
 npm run db:seed
-```
 
-### 4. Start Development
-
-```bash
+# 4. Dev server
 npm run dev
 ```
 
-Visit [http://localhost:3000](http://localhost:3000)
+Acesse [http://localhost:3000](http://localhost:3000).
 
-## Project Structure
+### Primeiro Acesso (seed)
+
+- **Admin:** admin@example.com / admin123
+- **Usuário Demo:** user@example.com / user123
+
+## 📁 Estrutura do Projeto
 
 ```
-src/
-  app/              # Next.js App Router
-    (dashboard)/    # Protected dashboard routes
-    api/            # API routes
-  components/       # React components
-    ui/             # shadcn/ui components
-    layout/         # Layout components
-  lib/              # Utilities and setup
-    trpc/           # tRPC configuration
-  server/           # tRPC routers and logic
-    routers/        # API routers
-  hooks/            # Custom React hooks
-  types/            # TypeScript types
+finally-app/
+├── prisma/
+│   ├── schema.prisma          # Schema do banco
+│   └── seed.ts                # Dados iniciais
+├── src/
+│   ├── app/                   # Next.js App Router
+│   │   ├── api/               # API routes (auth, trpc)
+│   │   ├── dashboard/         # Painel administrativo
+│   │   └── sign-in/           # Login
+│   ├── components/
+│   │   ├── auth/              # Componentes de autenticação
+│   │   ├── layout/            # Sidebar, header, tenant-switcher
+│   │   └── ui/                # shadcn/ui
+│   ├── hooks/                 # Hooks customizados
+│   ├── lib/
+│   │   └── trpc/              # Configuração tRPC + cliente
+│   └── server/
+│       └── routers/           # Routers tRPC
+└── docs/                      # Documentação
 ```
 
-## Scripts
+## 🧪 Scripts
 
-- `dev` - Start development server with Turbopack
-- `build` - Build for production
-- `lint` - Run Biome linter
-- `format` - Format code with Biome
-- `db:generate` - Generate Prisma client
-- `db:migrate` - Run database migrations
-- `db:studio` - Open Prisma Studio
-- `db:seed` - Seed database with sample data
-- `test` - Run Vitest tests
-
-## Docker
-
-### Development
-
-```bash
-# Start all services
-docker-compose up
-
-# With hot reload
-docker-compose up --build
-```
-
-### Stopping
-
-```bash
-docker-compose down
-
-# Remove volumes
-docker-compose down -v
-```
-
-## Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `DATABASE_URL` | PostgreSQL connection string | Yes |
-| `NEXTAUTH_SECRET` | Secret for JWT signing | Yes |
-| `NEXTAUTH_URL` | App URL | Yes |
-| `GOOGLE_CLIENT_ID` | Google OAuth ID | No |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth Secret | No |
-| `GITHUB_CLIENT_ID` | GitHub OAuth ID | No |
-| `GITHUB_CLIENT_SECRET` | GitHub OAuth Secret | No |
-
-## Multi-tenancy
-
-The boilerplate includes full multi-tenant support:
-
-- **Tenants**: Organizations that contain users and data
-- **Memberships**: Users can belong to multiple tenants with different roles
-- **Roles**: Owner, Admin, Member, Viewer
-- **Isolation**: Data is automatically scoped to the current tenant
-
-### Creating a Tenant
-
-1. Sign in and click the tenant switcher in the header
-2. Click "Create Tenant"
-3. Enter tenant name and slug
-4. You'll be automatically switched to the new tenant
-
-### Switching Tenants
-
-Use the tenant switcher dropdown in the header to switch between your organizations.
-
-## Customization
-
-### Adding Providers
-
-1. Configure in `src/auth.config.ts`
-2. Add environment variables
-
-### Adding Routes
-
-Create routes in `src/app/(dashboard)/` for authenticated pages.
-
-### Adding API Endpoints
-
-Add tRPC routers in `src/server/routers/` and export them in `_app.ts`.
-
-## Deployment
-
-### Vercel
-
-```bash
-vercel
-```
-
-### Docker
-
-```bash
-# Build production image
-docker build -t boilerplate-saas .
-
-# Run
-docker run -p 3000:3000 --env-file .env boilerplate-saas
-```
-
-## License
-
-MIT License - feel free to use this boilerplate for any project.
-
-## Credits
-
-Based on [motrx](https://github.com/crislerwin/motrx) project structure.
+| Script | Descrição |
+|--------|-----------|
+| `npm run dev` | Dev server com Turbopack |
+| `npm run build` | Build de produção |
+| `npm run lint` | Lint com Biome |
+| `npm run format` | Formatação com Biome |
+| `npm run check` | Lint + format + imports |
+| `npm run type-check` | Checagem TypeScript |
+| `npm run db:migrate` | Executar migrações |
+| `npm run db:seed` | Popular banco com dados demo |
+| `npm run db:studio` | Prisma Studio |
+| `npm run docker:up` | Inicia DB + Redis |
+| `npm run docker:down` | Para containers |
+| `npm run test` | Testes unitários |
