@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: saas
+      POSTGRES_DB: finally
     ports:
       - "5432:5432"
     volumes:
@@ -34,7 +34,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/saas
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/finally
       - NEXTAUTH_SECRET=your-secret-key-change-this
       - NEXTAUTH_URL=http://localhost:3000
       - GOOGLE_CLIENT_ID=
