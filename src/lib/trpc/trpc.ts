@@ -67,7 +67,7 @@ const loggingMiddleware = t.middleware(async ({ path, type, next, ctx }) => {
 // ─── Telemetry Middleware ───────────────────────────────────────
 
 const telemetryMiddleware = t.middleware(async ({ path, type, next, ctx }) => {
-  const tracer = trace.getTracer("finally-app");
+  const tracer = trace.getTracer("visionary");
   const span = tracer.startSpan(`trpc.${type}.${path}`);
 
   span.setAttribute("trpc.path", path);

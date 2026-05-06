@@ -1,4 +1,4 @@
-# 💰 Finally — Plataforma SaaS de Gestão Financeira Integrada
+# 💰 Visionary — Plataforma SaaS de Gestão Financeira Integrada
 
 Plataforma SaaS focada em gestão financeira integrada e conexão entre parceiros de negócio. Multi-tenant, com painel financeiro, conciliação, fluxo de caixa e colaboração entre empresas parceiras.
 
