@@ -4,9 +4,9 @@ import { Providers } from "./providers";
 import "@/app/globals.css";
 
 export const metadata: Metadata = {
-  title: "SaaS Boilerplate - Multi-tenant Next.js Starter",
+  title: "Visionary - Financial Intelligence Platform",
   description:
-    "A complete SaaS boilerplate with Next.js, TypeScript, Prisma, tRPC, and NextAuth.js",
+    "A multi-tenant financial management platform built with Next.js, TypeScript, Prisma, tRPC, and NextAuth.js",
 };
 
 export default function RootLayout({
