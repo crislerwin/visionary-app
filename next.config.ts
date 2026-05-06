@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [{ protocol: "https", hostname: "**" }],
   },
   turbopack: {
-    // Next.js 16 turbopack é estável por padrão
+    root: __dirname,
   },
 };
 
