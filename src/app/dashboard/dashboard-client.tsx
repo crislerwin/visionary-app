@@ -360,17 +360,67 @@ export function DashboardClient() {
         </Card>
       </section>
 
-      <section className="mt-6">
-        <Card className="min-h-0 py-3">
-          <CardContent className="px-4 pb-3 pt-0">
-            <DataTable
-              columns={transactionColumns}
-              data={MOCK_TRANSACTIONS}
-              title="Últimas Transações"
-              description="Transações recentes do período"
-              searchKey="description"
-              searchPlaceholder="Buscar transação..."
-            />
+      <section className="mt-6 min-w-0">
+        <Card className="min-h-0 min-w-0 overflow-hidden py-3">
+          <CardContent className="min-w-0 px-4 pb-3 pt-0">
+            <div className="mb-2 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h3 className="text-base font-semibold tracking-tight">Últimas Transações</h3>
+                <p className="text-sm text-muted-foreground">Transações recentes do período</p>
+              </div>
+            </div>
+
+            {/* Desktop: tabela */}
+            <div className="hidden md:block">
+              <DataTable
+                columns={transactionColumns}
+                data={MOCK_TRANSACTIONS}
+                searchKey="description"
+                searchPlaceholder="Buscar transação..."
+              />
+            </div>
+
+            {/* Mobile: lista de cards */}
+            <div className="space-y-2 md:hidden">
+              {MOCK_TRANSACTIONS.map((t) => (
+                <div
+                  key={t.id}
+                  className="flex items-center justify-between rounded-lg border bg-card px-3 py-2.5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-sm font-medium">{t.description}</span>
+                      <span
+                        className={cn(
+                          "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none",
+                          t.status === "COMPLETED"
+                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+                            : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
+                        )}
+                      >
+                        {t.status === "COMPLETED" ? "OK" : "PEN"}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <span>{t.date}</span>
+                      <span className="text-border">·</span>
+                      <span className="truncate">{t.category}</span>
+                    </div>
+                  </div>
+                  <span
+                    className={cn(
+                      "ml-3 shrink-0 text-sm font-semibold tabular-nums",
+                      t.type === "INCOME"
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-rose-600 dark:text-rose-400",
+                    )}
+                  >
+                    {t.type === "INCOME" ? "+" : "-"}
+                    {currency(t.amount)}
+                  </span>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </section>
