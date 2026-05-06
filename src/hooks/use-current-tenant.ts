@@ -2,6 +2,7 @@
 
 import { trpc } from "@/lib/trpc/react";
 import type { MemberRole } from "@prisma/client";
+import { useEffect } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -19,11 +20,24 @@ interface TenantStore {
   setCurrentTenant: (id: string | null) => void;
 }
 
+const COOKIE_NAME = "current-tenant";
+
+function setTenantCookie(tenantId: string | null) {
+  if (tenantId) {
+    document.cookie = `${COOKIE_NAME}=${tenantId};path=/;max-age=31536000`;
+  } else {
+    document.cookie = `${COOKIE_NAME}=;path=/;max-age=0`;
+  }
+}
+
 const useTenantStore = create<TenantStore>()(
   persist(
     (set) => ({
       currentTenantId: null,
-      setCurrentTenant: (id) => set({ currentTenantId: id }),
+      setCurrentTenant: (id) => {
+        setTenantCookie(id);
+        set({ currentTenantId: id });
+      },
     }),
     {
       name: "tenant-storage",
@@ -46,6 +60,13 @@ export function useCurrentTenant(): {
 
   const currentTenant: Tenant | null =
     tenants?.find((t) => t.id === currentTenantId) || tenants?.[0] || null;
+
+  // Sync cookie when tenant is restored from localStorage or auto-selected
+  useEffect(() => {
+    if (currentTenant?.id) {
+      setTenantCookie(currentTenant.id);
+    }
+  }, [currentTenant?.id]);
 
   return {
     currentTenant,

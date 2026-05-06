@@ -6,11 +6,21 @@ import type { NextRequest } from "next/server";
 const handler = async (req: NextRequest) => {
   const session = await auth();
 
+  // Read tenant from cookie or header (header takes precedence)
+  const tenantCookie = req.cookies.get("current-tenant")?.value;
+  const tenantHeader = req.headers.get("x-tenant-id");
+  const tenantId = tenantHeader ?? tenantCookie ?? null;
+
   return fetchRequestHandler({
     endpoint: "/api/trpc",
     req,
     router: appRouter,
-    createContext: () => createTRPCContext({ session, headers: req.headers }),
+    createContext: () =>
+      createTRPCContext({
+        session,
+        tenantId,
+        headers: req.headers,
+      }),
   });
 };
 

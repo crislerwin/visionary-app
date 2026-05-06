@@ -10,65 +10,15 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { DataTable } from "@/components/ui/data-table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-import {
-  ArrowDownRight,
-  ArrowUpRight,
-  DollarSign,
-  TrendingDown,
-  TrendingUp,
-  Wallet,
-} from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useCurrentTenant } from "@/hooks/use-current-tenant";
+import { api } from "@/lib/trpc/react";
+import { cn, formatDate } from "@/lib/utils";
+import { TransactionStatus, TransactionType } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useMemo, useState } from "react";
+import { DollarSign, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { useMemo } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-
-interface Transaction {
-  id: string;
-  description: string;
-  date: string;
-  amount: number;
-  type: "INCOME" | "EXPENSE";
-  category: string;
-  status: "COMPLETED" | "PENDING";
-}
-
-const MONTHS = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
-];
-
-const SHORT_MONTHS = [
-  "Jan",
-  "Fev",
-  "Mar",
-  "Abr",
-  "Mai",
-  "Jun",
-  "Jul",
-  "Ago",
-  "Set",
-  "Out",
-  "Nov",
-  "Dez",
-];
 
 function currency(value: number) {
   return new Intl.NumberFormat("pt-BR", {
@@ -76,63 +26,6 @@ function currency(value: number) {
     currency: "BRL",
     maximumFractionDigits: 0,
   }).format(value);
-}
-
-function seeded(seed: number) {
-  let s = seed;
-  return () => {
-    s = (s * 9301 + 49297) % 233280;
-    return s / 233280;
-  };
-}
-
-function buildData(month: number, year: number) {
-  const rand = seeded(year * 100 + month + 1);
-
-  const balanceSeries = Array.from({ length: 12 }, (_, i) => {
-    const idx = (month + 1 + i) % 12;
-    const base = 80000 + i * 4500 + rand() * 20000;
-    return {
-      month: SHORT_MONTHS[idx],
-      saldo: Math.round(base),
-    };
-  });
-
-  const compareSeries = Array.from({ length: 12 }, (_, i) => {
-    const idx = (month + 1 + i) % 12;
-    const receitas = Math.round(40000 + rand() * 35000);
-    const despesas = Math.round(25000 + rand() * 28000);
-    return {
-      month: SHORT_MONTHS[idx],
-      receitas,
-      despesas,
-    };
-  });
-
-  const last = compareSeries[compareSeries.length - 1];
-  const prev = compareSeries[compareSeries.length - 2];
-
-  const saldo = balanceSeries[balanceSeries.length - 1].saldo;
-  const saldoPrev = balanceSeries[balanceSeries.length - 2].saldo;
-  const lucro = last.receitas - last.despesas;
-  const lucroPrev = prev.receitas - prev.despesas;
-
-  const pct = (a: number, b: number) => (b === 0 ? 0 : ((a - b) / Math.abs(b)) * 100);
-
-  return {
-    balanceSeries,
-    compareSeries,
-    cards: {
-      saldo,
-      saldoDelta: pct(saldo, saldoPrev),
-      receitas: last.receitas,
-      receitasDelta: pct(last.receitas, prev.receitas),
-      despesas: last.despesas,
-      despesasDelta: pct(last.despesas, prev.despesas),
-      lucro,
-      lucroDelta: pct(lucro, lucroPrev),
-    },
-  };
 }
 
 const balanceChartConfig = {
@@ -144,24 +37,21 @@ const compareChartConfig = {
   despesas: { label: "Despesas", color: "var(--chart-5)" },
 } satisfies ChartConfig;
 
-const MOCK_TRANSACTIONS: Transaction[] = [
-  { id: "1", description: "Salário mensal", date: "06/05/2026", amount: 8500.0, type: "INCOME", category: "Salário", status: "COMPLETED" },
-  { id: "2", description: "Aluguel apartamento", date: "05/05/2026", amount: 2200.0, type: "EXPENSE", category: "Moradia", status: "COMPLETED" },
-  { id: "3", description: "Supermercado Extra", date: "04/05/2026", amount: 680.5, type: "EXPENSE", category: "Alimentação", status: "COMPLETED" },
-  { id: "4", description: "Freelance projeto web", date: "03/05/2026", amount: 3200.0, type: "INCOME", category: "Freelance", status: "PENDING" },
-  { id: "5", description: "Uber / 99", date: "02/05/2026", amount: 145.8, type: "EXPENSE", category: "Transporte", status: "COMPLETED" },
-  { id: "6", description: "Netflix + Spotify", date: "01/05/2026", amount: 59.9, type: "EXPENSE", category: "Lazer", status: "COMPLETED" },
-  { id: "7", description: "Dividendos FIIs", date: "30/04/2026", amount: 420.0, type: "INCOME", category: "Investimentos", status: "COMPLETED" },
-  { id: "8", description: "Farmácia", date: "29/04/2026", amount: 210.35, type: "EXPENSE", category: "Saúde", status: "COMPLETED" },
-];
+interface TransactionRow {
+  id: string;
+  description: string;
+  date: string;
+  amount: number;
+  type: TransactionType;
+  category: string;
+  status: TransactionStatus;
+}
 
-const transactionColumns: ColumnDef<Transaction>[] = [
+const transactionColumns: ColumnDef<TransactionRow>[] = [
   {
     accessorKey: "description",
     header: "Descrição",
-    cell: ({ row }) => (
-      <span className="font-medium">{row.getValue("description")}</span>
-    ),
+    cell: ({ row }) => <span className="font-medium">{row.getValue("description")}</span>,
   },
   {
     accessorKey: "category",
@@ -181,10 +71,12 @@ const transactionColumns: ColumnDef<Transaction>[] = [
         <span
           className={cn(
             "font-medium",
-            type === "INCOME" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400",
+            type === TransactionType.INCOME
+              ? "text-emerald-600 dark:text-emerald-400"
+              : "text-rose-600 dark:text-rose-400",
           )}
         >
-          {type === "INCOME" ? "+" : "-"}
+          {type === TransactionType.INCOME ? "+" : "-"}
           {currency(amount)}
         </span>
       );
@@ -194,32 +86,138 @@ const transactionColumns: ColumnDef<Transaction>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue("status") as string;
+      const status = row.getValue("status") as TransactionStatus;
       return (
         <span
           className={cn(
             "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-            status === "COMPLETED"
+            status === TransactionStatus.COMPLETED
               ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
               : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
           )}
         >
-          {status === "COMPLETED" ? "Concluído" : "Pendente"}
+          {status === TransactionStatus.COMPLETED ? "Concluído" : "Pendente"}
         </span>
       );
     },
   },
 ];
 
+function pct(a: number, b: number) {
+  return b === 0 ? 0 : ((a - b) / Math.abs(b)) * 100;
+}
+
 export function DashboardClient() {
-  const now = new Date();
-  const [month, setMonth] = useState(now.getMonth());
-  const [year, setYear] = useState(now.getFullYear());
+  const { currentTenant, isLoading: tenantLoading } = useCurrentTenant();
+  const tenantReady = !tenantLoading && !!currentTenant;
 
-  const data = useMemo(() => buildData(month, year), [month, year]);
-  const { cards } = data;
+  const { data: monthlyStats, isLoading: statsLoading } = api.transaction.getMonthlyStats.useQuery(
+    { months: 12 },
+    { enabled: tenantReady },
+  );
+  const { data: totalBalanceData, isLoading: balanceLoading } =
+    api.bankAccount.getTotalBalance.useQuery(undefined, { enabled: tenantReady });
 
-  const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i);
+  // Latest transactions
+  const { data: transactionsData, isLoading: txLoading } = api.transaction.list.useQuery(
+    { limit: 8, offset: 0 },
+    { enabled: tenantReady },
+  );
+
+  const isLoading = statsLoading || balanceLoading || txLoading || tenantLoading;
+
+  // Chart data
+  const balanceSeries = monthlyStats?.balanceSeries ?? [];
+  const compareSeries = monthlyStats?.compareSeries ?? [];
+
+  // KPI values
+  const saldo = totalBalanceData?.totalBalance ?? 0;
+  // Delta calculations using monthly stats (last month vs previous)
+  const lastCompare = compareSeries[compareSeries.length - 1];
+  const prevCompare = compareSeries[compareSeries.length - 2];
+
+  const cards = useMemo(() => {
+    const lastReceitas = lastCompare?.receitas ?? 0;
+    const prevReceitas = prevCompare?.receitas ?? 0;
+    const lastDespesas = lastCompare?.despesas ?? 0;
+    const prevDespesas = prevCompare?.despesas ?? 0;
+    const lastLucro = lastReceitas - lastDespesas;
+    const prevLucro = prevReceitas - prevDespesas;
+
+    const lastSaldo = balanceSeries[balanceSeries.length - 1]?.saldo ?? 0;
+    const prevSaldo = balanceSeries[balanceSeries.length - 2]?.saldo ?? 0;
+
+    return {
+      saldo,
+      saldoDelta: pct(lastSaldo, prevSaldo),
+      receitas: lastReceitas,
+      receitasDelta: pct(lastReceitas, prevReceitas),
+      despesas: lastDespesas,
+      despesasDelta: pct(lastDespesas, prevDespesas),
+      lucro: lastLucro,
+      lucroDelta: pct(lastLucro, prevLucro),
+    };
+  }, [balanceSeries, lastCompare, prevCompare, saldo]);
+
+  // Format transactions for table
+  const transactions: TransactionRow[] = useMemo(() => {
+    return (
+      transactionsData?.transactions.map((t) => ({
+        id: t.id,
+        description: t.description ?? "—",
+        date: formatDate(new Date(t.date)),
+        amount: typeof t.amount === "string" ? Number(t.amount) : t.amount,
+        type: t.type,
+        category: t.category?.name ?? "—",
+        status: t.status,
+      })) ?? []
+    );
+  }, [transactionsData]);
+
+  if (isLoading) {
+    return (
+      <>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="mt-2 h-4 w-72" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-9 w-40" />
+            <Skeleton className="h-9 w-28" />
+          </div>
+        </div>
+
+        <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="py-3">
+              <CardHeader className="px-4 pb-1 pt-0">
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent className="px-4 pb-3 pt-0">
+                <Skeleton className="h-8 w-32" />
+                <Skeleton className="mt-2 h-3 w-24" />
+              </CardContent>
+            </Card>
+          ))}
+        </section>
+
+        <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <Card key={i} className="min-h-0 py-3">
+              <CardHeader className="px-4 pb-2 pt-0">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="mt-1 h-4 w-40" />
+              </CardHeader>
+              <CardContent className="px-4 pb-3 pt-0">
+                <Skeleton className="h-[260px] w-full sm:h-[300px]" />
+              </CardContent>
+            </Card>
+          ))}
+        </section>
+      </>
+    );
+  }
 
   return (
     <>
@@ -231,34 +229,6 @@ export function DashboardClient() {
           <p className="mt-1 text-sm text-muted-foreground">
             Acompanhe seus principais indicadores financeiros
           </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
-            <SelectTrigger className="w-[160px] bg-background">
-              <SelectValue placeholder="Mês" />
-            </SelectTrigger>
-            <SelectContent>
-              {MONTHS.map((m, i) => (
-                <SelectItem key={m} value={String(i)}>
-                  {m}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
-            <SelectTrigger className="w-[110px] bg-background">
-              <SelectValue placeholder="Ano" />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map((y) => (
-                <SelectItem key={y} value={String(y)}>
-                  {y}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
       </div>
 
@@ -298,7 +268,7 @@ export function DashboardClient() {
           </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
             <ChartContainer config={balanceChartConfig} className="h-[260px] w-full sm:h-[300px]">
-              <AreaChart data={data.balanceSeries} margin={{ left: 4, right: 12, top: 8 }}>
+              <AreaChart data={balanceSeries} margin={{ left: 4, right: 12, top: 8 }}>
                 <defs>
                   <linearGradient id="fillSaldo" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="var(--color-saldo)" stopOpacity={0.4} />
@@ -335,7 +305,7 @@ export function DashboardClient() {
           </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
             <ChartContainer config={compareChartConfig} className="h-[260px] w-full sm:h-[300px]">
-              <BarChart data={data.compareSeries} margin={{ left: 4, right: 12, top: 8 }}>
+              <BarChart data={compareSeries} margin={{ left: 4, right: 12, top: 8 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
                 <YAxis
@@ -372,54 +342,66 @@ export function DashboardClient() {
 
             {/* Desktop: tabela */}
             <div className="hidden md:block">
-              <DataTable
-                columns={transactionColumns}
-                data={MOCK_TRANSACTIONS}
-                searchKey="description"
-                searchPlaceholder="Buscar transação..."
-              />
+              {transactions.length > 0 ? (
+                <DataTable
+                  columns={transactionColumns}
+                  data={transactions}
+                  searchKey="description"
+                  searchPlaceholder="Buscar transação..."
+                />
+              ) : (
+                <div className="rounded-md border py-8 text-center text-sm text-muted-foreground">
+                  Nenhuma transação encontrada.
+                </div>
+              )}
             </div>
 
             {/* Mobile: lista de cards */}
             <div className="space-y-2 md:hidden">
-              {MOCK_TRANSACTIONS.map((t) => (
-                <div
-                  key={t.id}
-                  className="flex items-center justify-between rounded-lg border bg-card px-3 py-2.5"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-medium">{t.description}</span>
-                      <span
-                        className={cn(
-                          "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none",
-                          t.status === "COMPLETED"
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
-                            : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
-                        )}
-                      >
-                        {t.status === "COMPLETED" ? "OK" : "PEN"}
-                      </span>
-                    </div>
-                    <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <span>{t.date}</span>
-                      <span className="text-border">·</span>
-                      <span className="truncate">{t.category}</span>
-                    </div>
-                  </div>
-                  <span
-                    className={cn(
-                      "ml-3 shrink-0 text-sm font-semibold tabular-nums",
-                      t.type === "INCOME"
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-rose-600 dark:text-rose-400",
-                    )}
+              {transactions.length > 0 ? (
+                transactions.map((t) => (
+                  <div
+                    key={t.id}
+                    className="flex items-center justify-between rounded-lg border bg-card px-3 py-2.5"
                   >
-                    {t.type === "INCOME" ? "+" : "-"}
-                    {currency(t.amount)}
-                  </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-sm font-medium">{t.description}</span>
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none",
+                            t.status === TransactionStatus.COMPLETED
+                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+                              : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
+                          )}
+                        >
+                          {t.status === TransactionStatus.COMPLETED ? "OK" : "PEN"}
+                        </span>
+                      </div>
+                      <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span>{t.date}</span>
+                        <span className="text-border">·</span>
+                        <span className="truncate">{t.category}</span>
+                      </div>
+                    </div>
+                    <span
+                      className={cn(
+                        "ml-3 shrink-0 text-sm font-semibold tabular-nums",
+                        t.type === TransactionType.INCOME
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-rose-600 dark:text-rose-400",
+                      )}
+                    >
+                      {t.type === TransactionType.INCOME ? "+" : "-"}
+                      {currency(t.amount)}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-md border py-8 text-center text-sm text-muted-foreground">
+                  Nenhuma transação encontrada.
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
@@ -461,7 +443,7 @@ function KpiCard({
                 : "inline-flex items-center gap-0.5 font-medium text-rose-600 dark:text-rose-400"
             }
           >
-            {isUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+            {isUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
             {Math.abs(delta).toFixed(1)}%
           </span>
           <span className="text-muted-foreground">vs mês anterior</span>
