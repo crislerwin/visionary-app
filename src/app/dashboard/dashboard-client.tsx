@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   type ChartConfig,
@@ -10,14 +12,22 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { DataTable } from "@/components/ui/data-table";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentTenant } from "@/hooks/use-current-tenant";
 import { api } from "@/lib/trpc/react";
 import { cn, formatDate } from "@/lib/utils";
 import { TransactionStatus, TransactionType } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
-import { DollarSign, TrendingDown, TrendingUp, Wallet } from "lucide-react";
-import { useMemo } from "react";
+import { format } from "date-fns";
+import {
+  Calendar as CalendarIcon,
+  DollarSign,
+  TrendingDown,
+  TrendingUp,
+  Wallet,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 function currency(value: number) {
@@ -111,8 +121,14 @@ export function DashboardClient() {
   const { currentTenant, isLoading: tenantLoading } = useCurrentTenant();
   const tenantReady = !tenantLoading && !!currentTenant;
 
+  const now = new Date();
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
+    from: new Date(now.getFullYear(), now.getMonth() - 11, 1),
+    to: now,
+  });
+
   const { data: monthlyStats, isLoading: statsLoading } = api.transaction.getMonthlyStats.useQuery(
-    { months: 12 },
+    { startDate: dateRange.from, endDate: dateRange.to },
     { enabled: tenantReady },
   );
   const { data: totalBalanceData, isLoading: balanceLoading } =
@@ -120,7 +136,12 @@ export function DashboardClient() {
 
   // Latest transactions
   const { data: transactionsData, isLoading: txLoading } = api.transaction.list.useQuery(
-    { limit: 8, offset: 0 },
+    {
+      limit: 8,
+      offset: 0,
+      startDate: dateRange.from,
+      endDate: dateRange.to,
+    },
     { enabled: tenantReady },
   );
 
@@ -130,34 +151,35 @@ export function DashboardClient() {
   const balanceSeries = monthlyStats?.balanceSeries ?? [];
   const compareSeries = monthlyStats?.compareSeries ?? [];
 
-  // KPI values
+  // KPI values — totals for the selected period
   const saldo = totalBalanceData?.totalBalance ?? 0;
-  // Delta calculations using monthly stats (last month vs previous)
-  const lastCompare = compareSeries[compareSeries.length - 1];
-  const prevCompare = compareSeries[compareSeries.length - 2];
 
   const cards = useMemo(() => {
-    const lastReceitas = lastCompare?.receitas ?? 0;
-    const prevReceitas = prevCompare?.receitas ?? 0;
-    const lastDespesas = lastCompare?.despesas ?? 0;
-    const prevDespesas = prevCompare?.despesas ?? 0;
-    const lastLucro = lastReceitas - lastDespesas;
-    const prevLucro = prevReceitas - prevDespesas;
+    const totalReceitas = compareSeries.reduce((sum, m) => sum + (m.receitas ?? 0), 0);
+    const totalDespesas = compareSeries.reduce((sum, m) => sum + (m.despesas ?? 0), 0);
+    const totalLucro = totalReceitas - totalDespesas;
 
-    const lastSaldo = balanceSeries[balanceSeries.length - 1]?.saldo ?? 0;
-    const prevSaldo = balanceSeries[balanceSeries.length - 2]?.saldo ?? 0;
+    // Delta: compare first half vs second half of the period
+    const mid = Math.floor(compareSeries.length / 2);
+    const firstHalfReceitas = compareSeries.slice(0, mid).reduce((sum, m) => sum + (m.receitas ?? 0), 0);
+    const secondHalfReceitas = compareSeries.slice(mid).reduce((sum, m) => sum + (m.receitas ?? 0), 0);
+    const firstHalfDespesas = compareSeries.slice(0, mid).reduce((sum, m) => sum + (m.despesas ?? 0), 0);
+    const secondHalfDespesas = compareSeries.slice(mid).reduce((sum, m) => sum + (m.despesas ?? 0), 0);
+
+    const firstHalfSaldo = balanceSeries[0]?.saldo ?? 0;
+    const lastHalfSaldo = balanceSeries[balanceSeries.length - 1]?.saldo ?? 0;
 
     return {
       saldo,
-      saldoDelta: pct(lastSaldo, prevSaldo),
-      receitas: lastReceitas,
-      receitasDelta: pct(lastReceitas, prevReceitas),
-      despesas: lastDespesas,
-      despesasDelta: pct(lastDespesas, prevDespesas),
-      lucro: lastLucro,
-      lucroDelta: pct(lastLucro, prevLucro),
+      saldoDelta: pct(lastHalfSaldo, firstHalfSaldo),
+      receitas: totalReceitas,
+      receitasDelta: pct(secondHalfReceitas, firstHalfReceitas),
+      despesas: totalDespesas,
+      despesasDelta: pct(secondHalfDespesas, firstHalfDespesas),
+      lucro: totalLucro,
+      lucroDelta: pct(totalLucro, firstHalfReceitas - firstHalfDespesas),
     };
-  }, [balanceSeries, lastCompare, prevCompare, saldo]);
+  }, [balanceSeries, compareSeries, saldo]);
 
   // Format transactions for table
   const transactions: TransactionRow[] = useMemo(() => {
@@ -230,6 +252,8 @@ export function DashboardClient() {
             Acompanhe seus principais indicadores financeiros
           </p>
         </div>
+
+        <DateRangePicker range={dateRange} onChange={setDateRange} />
       </div>
 
       <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -240,20 +264,20 @@ export function DashboardClient() {
           icon={<Wallet className="h-4 w-4" />}
         />
         <KpiCard
-          title="Receitas do Mês"
+          title="Receitas do Período"
           value={currency(cards.receitas)}
           delta={cards.receitasDelta}
           icon={<TrendingUp className="h-4 w-4" />}
         />
         <KpiCard
-          title="Despesas do Mês"
+          title="Despesas do Período"
           value={currency(cards.despesas)}
           delta={cards.despesasDelta}
           invertDelta
           icon={<TrendingDown className="h-4 w-4" />}
         />
         <KpiCard
-          title={cards.lucro >= 0 ? "Lucro do Mês" : "Prejuízo do Mês"}
+          title={cards.lucro >= 0 ? "Lucro do Período" : "Prejuízo do Período"}
           value={currency(cards.lucro)}
           delta={cards.lucroDelta}
           icon={<DollarSign className="h-4 w-4" />}
@@ -264,7 +288,7 @@ export function DashboardClient() {
         <Card className="min-h-0 py-3">
           <CardHeader className="px-4 pb-2 pt-0">
             <CardTitle>Evolução do Saldo</CardTitle>
-            <CardDescription>Últimos 12 meses</CardDescription>
+            <CardDescription>Período selecionado</CardDescription>
           </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
             <ChartContainer config={balanceChartConfig} className="h-[260px] w-full sm:h-[300px]">
@@ -301,7 +325,7 @@ export function DashboardClient() {
         <Card className="min-h-0 py-3">
           <CardHeader className="px-4 pb-2 pt-0">
             <CardTitle>Receitas vs Despesas</CardTitle>
-            <CardDescription>Comparativo mensal</CardDescription>
+            <CardDescription>Período selecionado</CardDescription>
           </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
             <ChartContainer config={compareChartConfig} className="h-[260px] w-full sm:h-[300px]">
@@ -410,6 +434,101 @@ export function DashboardClient() {
   );
 }
 
+function DateRangePicker({
+  range,
+  onChange,
+}: {
+  range: { from: Date; to: Date };
+  onChange: (range: { from: Date; to: Date }) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<{ from?: Date; to?: Date }>(range);
+  const [months, setMonths] = useState(1);
+
+  useEffect(() => {
+    const handleResize = () => setMonths(window.innerWidth >= 640 ? 2 : 1);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const handleApply = () => {
+    if (draft.from && draft.to) {
+      onChange({ from: draft.from, to: draft.to });
+      setOpen(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setDraft(range);
+    setOpen(false);
+  };
+
+  return (
+    <div className="flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto sm:justify-start">
+      <Popover
+        open={open}
+        onOpenChange={(isOpen) => {
+          if (isOpen) setDraft(range);
+          setOpen(isOpen);
+        }}
+      >
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn("justify-start text-left font-normal", !range && "text-muted-foreground")}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {range?.from ? (
+              range.to ? (
+                <>
+                  {format(range.from, "dd/MM/yyyy")} - {format(range.to, "dd/MM/yyyy")}
+                </>
+              ) : (
+                format(range.from, "dd/MM/yyyy")
+              )
+            ) : (
+              <span>Selecione um período</span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="center">
+          <div className="p-3">
+            <Calendar
+              initialFocus
+              mode="range"
+              defaultMonth={draft?.from ?? range.from}
+              selected={{
+                from: draft?.from,
+                to: draft?.to,
+              }}
+              onSelect={(selected) => {
+                setDraft({
+                  from: selected?.from,
+                  to: selected?.to,
+                });
+              }}
+              numberOfMonths={months}
+            />
+            <div className="mt-3 flex items-center justify-end gap-2 border-t pt-3">
+              <Button variant="ghost" size="sm" onClick={handleCancel}>
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleApply}
+                disabled={!draft.from || !draft.to}
+              >
+                Aplicar
+              </Button>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
 function KpiCard({
   title,
   value,
@@ -446,7 +565,7 @@ function KpiCard({
             {isUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
             {Math.abs(delta).toFixed(1)}%
           </span>
-          <span className="text-muted-foreground">vs mês anterior</span>
+          <span className="text-muted-foreground">vs metade anterior</span>
         </div>
       </CardContent>
     </Card>

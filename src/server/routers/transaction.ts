@@ -384,13 +384,15 @@ export const transactionRouter = router({
   getMonthlyStats: tenantProcedure
     .input(
       z.object({
-        months: z.number().default(12),
+        startDate: z.coerce.date(),
+        endDate: z.coerce.date(),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const now = new Date();
-      const startDate = new Date(now.getFullYear(), now.getMonth() - input.months + 1, 1);
+      const startDate = new Date(input.startDate);
       startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(input.endDate);
+      endDate.setHours(23, 59, 59, 999);
 
       const transactions = await prisma.transaction.findMany({
         where: {
@@ -398,6 +400,7 @@ export const transactionRouter = router({
           status: TransactionStatus.COMPLETED,
           date: {
             gte: startDate,
+            lte: endDate,
           },
         },
         select: {
@@ -411,12 +414,16 @@ export const transactionRouter = router({
       // Group by month (YYYY-MM)
       const monthlyData = new Map<string, { income: number; expense: number; label: string }>();
 
-      // Initialize all months with zero
-      for (let i = 0; i < input.months; i++) {
-        const d = new Date(now.getFullYear(), now.getMonth() - input.months + 1 + i, 1);
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-        const label = d.toLocaleDateString("pt-BR", { month: "short" });
+      // Initialize all months in the range with zero
+      const startMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      const endMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+      const currentMonth = new Date(startMonth);
+
+      while (currentMonth <= endMonth) {
+        const key = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}`;
+        const label = currentMonth.toLocaleDateString("pt-BR", { month: "short" });
         monthlyData.set(key, { income: 0, expense: 0, label: label.replace(".", "") });
+        currentMonth.setMonth(currentMonth.getMonth() + 1);
       }
 
       // Aggregate transactions
