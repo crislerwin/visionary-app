@@ -97,7 +97,7 @@ export function SmartForm<T extends FieldValues>({
   footer,
   serverErrors,
 }: SmartFormProps<T>) {
-  const form = useForm<T, any, T>({
+  const form = useForm<T>({
     resolver: zodResolver(schema),
     defaultValues: defaultValues as DefaultValues<T>,
   });
@@ -172,7 +172,7 @@ function SmartFieldComponent<T extends FieldValues>({
   form,
 }: {
   field: SmartField<T>;
-  form: UseFormReturn<T, any, T>;
+  form: UseFormReturn<T>;
 }) {
   const {
     control,
@@ -347,7 +347,7 @@ export function useSmartForm<T extends FieldValues>(
   schema: z.ZodType<T, z.ZodTypeDef, T>,
   defaultValues?: Partial<T>
 ) {
-  return useForm<T, any, T>({
+  return useForm<T>({
     resolver: zodResolver(schema),
     defaultValues: defaultValues as DefaultValues<T>,
   });
