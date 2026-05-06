@@ -16,6 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import type { BankAccountType } from "@prisma/client";
 
 interface BankAccount {
   id: string;
@@ -31,7 +32,13 @@ interface BankAccount {
 
 export function BankAccountList() {
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null);
+  const [editingAccount, setEditingAccount] = useState<{
+    id: string;
+    name: string;
+    type: BankAccountType;
+    currency: string;
+    initialBalance: number;
+  } | null>(null);
   const [deletingAccount, setDeletingAccount] = useState<BankAccount | null>(null);
 
   const { data: accounts, isLoading, refetch } = api.bankAccount.list.useQuery();
@@ -43,7 +50,13 @@ export function BankAccountList() {
   });
 
   const handleEdit = (account: BankAccount) => {
-    setEditingAccount(account);
+    setEditingAccount({
+      id: account.id,
+      name: account.name,
+      type: account.type as BankAccountType,
+      currency: account.currency,
+      initialBalance: account.initialBalance ? Number(account.initialBalance) : 0,
+    });
     setIsFormOpen(true);
   };
 
@@ -103,17 +116,21 @@ export function BankAccountList() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {accounts?.map((account) => {
-            const accountWithNumbers = {
+            const accountNormalized = {
               ...account,
+              id: account.id,
+              name: account.name,
+              type: account.type as BankAccountType,
+              currency: account.currency,
               currentBalance: Number(account.currentBalance),
-              initialBalance: account.initialBalance ? Number(account.initialBalance) : undefined,
+              initialBalance: account.initialBalance ? Number(account.initialBalance) : 0,
             };
             return (
               <BankAccountCard
                 key={account.id}
-                account={accountWithNumbers}
-                onEdit={() => handleEdit(account)}
-                onDelete={() => handleDelete(account)}
+                account={accountNormalized}
+                onEdit={() => handleEdit(accountNormalized)}
+                onDelete={() => handleDelete(accountNormalized)}
               />
             );
           })}

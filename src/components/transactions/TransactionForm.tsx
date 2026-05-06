@@ -37,7 +37,7 @@ const transactionSchema = z.object({
   amount: z.coerce.number().positive("Amount must be positive"),
   type: z.enum([TransactionType.INCOME, TransactionType.EXPENSE]),
   description: z.string().min(1, "Description is required").max(500),
-  date: z.date(),
+  date: z.coerce.date(),
   bankAccountId: z.string().min(1, "Bank account is required"),
   categoryId: z.string().optional(),
   status: z.enum([
@@ -73,8 +73,9 @@ export function TransactionForm({
 }: TransactionFormProps) {
   const isEditing = !!transaction;
 
-  const { data: bankAccounts } = api.bankAccount.list.useQuery();
-  const { data: categories } = api.category.list.useQuery();
+  const { data: bankAccounts } = api.bankAccount.list.useQuery(undefined);
+  const { data: categoriesData } = api.category.list.useQuery({});
+  const categories = categoriesData?.categories ?? [];
 
   const createMutation = api.transaction.create.useMutation({
     onSuccess: () => {
@@ -131,17 +132,28 @@ export function TransactionForm({
       updateMutation.mutate({
         id: transaction.id,
         ...data,
-        date: data.date.toISOString(),
+        date: data.date,
       });
     } else {
       createMutation.mutate({
         ...data,
-        date: data.date.toISOString(),
+        date: data.date,
       });
     }
   };
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
+
+  const formatDateDisplay = (date: Date | undefined) => {
+    if (!date) return "Pick a date";
+    return date.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const dateValue = form.watch("date");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -219,19 +231,11 @@ export function TransactionForm({
                   variant="outline"
                   className={cn(
                     "w-full justify-start text-left font-normal",
-                    !form.watch("date") && "text-muted-foreground"
+                    !dateValue && "text-muted-foreground"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {form.watch("date") ? (
-                    form.watch("date").toLocaleDateString("en-US", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })
-                  ) : (
-                    <span>Pick a date</span>
-                  )}
+                  {dateValue ? formatDateDisplay(dateValue) : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -240,8 +244,8 @@ export function TransactionForm({
                   <Input
                     type="date"
                     value={
-                      form.watch("date")
-                        ? form.watch("date").toISOString().split("T")[0]
+                      dateValue
+                        ? dateValue.toISOString().split("T")[0]
                         : ""
                     }
                     onChange={(e) =>
@@ -297,7 +301,7 @@ export function TransactionForm({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No category</SelectItem>
-                {categories?.map((category) => (
+                {categories.map((category: { id: string; name: string }) => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.name}
                   </SelectItem>

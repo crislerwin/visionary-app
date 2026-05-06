@@ -45,6 +45,27 @@ interface TransactionTableProps {
 
 interface Transaction {
   id: string;
+  amount: number | string;
+  type: TransactionType;
+  description: string | null;
+  date: Date | string;
+  status: TransactionStatus;
+  bankAccount: {
+    id: string;
+    name: string;
+    currency: string;
+  };
+  category: {
+    id: string;
+    name: string;
+    color: string;
+    icon: string;
+  } | null;
+}
+
+// Helper to normalize transaction from API
+type NormalizedTransaction = {
+  id: string;
   amount: number;
   type: TransactionType;
   description: string;
@@ -61,7 +82,14 @@ interface Transaction {
     color: string;
     icon: string;
   } | null;
-}
+};
+
+const normalizeTransaction = (t: Transaction): NormalizedTransaction => ({
+  ...t,
+  amount: typeof t.amount === 'string' ? Number(t.amount) : t.amount,
+  description: t.description ?? '',
+  date: t.date instanceof Date ? t.date : new Date(t.date),
+});
 
 export function TransactionTable({
   onEdit,
@@ -82,8 +110,8 @@ export function TransactionTable({
     offset: page * pageSize,
   });
 
-  const { data: bankAccounts } = api.bankAccount.list.useQuery();
-  const { data: categoriesData } = api.category.list.useQuery();
+  const { data: bankAccounts } = api.bankAccount.list.useQuery(undefined);
+  const { data: categoriesData } = api.category.list.useQuery({});
   const categories = categoriesData?.categories ?? [];
 
   const transactions = data?.transactions ?? [];
@@ -200,7 +228,9 @@ export function TransactionTable({
                 </TableCell>
               </TableRow>
             ) : (
-              transactions.map((transaction) => (
+              transactions.map((rawTransaction) => {
+                const transaction = normalizeTransaction(rawTransaction);
+                return (
                 <TableRow key={transaction.id}>
                   <TableCell className="whitespace-nowrap">
                     {formatDate(transaction.date)}
@@ -258,7 +288,7 @@ export function TransactionTable({
                     {new Intl.NumberFormat("en-US", {
                       style: "currency",
                       currency: transaction.bankAccount.currency,
-                    }).format(transaction.amount)}
+                    }).format(Number(transaction.amount))}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -269,12 +299,12 @@ export function TransactionTable({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(transaction as Transaction)}>
+                        <DropdownMenuItem onClick={() => onEdit(transaction)}>
                           <Edit2 className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => onDelete(transaction as Transaction)}
+                          onClick={() => onDelete(transaction)}
                           className="text-destructive focus:text-destructive"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
@@ -284,7 +314,7 @@ export function TransactionTable({
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))
+              )})
             )}
           </TableBody>
         </Table>
