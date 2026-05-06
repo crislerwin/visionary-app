@@ -4,7 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 import { sidebarNavigation, type NavSection } from "@/config/navigation";
 import { Menu, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
@@ -35,7 +41,8 @@ function SidebarNavSection({
       <div className="space-y-1">
         {section.items.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+          const isActive =
+            pathname === item.href || pathname?.startsWith(`${item.href}/`);
 
           return (
             <Link
@@ -46,7 +53,7 @@ function SidebarNavSection({
                 "hover:bg-accent hover:text-accent-foreground",
                 isActive && "bg-accent text-accent-foreground",
                 item.disabled && "pointer-events-none opacity-50",
-                collapsed && "justify-center"
+                collapsed && "justify-center",
               )}
               title={collapsed ? item.title : undefined}
             >
@@ -68,35 +75,63 @@ function MobileMenu({
   setOpen: (value: boolean) => void;
 }) {
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild className="lg:hidden">
-        <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Toggle Menu">
+    <Drawer open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild className="lg:hidden">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9"
+          aria-label="Toggle Menu"
+        >
           <Menu className="h-5 w-5" />
         </Button>
-      </SheetTrigger>
-      <SheetContent side="left" className="w-72 p-0">
-        <div className="flex h-full flex-col">
-          <div className="flex h-14 items-center border-b px-4">
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-2 font-semibold"
-              onClick={() => setOpen(false)}
-            >
-              <span className="text-lg">Visionary</span>
-            </Link>
-          </div>
-          <div className="flex-1 overflow-y-auto py-4">
-            {sidebarNavigation.map((section) => (
-              <SidebarNavSection
-                key={section.title || section.items[0]?.href}
-                section={section}
-                collapsed={false}
-              />
-            ))}
-          </div>
+      </DrawerTrigger>
+      <DrawerContent className="max-h-[85vh]">
+        <DrawerHeader>
+          <DrawerTitle className="text-center">Menu</DrawerTitle>
+        </DrawerHeader>
+        <div className="overflow-y-auto px-2 pb-6">
+          {sidebarNavigation.map((section) => {
+            const pathname = usePathname();
+            return (
+              <div key={section.title || section.items[0]?.href} className="mb-3">
+                {section.title && (
+                  <h3 className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {section.title}
+                  </h3>
+                )}
+                <div className="space-y-1">
+                  {section.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive =
+                      pathname === item.href ||
+                      pathname?.startsWith(`${item.href}/`);
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setOpen(false)}
+                        className={cn(
+                          "flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium transition-colors",
+                          "hover:bg-accent hover:text-accent-foreground",
+                          isActive &&
+                            "bg-accent text-accent-foreground",
+                          item.disabled && "pointer-events-none opacity-50",
+                        )}
+                      >
+                        <Icon className="h-5 w-5 shrink-0" />
+                        <span>{item.title}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   );
 }
 
@@ -105,7 +140,7 @@ export function Sidebar({ collapsed, setCollapsed, className }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile Menu */}
+      {/* Mobile Drawer Menu */}
       <MobileMenu open={mobileOpen} setOpen={setMobileOpen} />
 
       {/* Desktop Sidebar */}
@@ -113,7 +148,7 @@ export function Sidebar({ collapsed, setCollapsed, className }: SidebarProps) {
         className={cn(
           "hidden lg:flex flex-col border-r bg-background transition-all duration-300",
           collapsed ? "w-16" : "w-64",
-          className
+          className,
         )}
       >
         {/* Header with Tenant Switcher and Collapse Button */}
@@ -164,30 +199,58 @@ export function Sidebar({ collapsed, setCollapsed, className }: SidebarProps) {
 
 export function MobileSidebarTrigger() {
   return (
-    <Sheet>
-      <SheetTrigger asChild className="lg:hidden">
-        <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Toggle Menu">
+    <Drawer>
+      <DrawerTrigger asChild className="lg:hidden">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9"
+          aria-label="Toggle Menu"
+        >
           <Menu className="h-5 w-5" />
         </Button>
-      </SheetTrigger>
-      <SheetContent side="left" className="w-72 p-0">
-        <div className="flex h-full flex-col">
-          <div className="flex h-14 items-center border-b px-4">
-            <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-              <span className="text-lg">Visionary</span>
-            </Link>
-          </div>
-          <div className="flex-1 overflow-y-auto py-4">
-            {sidebarNavigation.map((section) => (
-              <SidebarNavSection
-                key={section.title || section.items[0]?.href}
-                section={section}
-                collapsed={false}
-              />
-            ))}
-          </div>
+      </DrawerTrigger>
+      <DrawerContent className="max-h-[85vh]">
+        <DrawerHeader>
+          <DrawerTitle className="text-center">Menu</DrawerTitle>
+        </DrawerHeader>
+        <div className="overflow-y-auto px-2 pb-6">
+          {sidebarNavigation.map((section) => (
+            <div key={section.title || section.items[0]?.href} className="mb-3">
+              {section.title && (
+                <h3 className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {section.title}
+                </h3>
+              )}
+              <div className="space-y-1">
+                {section.items.map((item) => {
+                  const pathname = usePathname();
+                  const Icon = item.icon;
+                  const isActive =
+                    pathname === item.href ||
+                    pathname?.startsWith(`${item.href}/`);
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium transition-colors",
+                        "hover:bg-accent hover:text-accent-foreground",
+                        isActive && "bg-accent text-accent-foreground",
+                        item.disabled && "pointer-events-none opacity-50",
+                      )}
+                    >
+                      <Icon className="h-5 w-5 shrink-0" />
+                      <span>{item.title}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   );
 }
