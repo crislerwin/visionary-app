@@ -157,7 +157,7 @@ export function DashboardClient() {
     const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i);
 
     return (
-        <>
+        <main className="min-h-screen bg-muted/30">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
@@ -364,7 +364,7 @@ export function DashboardClient() {
                     </CardContent>
                 </Card>
             </section>
-        </>
+        </main>
     );
 }
 
