@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [{ protocol: "https", hostname: "**" }],
   },
+  turbopack: {
+    // Next.js 16 turbopack é estável por padrão
+  },
 };
 
 export default nextConfig;
