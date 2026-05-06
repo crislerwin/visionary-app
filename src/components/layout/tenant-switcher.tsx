@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useCurrentTenant } from "@/hooks/use-current-tenant";
 import { trpc } from "@/lib/trpc/react";
 import { cn } from "@/lib/utils";
+import { isBackofficeUser } from "@/lib/backoffice";
 
 export function TenantSwitcher() {
   const router = useRouter();
@@ -45,7 +46,7 @@ export function TenantSwitcher() {
     return (tenants ?? []).filter((t) => t.name.toLowerCase().includes(query));
   }, [tenants, searchQuery]);
 
-  const isBackoffice = session?.user?.isBackoffice ?? false;
+  const isBackoffice = isBackofficeUser(session?.user?.email);
 
   // biome-ignore lint/suspicious/noExplicitAny: tRPC RC type workaround
   const createTenant = (trpc.tenant.create.useMutation as any)({
