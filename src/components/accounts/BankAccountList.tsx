@@ -16,12 +16,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import type { BankAccountType } from "@prisma/client";
+import { BankAccountType } from "@prisma/client";
 
 interface BankAccount {
   id: string;
   name: string;
-  type: string;
+  type: BankAccountType;
   currency: string;
   currentBalance: number;
   initialBalance: number;
@@ -53,9 +53,9 @@ export function BankAccountList() {
     setEditingAccount({
       id: account.id,
       name: account.name,
-      type: account.type as BankAccountType,
+      type: account.type,
       currency: account.currency,
-      initialBalance: account.initialBalance ? Number(account.initialBalance) : 0,
+      initialBalance: account.initialBalance,
     });
     setIsFormOpen(true);
   };
@@ -116,14 +116,10 @@ export function BankAccountList() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {accounts?.map((account) => {
-            const accountNormalized = {
+            const accountNormalized: BankAccount = {
               ...account,
-              id: account.id,
-              name: account.name,
-              type: account.type as BankAccountType,
-              currency: account.currency,
               currentBalance: Number(account.currentBalance),
-              initialBalance: account.initialBalance ? Number(account.initialBalance) : 0,
+              initialBalance: Number(account.initialBalance),
             };
             return (
               <BankAccountCard

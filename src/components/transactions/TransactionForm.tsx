@@ -301,7 +301,7 @@ export function TransactionForm({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No category</SelectItem>
-                {categories.map((category: { id: string; name: string }) => (
+                {categoriesData?.categories?.map((category: { id: string; name: string }) => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.name}
                   </SelectItem>
