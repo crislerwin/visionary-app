@@ -2,11 +2,12 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import React, { useCallback } from "react";
+import React from "react";
 import {
   Controller,
   type ControllerRenderProps,
   useForm,
+  type DefaultValues,
   type FieldValues,
   type Path,
   type UseFormReturn,
@@ -55,12 +56,10 @@ export interface SmartField<T extends FieldValues = FieldValues> {
   disabled?: boolean;
   required?: boolean;
   className?: string;
-  // Para campos custom - componente customizado
   customRender?: (props: {
     field: ControllerRenderProps<T, Path<T>>;
     form: UseFormReturn<T>;
   }) => React.ReactNode;
-  // Transformações de valor (entrada/saída)
   transform?: {
     input?: (value: unknown) => unknown;
     output?: (value: unknown) => unknown;
@@ -68,27 +67,16 @@ export interface SmartField<T extends FieldValues = FieldValues> {
 }
 
 export interface SmartFormProps<T extends FieldValues = FieldValues> {
-  // Schema de validação Zod
   schema: z.ZodType<T, z.ZodTypeDef, T>;
-  // Configuração dos campos
   fields: SmartField<T>[];
-  // Valores iniciais
   defaultValues?: Partial<T>;
-  // Callback de submit
   onSubmit: (data: T) => void | Promise<void>;
-  // Texto do botão de submit
   submitText?: string;
-  // Loading state
   isLoading?: boolean;
-  // Classes customizadas
   className?: string;
-  // Layout: vertical ou horizontal
   layout?: "vertical" | "horizontal";
-  // Gap entre campos
   gap?: "sm" | "md" | "lg";
-  // Footer customizado (pode substituir o botão padrão)
   footer?: React.ReactNode | ((form: UseFormReturn<T>) => React.ReactNode);
-  // Erros do servidor para mostrar
   serverErrors?: Partial<Record<Path<T>, string>>;
 }
 
@@ -109,31 +97,23 @@ export function SmartForm<T extends FieldValues>({
   footer,
   serverErrors,
 }: SmartFormProps<T>) {
-  const form = useForm<T>({
+  const form = useForm<T, any, T>({
     resolver: zodResolver(schema),
-    defaultValues: defaultValues as T,
+    defaultValues: defaultValues as DefaultValues<T>,
   });
 
-  // Aplicar erros do servidor
   React.useEffect(() => {
     if (serverErrors) {
       for (const [key, value] of Object.entries(serverErrors)) {
         if (value) {
           form.setError(key as Path<T>, {
             type: "server",
-            message: value,
+            message: value as string,
           });
         }
       }
     }
   }, [serverErrors, form]);
-
-  const handleSubmit = useCallback(
-    async (data: T) => {
-      await onSubmit(data);
-    },
-    [onSubmit]
-  );
 
   const gapClasses = {
     sm: "gap-3",
@@ -148,21 +128,19 @@ export function SmartForm<T extends FieldValues>({
 
   return (
     <form
-      onSubmit={form.handleSubmit(handleSubmit)}
+      onSubmit={form.handleSubmit(onSubmit)}
       className={cn(layoutClasses[layout], gapClasses[gap], className)}
     >
       {fields.map((field) => (
-        <SmartFieldComponent
-          key={field.name}
-          field={field}
-          form={form}
-        />
+        <SmartFieldComponent key={field.name} field={field} form={form} />
       ))}
 
-      <div className={cn(
-        "flex items-center justify-end",
-        layout === "horizontal" && "col-span-full"
-      )}>
+      <div
+        className={cn(
+          "flex items-center justify-end",
+          layout === "horizontal" && "col-span-full"
+        )}
+      >
         {footer ? (
           typeof footer === "function" ? (
             footer(form)
@@ -170,7 +148,10 @@ export function SmartForm<T extends FieldValues>({
             footer
           )
         ) : (
-          <Button type="submit" disabled={isLoading || form.formState.isSubmitting}>
+          <Button
+            type="submit"
+            disabled={isLoading || form.formState.isSubmitting}
+          >
             {(isLoading || form.formState.isSubmitting) && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
@@ -191,13 +172,22 @@ function SmartFieldComponent<T extends FieldValues>({
   form,
 }: {
   field: SmartField<T>;
-  form: UseFormReturn<T>;
+  form: UseFormReturn<T, any, T>;
 }) {
-  const { control, formState: { errors } } = form;
+  const {
+    control,
+    formState: { errors },
+  } = form;
   const error = errors[field.name];
 
   const labelContent = (
-    <Label htmlFor={field.name} className={cn(field.required && "after:content-['*'] after:ml-0.5 after:text-destructive")}>
+    <Label
+      htmlFor={field.name}
+      className={cn(
+        field.required &&
+          "after:content-['*'] after:ml-0.5 after:text-destructive"
+      )}
+    >
       {field.label}
     </Label>
   );
@@ -209,8 +199,7 @@ function SmartFieldComponent<T extends FieldValues>({
       <Controller
         name={field.name}
         control={control}
-        render={({ field: controllerField }) => {
-          // Aplicar transformação de input se existir
+        render={({ field: controllerField }): React.ReactElement => {
           const value = field.transform?.input
             ? field.transform.input(controllerField.value)
             : controllerField.value;
@@ -223,7 +212,11 @@ function SmartFieldComponent<T extends FieldValues>({
           };
 
           if (field.type === "custom" && field.customRender) {
-            return field.customRender({ field: controllerField, form });
+            const result = field.customRender({
+              field: controllerField,
+              form,
+            });
+            return <>{result}</>;
           }
 
           switch (field.type) {
@@ -250,7 +243,9 @@ function SmartFieldComponent<T extends FieldValues>({
                   disabled={field.disabled}
                   {...controllerField}
                   value={(value as string | number | undefined) || ""}
-                  onChange={(e) => handleChange(e.target.valueAsNumber || 0)}
+                  onChange={(e) =>
+                    handleChange(e.target.valueAsNumber || 0)
+                  }
                 />
               );
 
@@ -276,7 +271,10 @@ function SmartFieldComponent<T extends FieldValues>({
                   onValueChange={handleChange}
                   disabled={field.disabled}
                 >
-                  <SelectTrigger id={field.name} className={cn(error && "border-destructive")}>
+                  <SelectTrigger
+                    id={field.name}
+                    className={cn(error && "border-destructive")}
+                  >
                     <SelectValue placeholder={field.placeholder} />
                   </SelectTrigger>
                   <SelectContent>
@@ -296,7 +294,13 @@ function SmartFieldComponent<T extends FieldValues>({
                   type="date"
                   disabled={field.disabled}
                   {...controllerField}
-                  value={value ? new Date(value as string | Date).toISOString().split("T")[0] : ""}
+                  value={
+                    value
+                      ? new Date(value as string | Date)
+                          .toISOString()
+                          .split("T")[0]
+                      : ""
+                  }
                   onChange={(e) => handleChange(e.target.valueAsDate)}
                 />
               );
@@ -317,7 +321,7 @@ function SmartFieldComponent<T extends FieldValues>({
               );
 
             default:
-              return null;
+              return <></>;
           }
         }}
       />
@@ -343,9 +347,9 @@ export function useSmartForm<T extends FieldValues>(
   schema: z.ZodType<T, z.ZodTypeDef, T>,
   defaultValues?: Partial<T>
 ) {
-  return useForm<T>({
+  return useForm<T, any, T>({
     resolver: zodResolver(schema),
-    defaultValues: defaultValues as T,
+    defaultValues: defaultValues as DefaultValues<T>,
   });
 }
 

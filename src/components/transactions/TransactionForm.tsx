@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { useForm, type DefaultValues } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ const transactionSchema = z.object({
   amount: z.coerce.number().positive("Amount must be positive"),
   type: z.enum([TransactionType.INCOME, TransactionType.EXPENSE]),
   description: z.string().min(1, "Description is required").max(500),
-  date: z.coerce.date(),
+  date: z.string().min(1, "Date is required"),
   bankAccountId: z.string().min(1, "Bank account is required"),
   categoryId: z.string().optional(),
   status: z.enum([
@@ -84,12 +84,14 @@ export function TransactionForm({
     },
   });
 
-  const defaultValues = useMemo(
+  const defaultValues = useMemo<DefaultValues<TransactionFormData>>(
     () => ({
       amount: transaction?.amount ?? 0,
       type: transaction?.type ?? TransactionType.EXPENSE,
       description: transaction?.description ?? "",
-      date: transaction?.date ? new Date(transaction.date).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+      date: transaction?.date
+        ? new Date(transaction.date).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0],
       bankAccountId: transaction?.bankAccountId ?? "",
       categoryId: transaction?.categoryId ?? "",
       status: transaction?.status ?? TransactionStatus.COMPLETED,
@@ -194,9 +196,7 @@ export function TransactionForm({
             <Input
               id="date"
               type="date"
-              {...form.register("date", {
-                setValueAs: (v) => (v ? new Date(v) : new Date()),
-              })}
+              {...form.register("date")}
             />
             {form.formState.errors.date && (
               <p className="text-sm text-destructive">
