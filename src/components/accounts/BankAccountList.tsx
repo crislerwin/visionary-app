@@ -23,6 +23,10 @@ interface BankAccount {
   type: string;
   currency: string;
   currentBalance: number;
+  initialBalance: number;
+  _count?: {
+    transactions: number;
+  };
 }
 
 export function BankAccountList() {
@@ -98,14 +102,21 @@ export function BankAccountList() {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {accounts?.map((account) => (
-            <BankAccountCard
-              key={account.id}
-              account={account}
-              onEdit={() => handleEdit(account)}
-              onDelete={() => handleDelete(account)}
-            />
-          ))}
+          {accounts?.map((account) => {
+            const accountWithNumbers = {
+              ...account,
+              currentBalance: Number(account.currentBalance),
+              initialBalance: account.initialBalance ? Number(account.initialBalance) : undefined,
+            };
+            return (
+              <BankAccountCard
+                key={account.id}
+                account={accountWithNumbers}
+                onEdit={() => handleEdit(account)}
+                onDelete={() => handleDelete(account)}
+              />
+            );
+          })}
         </div>
       )}
 

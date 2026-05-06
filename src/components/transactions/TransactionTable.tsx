@@ -83,7 +83,8 @@ export function TransactionTable({
   });
 
   const { data: bankAccounts } = api.bankAccount.list.useQuery();
-  const { data: categories } = api.category.list.useQuery();
+  const { data: categoriesData } = api.category.list.useQuery();
+  const categories = categoriesData?.categories ?? [];
 
   const transactions = data?.transactions ?? [];
   const total = data?.total ?? 0;

@@ -5,7 +5,7 @@ import {
   publicProcedure,
   router,
   tenantProcedure,
-} from "./trpc/trpc";
+} from "@/lib/trpc/trpc";
 import { TRPCError } from "@trpc/server";
 
 describe("createTRPCContext", () => {

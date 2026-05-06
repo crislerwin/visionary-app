@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -225,7 +224,11 @@ export function TransactionForm({
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {form.watch("date") ? (
-                    format(form.watch("date"), "PPP")
+                    form.watch("date").toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })
                   ) : (
                     <span>Pick a date</span>
                   )}
@@ -238,7 +241,7 @@ export function TransactionForm({
                     type="date"
                     value={
                       form.watch("date")
-                        ? format(form.watch("date"), "yyyy-MM-dd")
+                        ? form.watch("date").toISOString().split("T")[0]
                         : ""
                     }
                     onChange={(e) =>

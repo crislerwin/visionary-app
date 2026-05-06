@@ -1,6 +1,6 @@
 "use client";
 
-import { CreditCard, Landmark, PiggyBank, ArrowRightLeft, Trash2 } from "lucide-react";
+import { CreditCard, Landmark, PiggyBank, ArrowRightLeft, Trash2, Edit2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
