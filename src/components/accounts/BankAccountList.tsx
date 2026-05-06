@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { BankAccountType } from "@prisma/client";
+import type { BankAccountType } from "@prisma/client";
 
 interface BankAccount {
   id: string;

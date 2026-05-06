@@ -117,14 +117,14 @@ export function SmartForm<T extends FieldValues>({
   // Aplicar erros do servidor
   React.useEffect(() => {
     if (serverErrors) {
-      Object.entries(serverErrors).forEach(([key, value]) => {
+      for (const [key, value] of Object.entries(serverErrors)) {
         if (value) {
           form.setError(key as Path<T>, {
             type: "server",
             message: value,
           });
         }
-      });
+      }
     }
   }, [serverErrors, form]);
 

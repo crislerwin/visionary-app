@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { api } from "@/lib/trpc/react";
-import { BankAccountType } from "@prisma/client";
+import type { BankAccountType } from "@prisma/client";
 
 const bankAccountSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),

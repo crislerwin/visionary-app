@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { api } from "@/lib/trpc/react";
-import { CategoryType } from "@prisma/client";
+import type { CategoryType } from "@prisma/client";
 
 const categorySchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
