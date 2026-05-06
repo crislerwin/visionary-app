@@ -211,13 +211,13 @@ export function DashboardClient() {
       </section>
 
       <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
+        <Card className="min-h-0 py-3">
+          <CardHeader className="px-4 pb-2 pt-0">
             <CardTitle>Evolução do Saldo</CardTitle>
             <CardDescription>Últimos 12 meses</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={balanceChartConfig} className="aspect-[16/10] w-full">
+          <CardContent className="px-4 pb-3 pt-0">
+            <ChartContainer config={balanceChartConfig} className="h-[260px] w-full sm:h-[300px]">
               <AreaChart data={data.balanceSeries} margin={{ left: 4, right: 12, top: 8 }}>
                 <defs>
                   <linearGradient id="fillSaldo" x1="0" y1="0" x2="0" y2="1">
@@ -248,13 +248,13 @@ export function DashboardClient() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
+        <Card className="min-h-0 py-3">
+          <CardHeader className="px-4 pb-2 pt-0">
             <CardTitle>Receitas vs Despesas</CardTitle>
             <CardDescription>Comparativo mensal</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={compareChartConfig} className="aspect-[16/10] w-full">
+          <CardContent className="px-4 pb-3 pt-0">
+            <ChartContainer config={compareChartConfig} className="h-[260px] w-full sm:h-[300px]">
               <BarChart data={data.compareSeries} margin={{ left: 4, right: 12, top: 8 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
@@ -299,14 +299,14 @@ function KpiCard({
   const isUp = delta >= 0;
   const isPositive = invertDelta ? !isUp : isUp;
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    <Card className="py-3">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 pb-1 pt-0">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
+        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted text-muted-foreground">
           {icon}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4 pb-3 pt-0">
         <div className="text-2xl font-semibold tracking-tight text-foreground">{value}</div>
         <div className="mt-1 flex items-center gap-1 text-xs">
           <span
