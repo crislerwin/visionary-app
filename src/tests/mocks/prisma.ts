@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
 
 // Deep mock for PrismaClient
 const createMockPrisma = () => {
@@ -40,7 +40,7 @@ const createMockPrisma = () => {
     transaction: mockTransaction,
     bankAccount: mockBankAccount,
     category: mockCategory,
-    $transaction: vi.fn((callback: any) =>
+    $transaction: vi.fn((callback: (client: unknown) => unknown) =>
       callback({
         transaction: mockTransaction,
         bankAccount: mockBankAccount,

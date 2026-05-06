@@ -120,7 +120,7 @@ export function CategoryForm({
         icon: "circle",
       });
     }
-  }, [category, form, open]);
+  }, [category, form]);
 
   const onSubmit = (data: CategoryFormData) => {
     if (isEditing && category) {

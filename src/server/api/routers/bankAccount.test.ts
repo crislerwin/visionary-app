@@ -175,7 +175,7 @@ describe("bankAccountRouter", () => {
         tenantId: mockTenantId,
       });
 
-      const result = await caller.create(minimalInput as any);
+      const result = await caller.create(minimalInput as { name: string; type: BankAccountType; currency?: string; initialBalance?: number; });
 
       expect(result.currency).toBe("BRL");
       expect(result.currentBalance).toBe(0);

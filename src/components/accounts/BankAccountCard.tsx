@@ -1,6 +1,6 @@
 "use client";
 
-import { CreditCard, Landmark, PiggyBank, ArrowRightLeft, Trash2, Edit2, Loader2 } from "lucide-react";
+import { CreditCard, Landmark, PiggyBank, ArrowRightLeft, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +16,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { api } from "@/lib/trpc/react";
 import { BankAccountType } from "@prisma/client";
 
 interface BankAccountCardProps {

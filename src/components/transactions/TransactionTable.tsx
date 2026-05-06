@@ -1,6 +1,5 @@
 "use client";
 
-import { format } from "date-fns";
 import { ArrowDownLeft, ArrowUpRight, Edit2, MoreHorizontal, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -72,7 +71,7 @@ export function TransactionTable({
   const [page, setPage] = useState(0);
   const pageSize = 20;
 
-  const { data, isLoading, refetch } = api.transaction.list.useQuery({
+  const { data, isLoading } = api.transaction.list.useQuery({
     type: filters?.type,
     status: filters?.status,
     bankAccountId: filters?.bankAccountId,
@@ -186,7 +185,7 @@ export function TransactionTable({
               <TableHead>Account</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Amount</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
+              <TableHead className="w-[50px]" />
             </TableRow>
           </TableHeader>
           <TableBody>

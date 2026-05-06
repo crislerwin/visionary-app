@@ -125,7 +125,7 @@ export function TransactionForm({
         status: TransactionStatus.COMPLETED,
       });
     }
-  }, [transaction, form, open]);
+  }, [transaction, form]);
 
   const onSubmit = (data: TransactionFormData) => {
     if (isEditing && transaction) {

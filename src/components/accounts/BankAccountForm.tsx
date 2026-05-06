@@ -97,7 +97,7 @@ export function BankAccountForm({
         initialBalance: 0,
       });
     }
-  }, [account, form, open]);
+  }, [account, form]);
 
   const onSubmit = (data: BankAccountFormData) => {
     if (isEditing && account) {

@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/db";
-import { protectedProcedure, router, tenantProcedure } from "@/lib/trpc/trpc";
-import { CategoryType } from "@prisma/client";
+import { router, tenantProcedure } from "@/lib/trpc/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
