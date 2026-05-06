@@ -9,6 +9,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { DataTable } from "@/components/ui/data-table";
 import {
   Select,
   SelectContent,
@@ -16,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -24,8 +26,19 @@ import {
   TrendingUp,
   Wallet,
 } from "lucide-react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+
+interface Transaction {
+  id: string;
+  description: string;
+  date: string;
+  amount: number;
+  type: "INCOME" | "EXPENSE";
+  category: string;
+  status: "COMPLETED" | "PENDING";
+}
 
 const MONTHS = [
   "Janeiro",
@@ -130,6 +143,73 @@ const compareChartConfig = {
   receitas: { label: "Receitas", color: "var(--chart-2)" },
   despesas: { label: "Despesas", color: "var(--chart-5)" },
 } satisfies ChartConfig;
+
+const MOCK_TRANSACTIONS: Transaction[] = [
+  { id: "1", description: "Salário mensal", date: "06/05/2026", amount: 8500.0, type: "INCOME", category: "Salário", status: "COMPLETED" },
+  { id: "2", description: "Aluguel apartamento", date: "05/05/2026", amount: 2200.0, type: "EXPENSE", category: "Moradia", status: "COMPLETED" },
+  { id: "3", description: "Supermercado Extra", date: "04/05/2026", amount: 680.5, type: "EXPENSE", category: "Alimentação", status: "COMPLETED" },
+  { id: "4", description: "Freelance projeto web", date: "03/05/2026", amount: 3200.0, type: "INCOME", category: "Freelance", status: "PENDING" },
+  { id: "5", description: "Uber / 99", date: "02/05/2026", amount: 145.8, type: "EXPENSE", category: "Transporte", status: "COMPLETED" },
+  { id: "6", description: "Netflix + Spotify", date: "01/05/2026", amount: 59.9, type: "EXPENSE", category: "Lazer", status: "COMPLETED" },
+  { id: "7", description: "Dividendos FIIs", date: "30/04/2026", amount: 420.0, type: "INCOME", category: "Investimentos", status: "COMPLETED" },
+  { id: "8", description: "Farmácia", date: "29/04/2026", amount: 210.35, type: "EXPENSE", category: "Saúde", status: "COMPLETED" },
+];
+
+const transactionColumns: ColumnDef<Transaction>[] = [
+  {
+    accessorKey: "description",
+    header: "Descrição",
+    cell: ({ row }) => (
+      <span className="font-medium">{row.getValue("description")}</span>
+    ),
+  },
+  {
+    accessorKey: "category",
+    header: "Categoria",
+  },
+  {
+    accessorKey: "date",
+    header: "Data",
+  },
+  {
+    accessorKey: "amount",
+    header: "Valor",
+    cell: ({ row }) => {
+      const amount = Number(row.getValue("amount"));
+      const type = row.original.type;
+      return (
+        <span
+          className={cn(
+            "font-medium",
+            type === "INCOME" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400",
+          )}
+        >
+          {type === "INCOME" ? "+" : "-"}
+          {currency(amount)}
+        </span>
+      );
+    },
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.getValue("status") as string;
+      return (
+        <span
+          className={cn(
+            "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+            status === "COMPLETED"
+              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+              : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
+          )}
+        >
+          {status === "COMPLETED" ? "Concluído" : "Pendente"}
+        </span>
+      );
+    },
+  },
+];
 
 export function DashboardClient() {
   const now = new Date();
@@ -276,6 +356,21 @@ export function DashboardClient() {
                 <Bar dataKey="despesas" fill="var(--color-despesas)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ChartContainer>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="mt-6">
+        <Card className="min-h-0 py-3">
+          <CardContent className="px-4 pb-3 pt-0">
+            <DataTable
+              columns={transactionColumns}
+              data={MOCK_TRANSACTIONS}
+              title="Últimas Transações"
+              description="Transações recentes do período"
+              searchKey="description"
+              searchPlaceholder="Buscar transação..."
+            />
           </CardContent>
         </Card>
       </section>

@@ -46,6 +46,8 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   searchKey?: string;
   searchPlaceholder?: string;
+  title?: string;
+  description?: string;
 }
 
 export function DataTable<TData, TValue>({
@@ -53,6 +55,8 @@ export function DataTable<TData, TValue>({
   data,
   searchKey,
   searchPlaceholder = "Filtrar...",
+  title,
+  description,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -79,17 +83,27 @@ export function DataTable<TData, TValue>({
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
+      {(title || description) && (
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            {title && <h3 className="text-base font-semibold tracking-tight">{title}</h3>}
+            {description && <p className="text-sm text-muted-foreground">{description}</p>}
+          </div>
+          <DataTableViewOptions table={table} />
+        </div>
+      )}
+
       <div className="flex items-center gap-2">
         {searchKey && (
           <Input
             placeholder={searchPlaceholder}
             value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
             onChange={(event) => table.getColumn(searchKey)?.setFilterValue(event.target.value)}
-            className="max-w-sm"
+            className="max-w-sm h-8 text-sm"
           />
         )}
-        <DataTableViewOptions table={table} />
+        {!title && !description && <DataTableViewOptions table={table} />}
       </div>
 
       <div className="overflow-hidden rounded-md border">
@@ -136,12 +150,12 @@ export function DataTable<TData, TValue>({
 
 function DataTablePagination<TData>({ table }: { table: ReturnType<typeof useReactTable<TData>> }) {
   return (
-    <div className="flex items-center justify-between px-2">
-      <div className="flex-1 text-sm text-muted-foreground">
+    <div className="flex items-center justify-between px-2 py-1">
+      <div className="flex-1 text-xs text-muted-foreground">
         {table.getFilteredSelectedRowModel().rows.length} de{" "}
         {table.getFilteredRowModel().rows.length} linha(s) selecionada(s).
       </div>
-      <div className="flex items-center space-x-6 lg:space-x-8">
+      <div className="flex items-center space-x-4 lg:space-x-6">
         <div className="flex items-center space-x-2">
           <p className="text-sm font-medium">Linhas por página</p>
           <Select
