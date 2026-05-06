@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { PrismaClient, MemberRole, CategoryType } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
