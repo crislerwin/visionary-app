@@ -89,7 +89,7 @@ export function TransactionForm({
       amount: transaction?.amount ?? 0,
       type: transaction?.type ?? TransactionType.EXPENSE,
       description: transaction?.description ?? "",
-      date: transaction?.date ? new Date(transaction.date) : new Date(),
+      date: transaction?.date ? new Date(transaction.date).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
       bankAccountId: transaction?.bankAccountId ?? "",
       categoryId: transaction?.categoryId ?? "",
       status: transaction?.status ?? TransactionStatus.COMPLETED,
@@ -105,6 +105,7 @@ export function TransactionForm({
   const handleSubmit = form.handleSubmit(async (data) => {
     const submitData = {
       ...data,
+      date: new Date(data.date),
       categoryId: data.categoryId || undefined,
     };
     
@@ -112,13 +113,9 @@ export function TransactionForm({
       await updateMutation.mutateAsync({
         id: transaction.id,
         ...submitData,
-        date: data.date.toISOString(),
       });
     } else {
-      await createMutation.mutateAsync({
-        ...submitData,
-        date: data.date.toISOString(),
-      });
+      await createMutation.mutateAsync(submitData);
     }
   });
 

@@ -233,7 +233,7 @@ function SmartFieldComponent<T extends FieldValues>({
                   placeholder={field.placeholder}
                   disabled={field.disabled}
                   {...controllerField}
-                  value={value || ""}
+                  value={value as string | undefined || ""}
                 />
               );
 
@@ -245,7 +245,7 @@ function SmartFieldComponent<T extends FieldValues>({
                   placeholder={field.placeholder}
                   disabled={field.disabled}
                   {...controllerField}
-                  value={value || ""}
+                  value={value as string | number | undefined || ""}
                   onChange={(e) => handleChange(e.target.valueAsNumber || 0)}
                 />
               );
@@ -257,7 +257,7 @@ function SmartFieldComponent<T extends FieldValues>({
                   placeholder={field.placeholder}
                   disabled={field.disabled}
                   {...controllerField}
-                  value={value || ""}
+                  value={value as string | undefined || ""}
                   className={cn(
                     "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
                     error && "border-destructive focus-visible:ring-destructive"
@@ -276,7 +276,7 @@ function SmartFieldComponent<T extends FieldValues>({
                     <SelectValue placeholder={field.placeholder} />
                   </SelectTrigger>
                   <SelectContent>
-                    {field.options?.map((option) => (
+                    {field.options?.map((option: SelectOption) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
@@ -292,7 +292,7 @@ function SmartFieldComponent<T extends FieldValues>({
                   type="date"
                   disabled={field.disabled}
                   {...controllerField}
-                  value={value ? new Date(value).toISOString().split("T")[0] : ""}
+                  value={value ? new Date(value as string | Date).toISOString().split("T")[0] : ""}
                   onChange={(e) => handleChange(e.target.valueAsDate)}
                 />
               );
