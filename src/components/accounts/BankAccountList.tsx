@@ -1,11 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { api } from "@/lib/trpc/react";
-import { BankAccountCard } from "./BankAccountCard";
-import { BankAccountForm } from "./BankAccountForm";
-import { Button } from "@/components/ui/button";
-import { Plus, Loader2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +10,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { api } from "@/lib/trpc/react";
 import type { BankAccountType } from "@prisma/client";
+import { Loader2, Plus } from "lucide-react";
+import { useState } from "react";
+import { BankAccountCard } from "./BankAccountCard";
+import { BankAccountForm } from "./BankAccountForm";
 
 interface BankAccount {
   id: string;
@@ -89,9 +89,7 @@ export function BankAccountList() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Bank Accounts</h2>
-          <p className="text-muted-foreground">
-            Manage your bank accounts and track balances
-          </p>
+          <p className="text-muted-foreground">Manage your bank accounts and track balances</p>
         </div>
         <Button onClick={() => setIsFormOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
@@ -145,8 +143,8 @@ export function BankAccountList() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Account</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deletingAccount?.name}"? This action cannot
-              be undone.
+              Are you sure you want to delete "{deletingAccount?.name}"? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -156,9 +154,7 @@ export function BankAccountList() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

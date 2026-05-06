@@ -18,9 +18,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useCurrentTenant } from "@/hooks/use-current-tenant";
+import { isBackofficeUser } from "@/lib/backoffice";
 import { trpc } from "@/lib/trpc/react";
 import { cn } from "@/lib/utils";
-import { isBackofficeUser } from "@/lib/backoffice";
 
 export function TenantSwitcher() {
   const router = useRouter();

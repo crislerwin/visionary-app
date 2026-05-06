@@ -1,10 +1,4 @@
-import {
-  LayoutDashboard,
-  FileText,
-  Users,
-  Settings,
-  type LucideIcon,
-} from "lucide-react";
+import { FileText, LayoutDashboard, type LucideIcon, Settings, Users } from "lucide-react";
 
 export interface NavItem {
   title: string;

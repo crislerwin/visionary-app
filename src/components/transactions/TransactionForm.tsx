@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { useForm, type DefaultValues } from "react-hook-form";
+import { type DefaultValues, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -96,7 +96,7 @@ export function TransactionForm({
       categoryId: transaction?.categoryId ?? "",
       status: transaction?.status ?? TransactionStatus.COMPLETED,
     }),
-    [transaction]
+    [transaction],
   );
 
   const form = useForm<TransactionFormData>({
@@ -110,7 +110,7 @@ export function TransactionForm({
       date: new Date(data.date),
       categoryId: data.categoryId || undefined,
     };
-    
+
     if (isEditing && transaction) {
       await updateMutation.mutateAsync({
         id: transaction.id,
@@ -127,9 +127,7 @@ export function TransactionForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "Edit Transaction" : "New Transaction"}
-          </DialogTitle>
+          <DialogTitle>{isEditing ? "Edit Transaction" : "New Transaction"}</DialogTitle>
           <DialogDescription>
             {isEditing
               ? "Update the transaction details below."
@@ -142,9 +140,7 @@ export function TransactionForm({
             <Label htmlFor="type">Type</Label>
             <Select
               value={form.watch("type")}
-              onValueChange={(value) =>
-                form.setValue("type", value as TransactionType)
-              }
+              onValueChange={(value) => form.setValue("type", value as TransactionType)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select type" />
@@ -155,9 +151,7 @@ export function TransactionForm({
               </SelectContent>
             </Select>
             {form.formState.errors.type && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.type.message}
-              </p>
+              <p className="text-sm text-destructive">{form.formState.errors.type.message}</p>
             )}
           </div>
 
@@ -171,9 +165,7 @@ export function TransactionForm({
               {...form.register("amount", { valueAsNumber: true })}
             />
             {form.formState.errors.amount && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.amount.message}
-              </p>
+              <p className="text-sm text-destructive">{form.formState.errors.amount.message}</p>
             )}
           </div>
 
@@ -193,15 +185,9 @@ export function TransactionForm({
 
           <div className="space-y-2">
             <Label htmlFor="date">Date</Label>
-            <Input
-              id="date"
-              type="date"
-              {...form.register("date")}
-            />
+            <Input id="date" type="date" {...form.register("date")} />
             {form.formState.errors.date && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.date.message}
-              </p>
+              <p className="text-sm text-destructive">{form.formState.errors.date.message}</p>
             )}
           </div>
 
@@ -233,9 +219,7 @@ export function TransactionForm({
             <Label htmlFor="categoryId">Category</Label>
             <Select
               value={form.watch("categoryId") || "none"}
-              onValueChange={(value) =>
-                form.setValue("categoryId", value === "none" ? "" : value)
-              }
+              onValueChange={(value) => form.setValue("categoryId", value === "none" ? "" : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select category (optional)" />
@@ -255,27 +239,19 @@ export function TransactionForm({
             <Label htmlFor="status">Status</Label>
             <Select
               value={form.watch("status")}
-              onValueChange={(value) =>
-                form.setValue("status", value as TransactionStatus)
-              }
+              onValueChange={(value) => form.setValue("status", value as TransactionStatus)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={TransactionStatus.COMPLETED}>
-                  Completed
-                </SelectItem>
+                <SelectItem value={TransactionStatus.COMPLETED}>Completed</SelectItem>
                 <SelectItem value={TransactionStatus.PENDING}>Pending</SelectItem>
-                <SelectItem value={TransactionStatus.CANCELLED}>
-                  Cancelled
-                </SelectItem>
+                <SelectItem value={TransactionStatus.CANCELLED}>Cancelled</SelectItem>
               </SelectContent>
             </Select>
             {form.formState.errors.status && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.status.message}
-              </p>
+              <p className="text-sm text-destructive">{form.formState.errors.status.message}</p>
             )}
           </div>
 

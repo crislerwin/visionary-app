@@ -69,12 +69,7 @@ const defaultIcons = [
   "plane",
 ];
 
-export function CategoryForm({
-  open,
-  onOpenChange,
-  category,
-  onSuccess,
-}: CategoryFormProps) {
+export function CategoryForm({ open, onOpenChange, category, onSuccess }: CategoryFormProps) {
   const isEditing = !!category;
 
   const { data: categories } = api.category.list.useQuery({ type: undefined });
@@ -101,7 +96,7 @@ export function CategoryForm({
       icon: category?.icon ?? "circle",
       parentId: category?.parentId ?? undefined,
     }),
-    [category]
+    [category],
   );
 
   const form = useForm<CategoryFormData>({
@@ -129,16 +124,14 @@ export function CategoryForm({
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
   const potentialParents = categories?.categories.filter(
-    (c) => !isEditing || c.id !== category?.id
+    (c) => !isEditing || c.id !== category?.id,
   );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "Edit Category" : "New Category"}
-          </DialogTitle>
+          <DialogTitle>{isEditing ? "Edit Category" : "New Category"}</DialogTitle>
           <DialogDescription>
             {isEditing
               ? "Update the category details below."
@@ -155,9 +148,7 @@ export function CategoryForm({
               {...form.register("name")}
             />
             {form.formState.errors.name && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.name.message}
-              </p>
+              <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
             )}
           </div>
 
@@ -165,9 +156,7 @@ export function CategoryForm({
             <Label htmlFor="type">Type</Label>
             <Select
               value={form.watch("type")}
-              onValueChange={(value) =>
-                form.setValue("type", value as "INCOME" | "EXPENSE")
-              }
+              onValueChange={(value) => form.setValue("type", value as "INCOME" | "EXPENSE")}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select type" />
@@ -178,9 +167,7 @@ export function CategoryForm({
               </SelectContent>
             </Select>
             {form.formState.errors.type && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.type.message}
-              </p>
+              <p className="text-sm text-destructive">{form.formState.errors.type.message}</p>
             )}
           </div>
 
@@ -201,9 +188,7 @@ export function CategoryForm({
               />
             </div>
             {form.formState.errors.color && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.color.message}
-              </p>
+              <p className="text-sm text-destructive">{form.formState.errors.color.message}</p>
             )}
           </div>
 

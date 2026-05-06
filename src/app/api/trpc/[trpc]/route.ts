@@ -1,5 +1,5 @@
-import { appRouter, createTRPCContext } from "@/server/routers/_app";
 import { auth } from "@/auth";
+import { appRouter, createTRPCContext } from "@/server/routers/_app";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import type { NextRequest } from "next/server";
 

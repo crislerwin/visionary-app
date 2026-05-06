@@ -2,7 +2,6 @@
 
 import { Edit2, Trash2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,6 +13,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 interface TransactionActionsProps {
   transactionId: string;
@@ -21,10 +21,7 @@ interface TransactionActionsProps {
   onDelete: () => void;
 }
 
-export function TransactionActions({
-  onEdit,
-  onDelete,
-}: TransactionActionsProps) {
+export function TransactionActions({ onEdit, onDelete }: TransactionActionsProps) {
   return (
     <div className="flex items-center gap-2">
       <Button variant="ghost" size="icon" onClick={onEdit}>
@@ -40,8 +37,8 @@ export function TransactionActions({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Transaction</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this transaction? This action
-              cannot be undone and will affect your account balance.
+              Are you sure you want to delete this transaction? This action cannot be undone and
+              will affect your account balance.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

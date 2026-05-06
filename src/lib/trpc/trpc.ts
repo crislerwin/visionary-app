@@ -1,7 +1,7 @@
+import { logger } from "@/lib/logger";
 import { SpanStatusCode, trace } from "@opentelemetry/api";
 import { TRPCError, initTRPC } from "@trpc/server";
 import type { Session } from "next-auth";
-import { logger } from "@/lib/logger";
 
 interface CreateContextOptions {
   session?: Session | null;

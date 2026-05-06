@@ -6,11 +6,11 @@ import React from "react";
 import {
   Controller,
   type ControllerRenderProps,
-  useForm,
   type DefaultValues,
   type FieldValues,
   type Path,
   type UseFormReturn,
+  useForm,
 } from "react-hook-form";
 import type { z } from "zod";
 
@@ -136,10 +136,7 @@ export function SmartForm<T extends FieldValues>({
       ))}
 
       <div
-        className={cn(
-          "flex items-center justify-end",
-          layout === "horizontal" && "col-span-full"
-        )}
+        className={cn("flex items-center justify-end", layout === "horizontal" && "col-span-full")}
       >
         {footer ? (
           typeof footer === "function" ? (
@@ -148,10 +145,7 @@ export function SmartForm<T extends FieldValues>({
             footer
           )
         ) : (
-          <Button
-            type="submit"
-            disabled={isLoading || form.formState.isSubmitting}
-          >
+          <Button type="submit" disabled={isLoading || form.formState.isSubmitting}>
             {(isLoading || form.formState.isSubmitting) && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
@@ -183,10 +177,7 @@ function SmartFieldComponent<T extends FieldValues>({
   const labelContent = (
     <Label
       htmlFor={field.name}
-      className={cn(
-        field.required &&
-          "after:content-['*'] after:ml-0.5 after:text-destructive"
-      )}
+      className={cn(field.required && "after:content-['*'] after:ml-0.5 after:text-destructive")}
     >
       {field.label}
     </Label>
@@ -243,9 +234,7 @@ function SmartFieldComponent<T extends FieldValues>({
                   disabled={field.disabled}
                   {...controllerField}
                   value={(value as string | number | undefined) || ""}
-                  onChange={(e) =>
-                    handleChange(e.target.valueAsNumber || 0)
-                  }
+                  onChange={(e) => handleChange(e.target.valueAsNumber || 0)}
                 />
               );
 
@@ -259,7 +248,7 @@ function SmartFieldComponent<T extends FieldValues>({
                   value={(value as string | undefined) || ""}
                   className={cn(
                     "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-                    error && "border-destructive focus-visible:ring-destructive"
+                    error && "border-destructive focus-visible:ring-destructive",
                   )}
                 />
               );
@@ -271,10 +260,7 @@ function SmartFieldComponent<T extends FieldValues>({
                   onValueChange={handleChange}
                   disabled={field.disabled}
                 >
-                  <SelectTrigger
-                    id={field.name}
-                    className={cn(error && "border-destructive")}
-                  >
+                  <SelectTrigger id={field.name} className={cn(error && "border-destructive")}>
                     <SelectValue placeholder={field.placeholder} />
                   </SelectTrigger>
                   <SelectContent>
@@ -294,13 +280,7 @@ function SmartFieldComponent<T extends FieldValues>({
                   type="date"
                   disabled={field.disabled}
                   {...controllerField}
-                  value={
-                    value
-                      ? new Date(value as string | Date)
-                          .toISOString()
-                          .split("T")[0]
-                      : ""
-                  }
+                  value={value ? new Date(value as string | Date).toISOString().split("T")[0] : ""}
                   onChange={(e) => handleChange(e.target.valueAsDate)}
                 />
               );
@@ -330,11 +310,7 @@ function SmartFieldComponent<T extends FieldValues>({
         <p className="text-sm text-muted-foreground">{field.description}</p>
       )}
 
-      {error && (
-        <p className="text-sm font-medium text-destructive">
-          {error.message as string}
-        </p>
-      )}
+      {error && <p className="text-sm font-medium text-destructive">{error.message as string}</p>}
     </div>
   );
 }
@@ -345,7 +321,7 @@ function SmartFieldComponent<T extends FieldValues>({
 
 export function useSmartForm<T extends FieldValues>(
   schema: z.ZodType<T, z.ZodTypeDef, T>,
-  defaultValues?: Partial<T>
+  defaultValues?: Partial<T>,
 ) {
   return useForm<T>({
     resolver: zodResolver(schema),

@@ -60,12 +60,7 @@ const currencies = [
   { code: "MXN", name: "Mexican Peso" },
 ];
 
-export function BankAccountForm({
-  open,
-  onOpenChange,
-  account,
-  onSuccess,
-}: BankAccountFormProps) {
+export function BankAccountForm({ open, onOpenChange, account, onSuccess }: BankAccountFormProps) {
   const isEditing = !!account;
 
   const createMutation = api.bankAccount.create.useMutation({
@@ -89,7 +84,7 @@ export function BankAccountForm({
       currency: account?.currency ?? "BRL",
       initialBalance: account?.initialBalance ?? 0,
     }),
-    [account]
+    [account],
   );
 
   const form = useForm<BankAccountFormData>({
@@ -102,7 +97,7 @@ export function BankAccountForm({
       ...data,
       type: data.type as BankAccountType,
     };
-    
+
     if (isEditing && account) {
       await updateMutation.mutateAsync({
         id: account.id,
@@ -119,9 +114,7 @@ export function BankAccountForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "Edit Bank Account" : "New Bank Account"}
-          </DialogTitle>
+          <DialogTitle>{isEditing ? "Edit Bank Account" : "New Bank Account"}</DialogTitle>
           <DialogDescription>
             {isEditing
               ? "Update the account details below."
@@ -132,15 +125,9 @@ export function BankAccountForm({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Account Name</Label>
-            <Input
-              id="name"
-              placeholder="e.g., Main Checking Account"
-              {...form.register("name")}
-            />
+            <Input id="name" placeholder="e.g., Main Checking Account" {...form.register("name")} />
             {form.formState.errors.name && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.name.message}
-              </p>
+              <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
             )}
           </div>
 
@@ -162,9 +149,7 @@ export function BankAccountForm({
               </SelectContent>
             </Select>
             {form.formState.errors.type && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.type.message}
-              </p>
+              <p className="text-sm text-destructive">{form.formState.errors.type.message}</p>
             )}
           </div>
 
@@ -186,9 +171,7 @@ export function BankAccountForm({
               </SelectContent>
             </Select>
             {form.formState.errors.currency && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.currency.message}
-              </p>
+              <p className="text-sm text-destructive">{form.formState.errors.currency.message}</p>
             )}
           </div>
 

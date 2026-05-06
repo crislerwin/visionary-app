@@ -1,16 +1,16 @@
 "use client";
 
+import { Loader2, Lock, Mail } from "lucide-react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
-import { Loader2, Lock, Mail } from "lucide-react";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
-import { SmartForm, type SmartField } from "@/components/ui/smart-form";
+import { type SmartField, SmartForm } from "@/components/ui/smart-form";
 import { cn } from "@/lib/utils";
 
 const loginSchema = z.object({
@@ -137,18 +137,14 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
         )}
       />
 
-      {serverError && (
-        <p className="text-sm font-medium text-destructive">{serverError}</p>
-      )}
+      {serverError && <p className="text-sm font-medium text-destructive">{serverError}</p>}
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
           <span className="w-full border-t" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">
-            Ou continue com
-          </span>
+          <span className="bg-background px-2 text-muted-foreground">Ou continue com</span>
         </div>
       </div>
 
@@ -173,10 +169,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
 
       <p className="text-center text-sm text-muted-foreground">
         Não tem uma conta?{" "}
-        <Link
-          href="/sign-up"
-          className="font-medium text-foreground hover:underline"
-        >
+        <Link href="/sign-up" className="font-medium text-foreground hover:underline">
           Criar conta
         </Link>
       </p>

@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BankAccountType } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ─── Mock Prisma (hoisted — must run before imports) ─────────────
 
@@ -14,9 +14,7 @@ const { mockPrisma } = vi.hoisted(() => {
       delete: vi.fn(),
       aggregate: vi.fn(),
     },
-    $transaction: vi.fn(
-      (callback: (tx: typeof mock) => unknown) => callback(mock),
-    ),
+    $transaction: vi.fn((callback: (tx: typeof mock) => unknown) => callback(mock)),
   };
   return { mockPrisma: mock };
 });
@@ -176,9 +174,7 @@ describe("bankAccountRouter", () => {
       mockPrisma.bankAccount.findFirst.mockResolvedValue(null);
 
       const caller = createCaller();
-      await expect(caller.byId({ id: "other-tenant-acct" })).rejects.toThrow(
-        TRPCError,
-      );
+      await expect(caller.byId({ id: "other-tenant-acct" })).rejects.toThrow(TRPCError);
     });
   });
 
@@ -325,21 +321,18 @@ describe("bankAccountRouter", () => {
       mockPrisma.bankAccount.findFirst.mockResolvedValue(null);
 
       const caller = createCaller();
-      await expect(
-        caller.update({ id: "ghost", name: "Nope" }),
-      ).rejects.toThrow(TRPCError);
-      await expect(
-        caller.update({ id: "ghost", name: "Nope" }),
-      ).rejects.toHaveProperty("code", "NOT_FOUND");
+      await expect(caller.update({ id: "ghost", name: "Nope" })).rejects.toThrow(TRPCError);
+      await expect(caller.update({ id: "ghost", name: "Nope" })).rejects.toHaveProperty(
+        "code",
+        "NOT_FOUND",
+      );
     });
 
     it("throws NOT_FOUND when account belongs to another tenant", async () => {
       mockPrisma.bankAccount.findFirst.mockResolvedValue(null);
 
       const caller = createCaller();
-      await expect(
-        caller.update({ id: "other-tenant", name: "X" }),
-      ).rejects.toThrow(TRPCError);
+      await expect(caller.update({ id: "other-tenant", name: "X" })).rejects.toThrow(TRPCError);
     });
   });
 
@@ -378,9 +371,7 @@ describe("bankAccountRouter", () => {
 
       await expect(promise).rejects.toThrow(TRPCError);
       await expect(promise).rejects.toHaveProperty("code", "CONFLICT");
-      await expect(promise).rejects.toThrow(
-        /Cannot delete bank account with transactions/,
-      );
+      await expect(promise).rejects.toThrow(/Cannot delete bank account with transactions/);
     });
 
     it("throws NOT_FOUND when account does not exist", async () => {
@@ -388,10 +379,7 @@ describe("bankAccountRouter", () => {
 
       const caller = createCaller();
       await expect(caller.delete({ id: "ghost" })).rejects.toThrow(TRPCError);
-      await expect(caller.delete({ id: "ghost" })).rejects.toHaveProperty(
-        "code",
-        "NOT_FOUND",
-      );
+      await expect(caller.delete({ id: "ghost" })).rejects.toHaveProperty("code", "NOT_FOUND");
     });
   });
 
@@ -442,9 +430,7 @@ describe("bankAccountRouter", () => {
 
   describe("tenant isolation", () => {
     it("list only returns accounts for the current tenant", async () => {
-      const tenantAAccounts = [
-        { id: "a1", name: "Tenant A Acct", tenantId: "tenant-a" },
-      ];
+      const tenantAAccounts = [{ id: "a1", name: "Tenant A Acct", tenantId: "tenant-a" }];
 
       mockPrisma.bankAccount.findMany.mockResolvedValue(tenantAAccounts);
 
