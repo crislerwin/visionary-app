@@ -50,7 +50,7 @@ Acesse [http://localhost:3000](http://localhost:3000).
 ## 📁 Estrutura do Projeto
 
 ```
-finally-app/
+visionary/
 ├── prisma/
 │   ├── schema.prisma          # Schema do banco
 │   └── seed.ts                # Dados iniciais
