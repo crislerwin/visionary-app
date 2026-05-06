@@ -13,5 +13,5 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     redirect("/sign-in");
   }
 
-  return <DashboardShell>{children}</DashboardShell>;
+  return <DashboardShell className="flex flex-col">{children}</DashboardShell>;
 }
