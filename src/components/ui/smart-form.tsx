@@ -10,6 +10,7 @@ import {
   type FieldValues,
   type Path,
   type UseFormReturn,
+  type DefaultValues,
 } from "react-hook-form";
 import type { z } from "zod";
 
@@ -69,11 +70,11 @@ export interface SmartField<T extends FieldValues = FieldValues> {
 
 export interface SmartFormProps<T extends FieldValues = FieldValues> {
   // Schema de validação Zod
-  schema: z.ZodType<T, z.ZodTypeDef, T>;
+  schema: z.ZodType<T>;
   // Configuração dos campos
   fields: SmartField<T>[];
   // Valores iniciais
-  defaultValues?: Partial<T>;
+  defaultValues?: DefaultValues<T> | T;
   // Callback de submit
   onSubmit: (data: T) => void | Promise<void>;
   // Texto do botão de submit
@@ -111,7 +112,7 @@ export function SmartForm<T extends FieldValues>({
 }: SmartFormProps<T>) {
   const form = useForm<T>({
     resolver: zodResolver(schema),
-    defaultValues: defaultValues as T,
+    defaultValues: defaultValues as DefaultValues<T>,
   });
 
   // Aplicar erros do servidor
@@ -128,12 +129,7 @@ export function SmartForm<T extends FieldValues>({
     }
   }, [serverErrors, form]);
 
-  const handleSubmit = useCallback(
-    async (data: T) => {
-      await onSubmit(data);
-    },
-    [onSubmit]
-  );
+  const handleSubmit = form.handleSubmit(onSubmit as (data: T) => void);
 
   const gapClasses = {
     sm: "gap-3",
@@ -148,7 +144,7 @@ export function SmartForm<T extends FieldValues>({
 
   return (
     <form
-      onSubmit={form.handleSubmit(handleSubmit)}
+      onSubmit={handleSubmit}
       className={cn(layoutClasses[layout], gapClasses[gap], className)}
     >
       {fields.map((field) => (
@@ -340,12 +336,12 @@ function SmartFieldComponent<T extends FieldValues>({
 // ============================================
 
 export function useSmartForm<T extends FieldValues>(
-  schema: z.ZodType<T, z.ZodTypeDef, T>,
-  defaultValues?: Partial<T>
+  schema: z.ZodType<T>,
+  defaultValues?: DefaultValues<T> | T
 ) {
   return useForm<T>({
     resolver: zodResolver(schema),
-    defaultValues: defaultValues as T,
+    defaultValues: defaultValues as DefaultValues<T>,
   });
 }
 

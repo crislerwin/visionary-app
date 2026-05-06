@@ -1,9 +1,7 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarIcon, Loader2 } from "lucide-react";
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { Loader2 } from "lucide-react";
+import { useMemo } from "react";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -15,22 +13,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SmartForm, type SmartField } from "@/components/ui/smart-form";
 import { api } from "@/lib/trpc/react";
-import { cn } from "@/lib/utils";
 import { TransactionStatus, TransactionType } from "@prisma/client";
 
 const transactionSchema = z.object({
@@ -75,7 +59,6 @@ export function TransactionForm({
 
   const { data: bankAccounts } = api.bankAccount.list.useQuery(undefined);
   const { data: categoriesData } = api.category.list.useQuery({});
-  const categories = categoriesData?.categories ?? [];
 
   const createMutation = api.transaction.create.useMutation({
     onSuccess: () => {
@@ -91,51 +74,28 @@ export function TransactionForm({
     },
   });
 
-  const form = useForm<TransactionFormData>({
-    resolver: zodResolver(transactionSchema),
-    defaultValues: {
-      amount: 0,
-      type: TransactionType.EXPENSE,
-      description: "",
-      date: new Date(),
-      bankAccountId: "",
-      status: TransactionStatus.COMPLETED,
-    },
-  });
+  const defaultValues = useMemo(
+    () => ({
+      amount: transaction?.amount ?? 0,
+      type: transaction?.type ?? TransactionType.EXPENSE,
+      description: transaction?.description ?? "",
+      date: transaction?.date ? new Date(transaction.date) : new Date(),
+      bankAccountId: transaction?.bankAccountId ?? "",
+      categoryId: transaction?.categoryId ?? undefined,
+      status: transaction?.status ?? TransactionStatus.COMPLETED,
+    }),
+    [transaction]
+  );
 
-  // Reset form when transaction changes
-  useEffect(() => {
-    if (transaction) {
-      form.reset({
-        amount: transaction.amount,
-        type: transaction.type,
-        description: transaction.description,
-        date: new Date(transaction.date),
-        bankAccountId: transaction.bankAccountId,
-        categoryId: transaction.categoryId ?? undefined,
-        status: transaction.status,
-      });
-    } else {
-      form.reset({
-        amount: 0,
-        type: TransactionType.EXPENSE,
-        description: "",
-        date: new Date(),
-        bankAccountId: "",
-        status: TransactionStatus.COMPLETED,
-      });
-    }
-  }, [transaction, form]);
-
-  const onSubmit = (data: TransactionFormData) => {
+  const handleSubmit = async (data: TransactionFormData) => {
     if (isEditing && transaction) {
-      updateMutation.mutate({
+      await updateMutation.mutateAsync({
         id: transaction.id,
         ...data,
         date: data.date,
       });
     } else {
-      createMutation.mutate({
+      await createMutation.mutateAsync({
         ...data,
         date: data.date,
       });
@@ -144,16 +104,86 @@ export function TransactionForm({
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
-  const formatDateDisplay = (date: Date | undefined) => {
-    if (!date) return "Pick a date";
-    return date.toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
+  const bankAccountOptions = useMemo(
+    () =>
+      bankAccounts?.map((account) => ({
+        label: `${account.name} (${account.currency})`,
+        value: account.id,
+      })) ?? [],
+    [bankAccounts]
+  );
 
-  const dateValue = form.watch("date");
+  const categoryOptions = useMemo(
+    () => [
+      { label: "No category", value: "" },
+      ...(categoriesData?.categories?.map((category) => ({
+        label: category.name,
+        value: category.id,
+      })) ?? []),
+    ],
+    [categoriesData]
+  );
+
+  const fields: SmartField<TransactionFormData>[] = [
+    {
+      name: "type",
+      label: "Type",
+      type: "select",
+      required: true,
+      options: [
+        { label: "Income", value: TransactionType.INCOME },
+        { label: "Expense", value: TransactionType.EXPENSE },
+      ],
+    },
+    {
+      name: "amount",
+      label: "Amount",
+      type: "number",
+      placeholder: "0.00",
+      required: true,
+    },
+    {
+      name: "description",
+      label: "Description",
+      type: "text",
+      placeholder: "Enter description...",
+      required: true,
+    },
+    {
+      name: "date",
+      label: "Date",
+      type: "date",
+      required: true,
+    },
+    {
+      name: "bankAccountId",
+      label: "Bank Account",
+      type: "select",
+      required: true,
+      options: bankAccountOptions,
+    },
+    {
+      name: "categoryId",
+      label: "Category",
+      type: "select",
+      placeholder: "Select category (optional)",
+      options: categoryOptions,
+      transform: {
+        output: (value) => (value === "" ? undefined : value),
+      },
+    },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      required: true,
+      options: [
+        { label: "Completed", value: TransactionStatus.COMPLETED },
+        { label: "Pending", value: TransactionStatus.PENDING },
+        { label: "Cancelled", value: TransactionStatus.CANCELLED },
+      ],
+    },
+  ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -169,190 +199,29 @@ export function TransactionForm({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="type">Type</Label>
-            <Select
-              value={form.watch("type")}
-              onValueChange={(value) =>
-                form.setValue("type", value as TransactionType)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={TransactionType.INCOME}>Income</SelectItem>
-                <SelectItem value={TransactionType.EXPENSE}>Expense</SelectItem>
-              </SelectContent>
-            </Select>
-            {form.formState.errors.type && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.type.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="amount">Amount</Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              {...form.register("amount", { valueAsNumber: true })}
-            />
-            {form.formState.errors.amount && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.amount.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Input
-              id="description"
-              placeholder="Enter description..."
-              {...form.register("description")}
-            />
-            {form.formState.errors.description && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.description.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label>Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !dateValue && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateValue ? formatDateDisplay(dateValue) : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                {/* Simplified date input for now */}
-                <div className="p-4">
-                  <Input
-                    type="date"
-                    value={
-                      dateValue
-                        ? dateValue.toISOString().split("T")[0]
-                        : ""
-                    }
-                    onChange={(e) =>
-                      form.setValue("date", new Date(e.target.value))
-                    }
-                  />
-                </div>
-              </PopoverContent>
-            </Popover>
-            {form.formState.errors.date && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.date.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="bankAccountId">Bank Account</Label>
-            <Select
-              value={form.watch("bankAccountId")}
-              onValueChange={(value) =>
-                form.setValue("bankAccountId", value)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select account" />
-              </SelectTrigger>
-              <SelectContent>
-                {bankAccounts?.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.name} ({account.currency})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {form.formState.errors.bankAccountId && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.bankAccountId.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="categoryId">Category</Label>
-            <Select
-              value={form.watch("categoryId") || "none"}
-              onValueChange={(value) =>
-                form.setValue("categoryId", value === "none" ? undefined : value)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select category (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No category</SelectItem>
-                {categoriesData?.categories?.map((category: { id: string; name: string }) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
-            <Select
-              value={form.watch("status")}
-              onValueChange={(value) =>
-                form.setValue("status", value as TransactionStatus)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={TransactionStatus.COMPLETED}>
-                  Completed
-                </SelectItem>
-                <SelectItem value={TransactionStatus.PENDING}>Pending</SelectItem>
-                <SelectItem value={TransactionStatus.CANCELLED}>
-                  Cancelled
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            {form.formState.errors.status && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.status.message}
-              </p>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditing ? "Update" : "Create"}
-            </Button>
-          </DialogFooter>
-        </form>
+        <SmartForm
+          schema={transactionSchema}
+          fields={fields}
+          defaultValues={defaultValues}
+          onSubmit={handleSubmit}
+          isLoading={isLoading}
+          footer={
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isLoading}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isEditing ? "Update" : "Create"}
+              </Button>
+            </DialogFooter>
+          }
+        />
       </DialogContent>
     </Dialog>
   );
