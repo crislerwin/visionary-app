@@ -19,7 +19,7 @@ import { api } from "@/lib/trpc/react";
 import { cn, formatDate } from "@/lib/utils";
 import { TransactionStatus, TransactionType } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
-import { format } from "date-fns";
+import { format, startOfMonth, subMonths } from "date-fns";
 import {
   Calendar as CalendarIcon,
   DollarSign,
@@ -123,7 +123,7 @@ export function DashboardClient() {
 
   const now = new Date();
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
-    from: new Date(now.getFullYear(), now.getMonth() - 11, 1),
+    from: startOfMonth(subMonths(now, 11)),
     to: now,
   });
 
@@ -161,10 +161,18 @@ export function DashboardClient() {
 
     // Delta: compare first half vs second half of the period
     const mid = Math.floor(compareSeries.length / 2);
-    const firstHalfReceitas = compareSeries.slice(0, mid).reduce((sum, m) => sum + (m.receitas ?? 0), 0);
-    const secondHalfReceitas = compareSeries.slice(mid).reduce((sum, m) => sum + (m.receitas ?? 0), 0);
-    const firstHalfDespesas = compareSeries.slice(0, mid).reduce((sum, m) => sum + (m.despesas ?? 0), 0);
-    const secondHalfDespesas = compareSeries.slice(mid).reduce((sum, m) => sum + (m.despesas ?? 0), 0);
+    const firstHalfReceitas = compareSeries
+      .slice(0, mid)
+      .reduce((sum, m) => sum + (m.receitas ?? 0), 0);
+    const secondHalfReceitas = compareSeries
+      .slice(mid)
+      .reduce((sum, m) => sum + (m.receitas ?? 0), 0);
+    const firstHalfDespesas = compareSeries
+      .slice(0, mid)
+      .reduce((sum, m) => sum + (m.despesas ?? 0), 0);
+    const secondHalfDespesas = compareSeries
+      .slice(mid)
+      .reduce((sum, m) => sum + (m.despesas ?? 0), 0);
 
     const firstHalfSaldo = balanceSeries[0]?.saldo ?? 0;
     const lastHalfSaldo = balanceSeries[balanceSeries.length - 1]?.saldo ?? 0;
@@ -495,6 +503,7 @@ function DateRangePicker({
         <PopoverContent className="w-auto p-0" align="center">
           <div className="p-3">
             <Calendar
+              key={`${range.from.toISOString()}-${range.to.toISOString()}`}
               initialFocus
               mode="range"
               defaultMonth={draft?.from ?? range.from}
@@ -514,11 +523,7 @@ function DateRangePicker({
               <Button variant="ghost" size="sm" onClick={handleCancel}>
                 Cancelar
               </Button>
-              <Button
-                size="sm"
-                onClick={handleApply}
-                disabled={!draft.from || !draft.to}
-              >
+              <Button size="sm" onClick={handleApply} disabled={!draft.from || !draft.to}>
                 Aplicar
               </Button>
             </div>

@@ -2,6 +2,15 @@ import { prisma } from "@/lib/db";
 import { router, tenantProcedure } from "@/lib/trpc/trpc";
 import { TransactionStatus, TransactionType } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
+import {
+  eachMonthOfInterval,
+  endOfDay,
+  format,
+  parseISO,
+  startOfDay,
+  startOfMonth,
+} from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { z } from "zod";
 
 const createTransactionSchema = z.object({
@@ -389,10 +398,8 @@ export const transactionRouter = router({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const startDate = new Date(input.startDate);
-      startDate.setHours(0, 0, 0, 0);
-      const endDate = new Date(input.endDate);
-      endDate.setHours(23, 59, 59, 999);
+      const startDate = startOfDay(input.startDate);
+      const endDate = endOfDay(input.endDate);
 
       const transactions = await prisma.transaction.findMany({
         where: {
@@ -411,25 +418,24 @@ export const transactionRouter = router({
         orderBy: { date: "asc" },
       });
 
-      // Group by month (YYYY-MM)
+      // Initialize all months in the range with zero
+      const monthsInRange = eachMonthOfInterval({
+        start: startOfMonth(startDate),
+        end: startOfMonth(endDate),
+      });
+
       const monthlyData = new Map<string, { income: number; expense: number; label: string }>();
 
-      // Initialize all months in the range with zero
-      const startMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-      const endMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
-      const currentMonth = new Date(startMonth);
-
-      while (currentMonth <= endMonth) {
-        const key = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}`;
-        const label = currentMonth.toLocaleDateString("pt-BR", { month: "short" });
-        monthlyData.set(key, { income: 0, expense: 0, label: label.replace(".", "") });
-        currentMonth.setMonth(currentMonth.getMonth() + 1);
+      for (const month of monthsInRange) {
+        const key = format(month, "yyyy-MM");
+        const label = format(month, "MMM", { locale: ptBR });
+        monthlyData.set(key, { income: 0, expense: 0, label });
       }
 
       // Aggregate transactions
       for (const t of transactions) {
-        const d = new Date(t.date);
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        const d = parseISO(t.date.toISOString());
+        const key = format(d, "yyyy-MM");
         const existing = monthlyData.get(key);
         if (existing) {
           if (t.type === TransactionType.INCOME) {
