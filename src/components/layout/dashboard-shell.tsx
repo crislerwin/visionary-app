@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Sidebar } from "./sidebar";
 import { MobileBottomNav } from "./mobile-bottom-nav";
 import { UserNav } from "./user-nav";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -23,7 +24,8 @@ export function DashboardShell({ children, className }: DashboardShellProps) {
       />
       <div className="flex-1 flex flex-col">
         {/* Top bar with UserNav */}
-        <div className="flex h-12 items-center justify-end border-b px-4">
+        <div className="flex h-12 items-center justify-end gap-2 border-b px-4">
+          <ThemeToggle />
           <UserNav />
         </div>
         {/* pb-16 accounts for MobileBottomNav height on mobile */}
