@@ -11,7 +11,8 @@ export function MarketingHero() {
           Intelligent Financial Management
         </h1>
         <p className="max-w-[750px] text-lg text-muted-foreground sm:text-xl">
-          Track income, expenses, and financial goals across multiple tenants. Built with Next.js, TypeScript, Prisma, tRPC, and NextAuth.js.
+          Track income, expenses, and financial goals across multiple tenants. Built with Next.js,
+          TypeScript, Prisma, tRPC, and NextAuth.js.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link href="/sign-in">

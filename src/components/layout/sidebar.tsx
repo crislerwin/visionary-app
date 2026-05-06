@@ -1,11 +1,11 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { type NavSection, sidebarNavigation } from "@/config/navigation";
+import { cn } from "@/lib/utils";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { sidebarNavigation, type NavSection } from "@/config/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { TenantSwitcher } from "./tenant-switcher";
 
 interface SidebarProps {
@@ -33,8 +33,7 @@ function SidebarNavSection({
       <div className="space-y-1">
         {section.items.map((item) => {
           const Icon = item.icon;
-          const isActive =
-            pathname === item.href || pathname?.startsWith(`${item.href}/`);
+          const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
 
           return (
             <Link

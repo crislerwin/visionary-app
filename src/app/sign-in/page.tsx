@@ -23,9 +23,7 @@ export default async function SignInPage() {
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               Bem-vindo de volta
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Entre na sua conta para continuar
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground">Entre na sua conta para continuar</p>
           </div>
         </CardHeader>
 

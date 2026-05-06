@@ -1,15 +1,9 @@
 "use client";
 
-import { CreditCard, Landmark, PiggyBank, ArrowRightLeft, Trash2, Edit2 } from "lucide-react";
+import { ArrowRightLeft, CreditCard, Edit2, Landmark, PiggyBank, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,11 +53,7 @@ function getAccountTypeLabel(type: BankAccountType) {
   }
 }
 
-export function BankAccountCard({
-  account,
-  onEdit,
-  onDelete,
-}: BankAccountCardProps) {
+export function BankAccountCard({ account, onEdit, onDelete }: BankAccountCardProps) {
   const Icon = getAccountIcon(account.type);
   const transactionCount = account._count?.transactions ?? 0;
 

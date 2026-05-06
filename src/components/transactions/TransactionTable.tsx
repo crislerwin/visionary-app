@@ -86,16 +86,12 @@ type NormalizedTransaction = {
 
 const normalizeTransaction = (t: Transaction): NormalizedTransaction => ({
   ...t,
-  amount: typeof t.amount === 'string' ? Number(t.amount) : t.amount,
-  description: t.description ?? '',
+  amount: typeof t.amount === "string" ? Number(t.amount) : t.amount,
+  description: t.description ?? "",
   date: t.date instanceof Date ? t.date : new Date(t.date),
 });
 
-export function TransactionTable({
-  onEdit,
-  onDelete,
-  filters,
-}: TransactionTableProps) {
+export function TransactionTable({ onEdit, onDelete, filters }: TransactionTableProps) {
   const [page, setPage] = useState(0);
   const pageSize = 20;
 
@@ -220,10 +216,7 @@ export function TransactionTable({
           <TableBody>
             {transactions.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="h-24 text-center text-muted-foreground"
-                >
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                   No transactions found.
                 </TableCell>
               </TableRow>
@@ -231,90 +224,89 @@ export function TransactionTable({
               transactions.map((rawTransaction) => {
                 const transaction = normalizeTransaction(rawTransaction);
                 return (
-                <TableRow key={transaction.id}>
-                  <TableCell className="whitespace-nowrap">
-                    {formatDate(transaction.date)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {transaction.type === TransactionType.INCOME ? (
-                        <ArrowUpRight className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <ArrowDownLeft className="h-4 w-4 text-red-500" />
-                      )}
-                      <span className="font-medium">
-                        {transaction.description}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {transaction.category ? (
+                  <TableRow key={transaction.id}>
+                    <TableCell className="whitespace-nowrap">
+                      {formatDate(transaction.date)}
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-2">
-                        <div
-                          className="h-3 w-3 rounded-full"
-                          style={{ backgroundColor: transaction.category.color }}
-                        />
-                        <span>{transaction.category.name}</span>
+                        {transaction.type === TransactionType.INCOME ? (
+                          <ArrowUpRight className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <ArrowDownLeft className="h-4 w-4 text-red-500" />
+                        )}
+                        <span className="font-medium">{transaction.description}</span>
                       </div>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>{transaction.bankAccount.name}</TableCell>
-                  <TableCell>
-                    <span
+                    </TableCell>
+                    <TableCell>
+                      {transaction.category ? (
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="h-3 w-3 rounded-full"
+                            style={{ backgroundColor: transaction.category.color }}
+                          />
+                          <span>{transaction.category.name}</span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>{transaction.bankAccount.name}</TableCell>
+                    <TableCell>
+                      <span
+                        className={cn(
+                          "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                          transaction.status === TransactionStatus.COMPLETED &&
+                            "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+                          transaction.status === TransactionStatus.PENDING &&
+                            "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
+                          transaction.status === TransactionStatus.CANCELLED &&
+                            "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+                        )}
+                      >
+                        {transaction.status.toLowerCase()}
+                      </span>
+                    </TableCell>
+                    <TableCell
                       className={cn(
-                        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-                        transaction.status === TransactionStatus.COMPLETED &&
-                          "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-                        transaction.status === TransactionStatus.PENDING &&
-                          "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
-                        transaction.status === TransactionStatus.CANCELLED &&
-                          "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                        "text-right font-medium",
+                        transaction.type === TransactionType.INCOME
+                          ? "text-green-600"
+                          : "text-red-600",
                       )}
                     >
-                      {transaction.status.toLowerCase()}
-                    </span>
-                  </TableCell>
-                  <TableCell
-                    className={cn(
-                      "text-right font-medium",
-                      transaction.type === TransactionType.INCOME
-                        ? "text-green-600"
-                        : "text-red-600"
-                    )}
-                  >
-                    {transaction.type === TransactionType.INCOME ? "+" : "-"}
-                    {new Intl.NumberFormat("en-US", {
-                      style: "currency",
-                      currency: transaction.bankAccount.currency,
-                    }).format(Number(transaction.amount))}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(transaction)}>
-                          <Edit2 className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => onDelete(transaction)}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              )})
+                      {transaction.type === TransactionType.INCOME ? "+" : "-"}
+                      {new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: transaction.bankAccount.currency,
+                      }).format(Number(transaction.amount))}
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => onEdit(transaction)}>
+                            <Edit2 className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => onDelete(transaction)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -324,8 +316,8 @@ export function TransactionTable({
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Showing {page * pageSize + 1} to{" "}
-            {Math.min((page + 1) * pageSize, total)} of {total} transactions
+            Showing {page * pageSize + 1} to {Math.min((page + 1) * pageSize, total)} of {total}{" "}
+            transactions
           </p>
           <div className="flex gap-2">
             <Button

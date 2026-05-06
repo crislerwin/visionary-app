@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { tenantProcedure, router } from "@/lib/trpc/trpc";
+import { router, tenantProcedure } from "@/lib/trpc/trpc";
 import { BankAccountType } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -14,7 +14,9 @@ const createBankAccountSchema = z.object({
 const updateBankAccountSchema = z.object({
   id: z.string(),
   name: z.string().min(1).max(100).optional(),
-  type: z.enum([BankAccountType.CHECKING, BankAccountType.SAVINGS, BankAccountType.CREDIT]).optional(),
+  type: z
+    .enum([BankAccountType.CHECKING, BankAccountType.SAVINGS, BankAccountType.CREDIT])
+    .optional(),
   currency: z.string().optional(),
 });
 
@@ -39,116 +41,108 @@ export const bankAccountRouter = router({
     return bankAccounts;
   }),
 
-  byId: tenantProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ ctx, input }) => {
-      const bankAccount = await prisma.bankAccount.findFirst({
-        where: {
-          id: input.id,
-          tenantId: ctx.tenantId,
-        },
-        include: {
-          _count: {
-            select: {
-              transactions: true,
-            },
+  byId: tenantProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
+    const bankAccount = await prisma.bankAccount.findFirst({
+      where: {
+        id: input.id,
+        tenantId: ctx.tenantId,
+      },
+      include: {
+        _count: {
+          select: {
+            transactions: true,
           },
         },
+      },
+    });
+
+    if (!bankAccount) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Bank account not found",
       });
+    }
 
-      if (!bankAccount) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Bank account not found",
-        });
-      }
+    return bankAccount;
+  }),
 
-      return bankAccount;
-    }),
+  create: tenantProcedure.input(createBankAccountSchema).mutation(async ({ ctx, input }) => {
+    const bankAccount = await prisma.bankAccount.create({
+      data: {
+        name: input.name,
+        type: input.type,
+        currency: input.currency,
+        initialBalance: input.initialBalance,
+        currentBalance: input.initialBalance,
+        tenantId: ctx.tenantId,
+      },
+    });
 
-  create: tenantProcedure
-    .input(createBankAccountSchema)
-    .mutation(async ({ ctx, input }) => {
-      const bankAccount = await prisma.bankAccount.create({
-        data: {
-          name: input.name,
-          type: input.type,
-          currency: input.currency,
-          initialBalance: input.initialBalance,
-          currentBalance: input.initialBalance,
-          tenantId: ctx.tenantId,
-        },
+    return bankAccount;
+  }),
+
+  update: tenantProcedure.input(updateBankAccountSchema).mutation(async ({ ctx, input }) => {
+    const existingAccount = await prisma.bankAccount.findFirst({
+      where: {
+        id: input.id,
+        tenantId: ctx.tenantId,
+      },
+    });
+
+    if (!existingAccount) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Bank account not found",
       });
+    }
 
-      return bankAccount;
-    }),
+    const bankAccount = await prisma.bankAccount.update({
+      where: { id: input.id },
+      data: {
+        ...(input.name !== undefined && { name: input.name }),
+        ...(input.type !== undefined && { type: input.type }),
+        ...(input.currency !== undefined && { currency: input.currency }),
+      },
+    });
 
-  update: tenantProcedure
-    .input(updateBankAccountSchema)
-    .mutation(async ({ ctx, input }) => {
-      const existingAccount = await prisma.bankAccount.findFirst({
-        where: {
-          id: input.id,
-          tenantId: ctx.tenantId,
-        },
-      });
+    return bankAccount;
+  }),
 
-      if (!existingAccount) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Bank account not found",
-        });
-      }
-
-      const bankAccount = await prisma.bankAccount.update({
-        where: { id: input.id },
-        data: {
-          ...(input.name !== undefined && { name: input.name }),
-          ...(input.type !== undefined && { type: input.type }),
-          ...(input.currency !== undefined && { currency: input.currency }),
-        },
-      });
-
-      return bankAccount;
-    }),
-
-  delete: tenantProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      const existingAccount = await prisma.bankAccount.findFirst({
-        where: {
-          id: input.id,
-          tenantId: ctx.tenantId,
-        },
-        include: {
-          _count: {
-            select: {
-              transactions: true,
-            },
+  delete: tenantProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+    const existingAccount = await prisma.bankAccount.findFirst({
+      where: {
+        id: input.id,
+        tenantId: ctx.tenantId,
+      },
+      include: {
+        _count: {
+          select: {
+            transactions: true,
           },
         },
+      },
+    });
+
+    if (!existingAccount) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Bank account not found",
       });
+    }
 
-      if (!existingAccount) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Bank account not found",
-        });
-      }
-
-      if (existingAccount._count.transactions > 0) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "Cannot delete bank account with transactions. Delete all transactions first.",
-        });
-      }
-
-      await prisma.bankAccount.delete({
-        where: { id: input.id },
+    if (existingAccount._count.transactions > 0) {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "Cannot delete bank account with transactions. Delete all transactions first.",
       });
+    }
 
-      return { success: true };
-    }),
+    await prisma.bankAccount.delete({
+      where: { id: input.id },
+    });
+
+    return { success: true };
+  }),
 
   getTotalBalance: tenantProcedure.query(async ({ ctx }) => {
     const result = await prisma.bankAccount.aggregate({

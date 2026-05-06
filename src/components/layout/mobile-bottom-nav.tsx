@@ -1,19 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
-import { Menu, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { sidebarNavigation } from "@/config/navigation";
 import { cn } from "@/lib/utils";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { LayoutDashboard, Menu } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 export function MobileBottomNav() {
   const [open, setOpen] = useState(false);
@@ -62,10 +57,7 @@ export function MobileBottomNav() {
           </DrawerHeader>
           <div className="overflow-y-auto px-2 pb-6">
             {sidebarNavigation.map((section) => (
-              <div
-                key={section.title || section.items[0]?.href}
-                className="mb-3"
-              >
+              <div key={section.title || section.items[0]?.href} className="mb-3">
                 {section.title && (
                   <h3 className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     {section.title}
@@ -75,8 +67,7 @@ export function MobileBottomNav() {
                   {section.items.map((item) => {
                     const Icon = item.icon;
                     const isActive =
-                      pathname === item.href ||
-                      pathname?.startsWith(`${item.href}/`);
+                      pathname === item.href || pathname?.startsWith(`${item.href}/`);
 
                     return (
                       <Link
