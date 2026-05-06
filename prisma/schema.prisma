@@ -83,10 +83,12 @@ model Tenant {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  owner      User        @relation("TenantOwner", fields: [ownerId], references: [id])
-  memberships Membership[]
-  sessions   Session[]
-  posts      Post[]
+  owner        User          @relation("TenantOwner", fields: [ownerId], references: [id])
+  memberships  Membership[]
+  sessions     Session[]
+  posts        Post[]
+  bankAccounts BankAccount[]
+  categories   Category[]
 
   @@map("tenants")
 }
@@ -131,4 +133,100 @@ model Post {
   @@index([tenantId])
   @@index([authorId])
   @@map("posts")
+}
+
+// ====================
+// FINANCIAL MODELS
+// ====================
+
+enum BankAccountType {
+  CHECKING
+  SAVINGS
+  CREDIT
+
+  @@map("bank_account_types")
+}
+
+enum CategoryType {
+  INCOME
+  EXPENSE
+
+  @@map("category_types")
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+
+  @@map("transaction_types")
+}
+
+enum TransactionStatus {
+  COMPLETED
+  PENDING
+  CANCELLED
+
+  @@map("transaction_statuses")
+}
+
+model BankAccount {
+  id              String          @id @default(cuid())
+  name            String
+  type            BankAccountType
+  currency        String          @default("BRL")
+  initialBalance  Decimal         @map("initial_balance") @db.Decimal(15, 2)
+  currentBalance  Decimal         @map("current_balance") @db.Decimal(15, 2)
+  tenantId        String          @map("tenant_id")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([tenantId])
+  @@map("bank_accounts")
+}
+
+model Category {
+  id          String       @id @default(cuid())
+  name        String
+  type        CategoryType
+  color       String       @default("#6366F1")
+  icon        String       @default("circle")
+  tenantId    String       @map("tenant_id")
+  parentId    String?      @map("parent_id")
+  isDefault   Boolean      @default(false) @map("is_default")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent       Category?     @relation("CategoryParent", fields: [parentId], references: [id], onDelete: SetNull)
+  children     Category[]    @relation("CategoryParent")
+  transactions Transaction[]
+
+  @@index([tenantId])
+  @@index([parentId])
+  @@map("categories")
+}
+
+model Transaction {
+  id            String           @id @default(cuid())
+  amount        Decimal          @db.Decimal(15, 2)
+  type          TransactionType
+  description   String?
+  date          DateTime
+  bankAccountId String           @map("bank_account_id")
+  categoryId    String?          @map("category_id")
+  status        TransactionStatus @default(COMPLETED)
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+
+  bankAccount BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  category    Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([bankAccountId])
+  @@index([categoryId])
+  @@index([date])
+  @@index([status])
+  @@map("transactions")
 }

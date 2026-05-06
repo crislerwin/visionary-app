@@ -100,12 +100,12 @@ export default async function HomePage() {
           <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
             Built by{" "}
             <a
-              href="https://github.com/crislerwin"
+              href="https://github.com/crislerwintler"
               target="_blank"
               rel="noreferrer"
               className="font-medium underline underline-offset-4"
             >
-              crislerwin
+              crislerwintler
             </a>
             . Open source.
           </p>
