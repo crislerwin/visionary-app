@@ -10,7 +10,6 @@ import {
   type FieldValues,
   type Path,
   type UseFormReturn,
-  type DefaultValues,
 } from "react-hook-form";
 import type { z } from "zod";
 
@@ -70,11 +69,11 @@ export interface SmartField<T extends FieldValues = FieldValues> {
 
 export interface SmartFormProps<T extends FieldValues = FieldValues> {
   // Schema de validação Zod
-  schema: z.ZodType<T>;
+  schema: z.ZodType<T, z.ZodTypeDef, T>;
   // Configuração dos campos
   fields: SmartField<T>[];
   // Valores iniciais
-  defaultValues?: DefaultValues<T> | T;
+  defaultValues?: Partial<T>;
   // Callback de submit
   onSubmit: (data: T) => void | Promise<void>;
   // Texto do botão de submit
@@ -112,7 +111,7 @@ export function SmartForm<T extends FieldValues>({
 }: SmartFormProps<T>) {
   const form = useForm<T>({
     resolver: zodResolver(schema),
-    defaultValues: defaultValues as DefaultValues<T>,
+    defaultValues: defaultValues as T,
   });
 
   // Aplicar erros do servidor
@@ -129,7 +128,12 @@ export function SmartForm<T extends FieldValues>({
     }
   }, [serverErrors, form]);
 
-  const handleSubmit = form.handleSubmit(onSubmit as (data: T) => void);
+  const handleSubmit = useCallback(
+    async (data: T) => {
+      await onSubmit(data);
+    },
+    [onSubmit]
+  );
 
   const gapClasses = {
     sm: "gap-3",
@@ -144,7 +148,7 @@ export function SmartForm<T extends FieldValues>({
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={form.handleSubmit(handleSubmit)}
       className={cn(layoutClasses[layout], gapClasses[gap], className)}
     >
       {fields.map((field) => (
@@ -201,7 +205,7 @@ function SmartFieldComponent<T extends FieldValues>({
   return (
     <div className={cn("space-y-2", field.className)}>
       {field.type !== "checkbox" && labelContent}
-      
+
       <Controller
         name={field.name}
         control={control}
@@ -233,7 +237,7 @@ function SmartFieldComponent<T extends FieldValues>({
                   placeholder={field.placeholder}
                   disabled={field.disabled}
                   {...controllerField}
-                  value={value as string | undefined || ""}
+                  value={(value as string | undefined) || ""}
                 />
               );
 
@@ -245,7 +249,7 @@ function SmartFieldComponent<T extends FieldValues>({
                   placeholder={field.placeholder}
                   disabled={field.disabled}
                   {...controllerField}
-                  value={value as string | number | undefined || ""}
+                  value={(value as string | number | undefined) || ""}
                   onChange={(e) => handleChange(e.target.valueAsNumber || 0)}
                 />
               );
@@ -257,7 +261,7 @@ function SmartFieldComponent<T extends FieldValues>({
                   placeholder={field.placeholder}
                   disabled={field.disabled}
                   {...controllerField}
-                  value={value as string | undefined || ""}
+                  value={(value as string | undefined) || ""}
                   className={cn(
                     "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
                     error && "border-destructive focus-visible:ring-destructive"
@@ -268,7 +272,7 @@ function SmartFieldComponent<T extends FieldValues>({
             case "select":
               return (
                 <Select
-                  value={value}
+                  value={value as string}
                   onValueChange={handleChange}
                   disabled={field.disabled}
                 >
@@ -276,7 +280,7 @@ function SmartFieldComponent<T extends FieldValues>({
                     <SelectValue placeholder={field.placeholder} />
                   </SelectTrigger>
                   <SelectContent>
-                    {field.options?.map((option: SelectOption) => (
+                    {field.options?.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
@@ -336,12 +340,12 @@ function SmartFieldComponent<T extends FieldValues>({
 // ============================================
 
 export function useSmartForm<T extends FieldValues>(
-  schema: z.ZodType<T>,
-  defaultValues?: DefaultValues<T> | T
+  schema: z.ZodType<T, z.ZodTypeDef, T>,
+  defaultValues?: Partial<T>
 ) {
   return useForm<T>({
     resolver: zodResolver(schema),
-    defaultValues: defaultValues as DefaultValues<T>,
+    defaultValues: defaultValues as T,
   });
 }
 
