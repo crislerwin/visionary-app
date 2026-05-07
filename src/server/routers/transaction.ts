@@ -47,7 +47,7 @@ const listTransactionsSchema = z.object({
   status: z
     .enum([TransactionStatus.COMPLETED, TransactionStatus.PENDING, TransactionStatus.CANCELLED])
     .optional(),
-  limit: z.number().default(50),
+  limit: z.number().min(1).max(999999).default(999999),
   offset: z.number().default(0),
   page: z.number().optional(),
   pageSize: z.number().optional(),
