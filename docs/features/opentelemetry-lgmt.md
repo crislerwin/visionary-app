@@ -1,6 +1,6 @@
 # OpenTelemetry + LGTM Stack
 
-**PR:** [#67](https://github.com/crislerwin/food-service/pull/67)  
+**PR:** [#67](https://github.com/crislerwin/meu-rango/pull/67)  
 **Data:** 27/04/2026  
 **Autor:** Crisler Wintler
 
@@ -96,7 +96,7 @@ const sdk = new NodeSDK({
   traceExporter: new OTLPTraceExporter({
     url: 'http://localhost:4318/v1/traces'
   }),
-  serviceName: 'food-service',
+  serviceName: 'meu-rango',
 });
 
 sdk.start();

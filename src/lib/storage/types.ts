@@ -65,7 +65,7 @@ export function getStorageConfig(): StorageConfig {
     return {
       provider: "s3",
       region: env("AWS_REGION", "us-east-1"),
-      bucket: env("AWS_S3_BUCKET", "food-service-images"),
+      bucket: env("AWS_S3_BUCKET", "meu-rango-images"),
       endpoint: process.env.AWS_S3_ENDPOINT || dotEnv.AWS_S3_ENDPOINT,
       accessKeyId: process.env.AWS_ACCESS_KEY_ID || dotEnv.AWS_ACCESS_KEY_ID,
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || dotEnv.AWS_SECRET_ACCESS_KEY,
@@ -78,7 +78,7 @@ export function getStorageConfig(): StorageConfig {
       provider: "minio",
       endpoint,
       publicEndpoint: process.env.MINIO_PUBLIC_ENDPOINT || dotEnv.MINIO_PUBLIC_ENDPOINT || endpoint,
-      bucket: env("MINIO_BUCKET", "food-service-images"),
+      bucket: env("MINIO_BUCKET", "meu-rango-images"),
       accessKeyId: env("MINIO_ACCESS_KEY", "minioadmin"),
       secretAccessKey: env("MINIO_SECRET_KEY", "minioadmin"),
       useSsl: envBool("MINIO_USE_SSL"),

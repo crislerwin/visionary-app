@@ -1,0 +1,457 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String   @id @default(cuid())
+  userId            String   @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String   @map("provider_account_id")
+  refresh_token     String?  @db.Text
+  access_token      String?  @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?  @db.Text
+  session_state     String?
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  tenantId     String?  @map("tenant_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant? @relation(fields: [tenantId], references: [id])
+
+  @@map("sessions")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String    @unique
+  emailVerified  DateTime? @map("email_verified")
+  image          String?
+  password       String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  accounts      Account[]
+  sessions      Session[]
+  memberships   Membership[]
+  ownedTenants  Tenant[]     @relation("TenantOwner")
+  approvedLeads Lead[]       @relation("LeadApprovedBy")
+  rejectedLeads Lead[]       @relation("LeadRejectedBy")
+  assignedLeads Lead[]       @relation("LeadAssignedTo")
+
+  @@map("users")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Tenant {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  description   String?
+  image         String?
+  whatsappPhone String?  @map("whatsapp_phone")
+  config        Json?    @default("{}")
+  ownerId       String   @map("owner_id")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  owner       User         @relation("TenantOwner", fields: [ownerId], references: [id])
+  memberships Membership[]
+  sessions    Session[]
+  invites     Invite[]
+
+  categories    Category[]
+  products      Product[]
+  customers     Customer[]
+  orders        Order[]
+  cashRegisters CashRegister[]
+  leads         Lead[]
+
+  @@map("tenants")
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+model Membership {
+  id        String     @id @default(cuid())
+  userId    String     @map("user_id")
+  tenantId  String     @map("tenant_id")
+  role      MemberRole @default(MEMBER)
+  invitedAt DateTime   @default(now()) @map("invited_at")
+  joinedAt  DateTime?  @map("joined_at")
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+  @@map("memberships")
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String
+  description String?
+  image       String?
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+  tenantId    String   @map("tenant_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("categories")
+}
+
+model Product {
+  id          String  @id @default(cuid())
+  name        String
+  description String? @db.Text
+  image       String?
+  price       Decimal @db.Decimal(10, 2)
+  isActive    Boolean @default(true) @map("is_active")
+  isDeleted   Boolean @default(false) @map("is_deleted")
+
+  stock      Int     @default(0)
+  trackStock Boolean @default(false) @map("track_stock")
+
+  categoryId String @map("category_id")
+  tenantId   String @map("tenant_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  category   Category       @relation(fields: [categoryId], references: [id])
+  tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  variants   ProductVariant[]
+  orderItems OrderItem[]
+  images     ProductImage[]
+
+  @@index([tenantId])
+  @@index([categoryId])
+  @@map("products")
+}
+
+model ProductVariant {
+  id       String  @id @default(cuid())
+  name     String
+  price    Decimal @db.Decimal(10, 2)
+  isActive Boolean @default(true) @map("is_active")
+
+  stock Int @default(0)
+
+  productId String @map("product_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String?
+  phone     String
+  email     String?
+  addresses Json?
+  notes     String?  @db.Text
+  birthDate DateTime? @map("birth_date")
+
+  points      Int      @default(0)
+  creditLimit Decimal? @db.Decimal(10, 2) @map("credit_limit")
+
+  tenantId  String   @map("tenant_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@unique([tenantId, phone])
+  @@index([tenantId])
+  @@index([phone])
+  @@map("customers")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum OrderType {
+  DELIVERY
+  PICKUP
+  DINE_IN
+}
+
+enum PaymentMethod {
+  PIX
+  CREDIT_CARD
+  DEBIT_CARD
+  CASH
+  OTHERS
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+}
+
+model Order {
+  id          String   @id @default(cuid())
+  orderNumber Int      @map("order_number")
+
+  type   OrderType
+  status OrderStatus @default(PENDING)
+
+  subtotal    Decimal @db.Decimal(10, 2)
+  deliveryFee Decimal? @db.Decimal(10, 2) @map("delivery_fee")
+  discount    Decimal? @db.Decimal(10, 2)
+  total       Decimal @db.Decimal(10, 2)
+
+  paymentMethod PaymentMethod? @map("payment_method")
+  paymentStatus PaymentStatus  @default(PENDING) @map("payment_status")
+
+  source String @default("WEB") @map("source")
+
+  address Json?
+
+  scheduledAt DateTime? @map("scheduled_at")
+
+  customerNotes String? @db.Text @map("customer_notes")
+  internalNotes String? @db.Text @map("internal_notes")
+  tableNumber   String? @map("table_number")
+
+  paidAt        DateTime? @map("paid_at")
+  confirmedAt   DateTime? @map("confirmed_at")
+  readyAt       DateTime? @map("ready_at")
+  deliveredAt   DateTime? @map("delivered_at")
+
+  customerId String @map("customer_id")
+  tenantId   String @map("tenant_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  customer Customer     @relation(fields: [customerId], references: [id])
+  tenant   Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items    OrderItem[]
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String @id @default(cuid())
+  quantity   Int
+  unitPrice  Decimal @db.Decimal(10, 2) @map("unit_price")
+  totalPrice Decimal @db.Decimal(10, 2) @map("total_price")
+  notes      String? @db.Text
+
+  orderId   String @map("order_id")
+  productId String @map("product_id")
+  variantId String? @map("variant_id")
+
+  productName String @map("product_name")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product  @relation(fields: [productId], references: [id])
+  variant ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+model ProductImage {
+  id           String   @id @default(cuid())
+  productId    String   @map("product_id")
+  url          String
+  thumbnailUrl String?  @map("thumbnail_url")
+  filename     String
+  size         Int
+  mimeType     String   @map("mime_type")
+  width        Int?
+  height       Int?
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+enum CashRegisterStatus {
+  OPEN
+  CLOSED
+}
+
+enum TransactionType {
+  SALE
+  EXPENSE
+  WITHDRAWAL
+  INITIAL
+}
+
+model CashRegister {
+  id            String   @id @default(cuid())
+  tenantId      String   @map("tenant_id")
+  openedAt      DateTime @default(now()) @map("opened_at")
+  closedAt      DateTime? @map("closed_at")
+  openedBy      String   @map("opened_by")
+  closedBy      String?  @map("closed_by")
+  initialAmount Decimal @db.Decimal(10, 2) @map("initial_amount")
+  finalAmount   Decimal? @db.Decimal(10, 2) @map("final_amount")
+  difference    Decimal? @db.Decimal(10, 2)
+  status        CashRegisterStatus @default(OPEN)
+  notes         String? @db.Text
+
+  tenant       Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  transactions CashRegisterTransaction[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([openedAt])
+  @@map("cash_registers")
+}
+
+model CashRegisterTransaction {
+  id             String   @id @default(cuid())
+  cashRegisterId String   @map("cash_register_id")
+  type           TransactionType
+  amount         Decimal  @db.Decimal(10, 2)
+  description    String?
+  category       String?
+  paymentMethod  PaymentMethod? @map("payment_method")
+  orderId        String?  @map("order_id")
+  createdBy      String   @map("created_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  cashRegister CashRegister @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
+
+  @@index([cashRegisterId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("cash_register_transactions")
+}
+
+model Invite {
+  id         String     @id @default(cuid())
+  email      String
+  token      String     @unique
+  tenantId   String     @map("tenant_id")
+  invitedBy  String     @map("invited_by")
+  role       MemberRole @default(MEMBER)
+  expiresAt  DateTime   @map("expires_at")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  acceptedAt DateTime?  @map("accepted_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([token])
+  @@map("invites")
+}
+
+enum LeadStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BusinessSize {
+  SOLO
+  SMALL
+  MEDIUM
+  LARGE
+}
+
+model Lead {
+  id              String        @id @default(cuid())
+  name            String
+  businessName    String?       @map("business_name")
+  email           String        @unique
+  phone           String?
+  status          LeadStatus    @default(PENDING)
+  businessSize    BusinessSize? @map("business_size")
+  employeeCount   Int?          @map("employee_count")
+  currentTool     String?       @map("current_tool")
+  notes           String?
+  assignedToId    String?       @map("assigned_to_id")
+  approvedById    String?       @map("approved_by_id")
+  approvedAt      DateTime?     @map("approved_at")
+  rejectedById    String?       @map("rejected_by_id")
+  rejectedAt      DateTime?     @map("rejected_at")
+  rejectionReason String?       @map("rejection_reason")
+  tenantId        String?       @map("tenant_id")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  approvedBy User?   @relation("LeadApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  rejectedBy User?   @relation("LeadRejectedBy", fields: [rejectedById], references: [id], onDelete: SetNull)
+  assignedTo User?   @relation("LeadAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  tenant     Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([email])
+  @@map("leads")
+}

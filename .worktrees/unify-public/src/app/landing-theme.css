@@ -1,0 +1,49 @@
+/* Tema isolado da landing page (Lovable) — não afeta o dashboard */
+
+.landing-theme {
+  --radius: 0.875rem;
+
+  /* Warm cream background, deep navy ink, mint accent */
+  --background: oklch(0.985 0.012 85);
+  --foreground: oklch(0.21 0.04 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0.04 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0.04 260);
+  --primary: oklch(0.32 0.09 260);
+  --primary-foreground: oklch(0.985 0.012 85);
+  --primary-glow: oklch(0.55 0.18 260);
+  --secondary: oklch(0.95 0.02 85);
+  --secondary-foreground: oklch(0.21 0.04 260);
+  --muted: oklch(0.95 0.015 85);
+  --muted-foreground: oklch(0.48 0.03 260);
+  --accent: oklch(0.74 0.14 165);
+  --accent-foreground: oklch(0.21 0.04 260);
+  --warm: oklch(0.78 0.14 55);
+  --warm-foreground: oklch(0.21 0.04 260);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.984 0.003 247.858);
+  --border: oklch(0.9 0.015 85);
+  --input: oklch(0.9 0.015 85);
+  --ring: oklch(0.55 0.18 260);
+
+  --gradient-hero: radial-gradient(
+      ellipse at top left,
+      oklch(0.74 0.14 165 / 0.18),
+      transparent 55%
+    ), radial-gradient(ellipse at bottom right, oklch(0.78 0.14 55 / 0.18), transparent 60%);
+  --gradient-primary: linear-gradient(135deg, oklch(0.32 0.09 260), oklch(0.45 0.14 250));
+  --gradient-accent: linear-gradient(135deg, oklch(0.74 0.14 165), oklch(0.82 0.12 150));
+  --shadow-elegant: 0 20px 60px -25px oklch(0.32 0.09 260 / 0.35);
+  --shadow-soft: 0 8px 30px -12px oklch(0.21 0.04 260 / 0.15);
+  --shadow-glow: 0 0 80px oklch(0.74 0.14 165 / 0.35);
+  --transition-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.landing-theme h1,
+.landing-theme h2,
+.landing-theme h3,
+.landing-theme h4 {
+  font-family: var(--font-fraunces), "Times New Roman", serif;
+  letter-spacing: -0.02em;
+}

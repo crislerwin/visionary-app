@@ -1,0 +1,14 @@
+# Prisma Migrate migration file
+# Generated at: 2026-05-07T00:00:00.000Z
+# 
+# This migration creates:
+# - AgentTone enum
+# - AgentInteractionStatus enum  
+# - AgentInteractionType enum
+# - AgentConfig table
+# - AgentInteractionLog table
+# - All indexes and foreign keys
+
+[metadata]
+title = "Add Agent Config and Interaction Log models"
+created_at = "2026-05-07T00:00:00Z"

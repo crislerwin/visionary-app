@@ -1,4 +1,4 @@
-# 🍔 Food Service — SaaS para Gestão de Restaurantes
+# 🍔 Meu Rango — SaaS para Gestão de Restaurantes
 
 Um sistema completo e pronto para produção para gestão de restaurantes, lanchonetes e estabelecimentos de alimentação. Multi-tenant, com catálogo público, controle de caixa, pedidos, gestão de equipes e personalização de marca.
 
@@ -42,7 +42,7 @@ Um sistema completo e pronto para produção para gestão de restaurantes, lanch
 ## 📁 Estrutura do Projeto
 
 ```
-food-service/
+meu-rango/
 ├── prisma/
 │   ├── schema.prisma          # Schema completo do banco
 │   └── seed.ts                # Dados iniciais (demo)
@@ -95,8 +95,8 @@ food-service/
 ### 1. Clone e Instalação
 
 ```bash
-git clone https://github.com/crislerwin/food-service.git
-cd food-service
+git clone https://github.com/crislerwin/meu-rango.git
+cd meu-rango
 npm install
 ```
 

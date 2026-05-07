@@ -1,6 +1,6 @@
 # Backoffice
 
-**PR:** [#69](https://github.com/crislerwin/food-service/pull/69)  
+**PR:** [#69](https://github.com/crislerwin/meu-rango/pull/69)  
 **Data:** 28/04/2026  
 **Autor:** Crisler Wintler
 

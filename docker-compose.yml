@@ -62,7 +62,7 @@ services:
         networks:
             - meu-rango-net
 
-    # ─── Food Service Application ───
+    # ─── Meu Rango Application ───
     app:
         build:
             context: .

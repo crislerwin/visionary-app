@@ -1,6 +1,6 @@
 # Histórico de Caixa com DataTable Reutilizável
 
-**PR:** [#46](https://github.com/crislerwin/food-service/pull/46) (completa #45)  
+**PR:** [#46](https://github.com/crislerwin/meu-rango/pull/46) (completa #45)  
 **Data:** 26/04/2026  
 **Autor:** Crisler Wintler
 

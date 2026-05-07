@@ -1,4 +1,4 @@
-# Testing Guide - Food Service
+# Testing Guide - Meu Rango
 
 This project uses **Vitest** for testing with the following stack:
 - **Vitest** - Test runner (replaces Jest)

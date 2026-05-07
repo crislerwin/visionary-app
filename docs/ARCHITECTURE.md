@@ -1,4 +1,4 @@
-# 🏗️ Arquitetura do Food Service
+# 🏗️ Arquitetura do Meu Rango
 
 Documento de decisões arquiteturais, estrutura de camadas e fluxos principais do sistema.
 
@@ -6,7 +6,7 @@ Documento de decisões arquiteturais, estrutura de camadas e fluxos principais d
 
 ## 1. Visão Geral
 
-O **food-service** é uma aplicação SaaS multi-tenant para gestão de restaurantes, construída com a stack moderna da Vercel: Next.js App Router, tRPC, Prisma e Tailwind CSS.
+O **meu-rango** é uma aplicação SaaS multi-tenant para gestão de restaurantes, construída com a stack moderna da Vercel: Next.js App Router, tRPC, Prisma e Tailwind CSS.
 
 ### Modelo de Domínio
 

@@ -1,6 +1,6 @@
 # 🔌 Referência da API — tRPC Routers
 
-Documentação completa dos routers tRPC disponíveis no `food-service`. Todos os endpoints são type-safe via Zod.
+Documentação completa dos routers tRPC disponíveis no `meu-rango`. Todos os endpoints são type-safe via Zod.
 
 Merge central: `src/server/routers/_app.ts`
 

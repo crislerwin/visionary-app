@@ -1,6 +1,6 @@
 # Checkout com WhatsApp e Gestão de Pedidos
 
-**PR:** [#68](https://github.com/crislerwin/food-service/pull/68) (completa #59)  
+**PR:** [#68](https://github.com/crislerwin/meu-rango/pull/68) (completa #59)  
 **Data:** 27/04/2026  
 **Autor:** Crisler Wintler
 
@@ -103,7 +103,7 @@ npx playwright test checkout-flow.spec.ts
 
 Exemplo da mensagem enviada:
 ```
-🍔 *NOVO PEDIDO - Food Service*
+🍔 *NOVO PEDIDO - Meu Rango*
 
 👤 *Cliente:* João Silva
 📱 *Telefone:* (11) 99999-9999

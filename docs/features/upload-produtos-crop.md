@@ -1,6 +1,6 @@
 # Upload de Imagens de Produtos com Crop
 
-**PR:** [#44](https://github.com/crislerwin/food-service/pull/44) (completa #43)  
+**PR:** [#44](https://github.com/crislerwin/meu-rango/pull/44) (completa #43)  
 **Data:** 25/04/2026   
 **Autor:** Crisler Wintler
 
@@ -56,7 +56,7 @@ Defina em `.env`:
 STORAGE_TYPE=s3
 AWS_ACCESS_KEY_ID=xxx
 AWS_SECRET_ACCESS_KEY=xxx
-AWS_S3_BUCKET=food-service
+AWS_S3_BUCKET=meu-rango
 AWS_S3_REGION=us-east-1
 
 # Opção 2: MinIO (self-hosted)
@@ -64,7 +64,7 @@ STORAGE_TYPE=minio
 MINIO_ENDPOINT=http://localhost:9000
 MINIO_ACCESS_KEY=xxx
 MINIO_SECRET_KEY=xxx
-MINIO_BUCKET=food-service
+MINIO_BUCKET=meu-rango
 
 # Opção 3: Local (desenvolvimento)
 STORAGE_TYPE=local

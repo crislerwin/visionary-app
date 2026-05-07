@@ -1,6 +1,6 @@
 # Menu Lovable Design
 
-**PR:** [#72](https://github.com/crislerwin/food-service/pull/72)  
+**PR:** [#72](https://github.com/crislerwin/meu-rango/pull/72)  
 **Data:** 29/04/2026  
 **Autor:** Crisler Wintler
 

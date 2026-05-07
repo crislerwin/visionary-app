@@ -1,6 +1,6 @@
-# 🤖 Guidelines para Agentes de IA — Food Service
+# 🤖 Guidelines para Agentes de IA — Meu Rango
 
-Este documento serve como **contexto primário** para qualquer agente de IA (Claude, Claude Code, Cursor, GitHub Copilot, etc.) que colabore no projeto food-service. Leia antes de propor qualquer mudança.
+Este documento serve como **contexto primário** para qualquer agente de IA (Claude, Claude Code, Cursor, GitHub Copilot, etc.) que colabore no projeto meu-rango. Leia antes de propor qualquer mudança.
 
 > 🎯 **Regra de ouro:** Se você não entender como algo funciona, pergunte — nunca assuma.
 
@@ -270,7 +270,7 @@ Sempre que modificar o schema:
 
 ## 9. Contato & Contexto
 
-- **Repositório:** https://github.com/crislerwin/food-service
+- **Repositório:** https://github.com/crislerwin/meu-rango
 - **Stack de teste:** localhost:3000, admin@example.com/admin123
 - **Boilerplate base:** MotRX (branch `main`)
 - **Deploy alvo:** Vercel (Docker para produção futura)

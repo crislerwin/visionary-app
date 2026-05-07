@@ -1,4 +1,4 @@
-# Food Service - SaaS para Restaurantes
+# Meu Rango - SaaS para Restaurantes
 
 ## Visão Geral
 
@@ -17,14 +17,14 @@ Plataforma SaaS completa para restaurantes, lanchonetes, pizzarias, hamburgueria
 Este projeto segue uma arquitetura de microserviços:
 
 ```
-food-service/           ← Este repo (Frontend + API)
+meu-rango/           ← Este repo (Frontend + API)
 │
 ├─ Web App (Next.js)
 ├─ API REST (tRPC)
 ├─ Banco PostgreSQL
 └─ Redis (cache/queue)
 
-food-service-evolution/ ← Repo separado (WhatsApp)
+meu-rango-evolution/ ← Repo separado (WhatsApp)
 │
 ├─ Evolution API (Baileys)
 ├─ Webhook handlers

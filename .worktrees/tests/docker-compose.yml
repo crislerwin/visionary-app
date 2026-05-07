@@ -1,0 +1,126 @@
+services:
+    db:
+        image: postgres:16-alpine
+        restart: always
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER:-postgres}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+            POSTGRES_DB: ${POSTGRES_DB:-saas}
+        ports:
+            - "5432:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+            - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+        networks:
+            - meu-rango-net
+
+    # ─── LGTM Observability Stack (all-in-one) ───
+    otel-lgtm:
+        image: grafana/otel-lgtm:latest
+        container_name: meu-rango-otel-lgtm
+        ports:
+            - "3001:3000" # Grafana UI
+            - "4318:4318" # OTLP HTTP (traces e métricas)
+            - "9090:9090" # Prometheus (Mimir)
+            - "3100:3100" # Loki push API (para Promtail)
+        volumes:
+            - otel-lgtm-data:/data
+        environment:
+            - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+            - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+        logging:
+            driver: json-file
+            options:
+                max-size: "10m"
+                max-file: "3"
+                tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+                labels: "loki,service_name,logging"
+        networks:
+            - meu-rango-net
+
+    # ─── Promtail (coleta logs dos containers Docker) ───
+    promtail:
+        image: grafana/promtail:3.2.0
+        container_name: meu-rango-promtail
+        labels:
+            loki: "true"
+            service_name: "promtail"
+            logging: "promtail"
+        volumes:
+            - ./docker/promtail-config.yml:/etc/promtail/config.yml:ro
+            - /var/lib/docker/containers:/var/lib/docker/containers:ro
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - /var/log:/var/log:ro
+            - promtail-positions:/tmp
+        depends_on:
+            - otel-lgtm
+        networks:
+            - meu-rango-net
+
+    # ─── Food Service Application ───
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: meu-rango-app
+        # Carrega todas as variáveis do arquivo .env automaticamente
+        env_file:
+            - .env
+        labels:
+            loki: "true"
+            service_name: "meu-rango"
+            logging: "meu-rango"
+        environment:
+            NODE_ENV: ${NODE_ENV:-production}
+            PORT: ${PORT:-3000}
+            HOSTNAME: ${HOSTNAME:-0.0.0.0}
+            # URL do banco apontando para o serviço "db" dentro da rede Docker
+            DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-saas}
+            # OpenTelemetry endpoint (LGTM container dentro da mesma rede)
+            OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-lgtm:4318/v1/traces}
+            OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-meu-rango}
+            LOG_LEVEL: ${LOG_LEVEL:-info}
+            # NextAuth (sobrescreve NEXTAUTH_URL do .env para o container)
+            NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+            # Storage (S3 or MinIO)
+            STORAGE_PROVIDER: ${STORAGE_PROVIDER:-s3}
+            AWS_REGION: ${AWS_REGION:-us-east-1}
+            AWS_S3_BUCKET: ${AWS_S3_BUCKET:-meu-rango-images}
+            AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+            AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+            # AWS_S3_ENDPOINT: ${AWS_S3_ENDPOINT}
+            # MinIO fallback — comente as linhas S3 acima e descomente abaixo para usar MinIO
+            # MINIO_ENDPOINT: ${MINIO_ENDPOINT:-http://minio:9000}
+            # MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://minio:9000}
+            # MINIO_BUCKET: ${MINIO_BUCKET:-meu-rango-images}
+            # MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+            # MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+            # MINIO_USE_SSL: "false"
+        ports:
+            - "${PORT:-3000}:3000"
+        depends_on:
+            - db
+            - otel-lgtm
+        logging:
+            driver: json-file
+            options:
+                max-size: "10m"
+                max-file: "3"
+                tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+                labels: "loki,service_name,logging"
+        networks:
+            - meu-rango-net
+
+volumes:
+    postgres_data:
+    otel-lgtm-data:
+    promtail-positions:
+
+networks:
+    meu-rango-net:
+        driver: bridge

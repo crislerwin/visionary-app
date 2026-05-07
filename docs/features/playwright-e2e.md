@@ -1,6 +1,6 @@
 # Playwright E2E Tests
 
-**PR:** [#39](https://github.com/crislerwin/food-service/pull/39)  
+**PR:** [#39](https://github.com/crislerwin/meu-rango/pull/39)  
 **Data:** 25/04/2026   
 **Autor:** Crisler Wintler
 

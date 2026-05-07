@@ -1,6 +1,6 @@
 # Configuração de Identidade Visual do Tenant
 
-**PR:** [#50](https://github.com/crislerwin/food-service/pull/50) (completa #48)  
+**PR:** [#50](https://github.com/crislerwin/meu-rango/pull/50) (completa #48)  
 **Data:** 28/04/2026  
 **Autor:** Crisler Wintler
 

@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Configuração do Playwright para testes end-to-end do Food Service.
+ * Configuração do Playwright para testes end-to-end do Meu Rango.
  *
  * Documentação: https://playwright.dev
  */

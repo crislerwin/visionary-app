@@ -1,6 +1,6 @@
 # Redes Sociais e Contato no Cardápio
 
-**PR:** [#74](https://github.com/crislerwin/food-service/pull/74)  
+**PR:** [#74](https://github.com/crislerwin/meu-rango/pull/74)  
 **Data:** 29/04/2026  
 **Autor:** Crisler Wintler
 

@@ -1,6 +1,6 @@
 # Upload de Imagem em Categorias
 
-**PR:** [#57](https://github.com/crislerwin/food-service/pull/57)  
+**PR:** [#57](https://github.com/crislerwin/meu-rango/pull/57)  
 **Data:** 26/04/2026  
 **Autor:** Crisler Wintler
 

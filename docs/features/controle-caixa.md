@@ -1,6 +1,6 @@
 # Controle de Caixa
 
-**PR:** [#40](https://github.com/crislerwin/food-service/pull/40) (completa #16)  
+**PR:** [#40](https://github.com/crislerwin/meu-rango/pull/40) (completa #16)  
 **Data:** 25/04/2026  
 **Autor:** Crisler Wintler
 

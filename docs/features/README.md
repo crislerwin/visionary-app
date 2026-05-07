@@ -1,6 +1,6 @@
 # Features Documentation
 
-Documentação completa das features implementadas no Food Service.
+Documentação completa das features implementadas no Meu Rango.
 
 ## Índice
 

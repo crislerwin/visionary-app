@@ -1,7 +1,7 @@
 import type { Page } from "@playwright/test";
 
 /**
- * Helpers de teste e2e para o Food Service.
+ * Helpers de teste e2e para o Meu Rango.
  *
  * Centraliza seletores e funções utilitárias para evitar
  * regressão e facilitar manutenção por QA agents.

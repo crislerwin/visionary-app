@@ -1,6 +1,6 @@
 # Landing Page do Lovable
 
-**PR:** [#71](https://github.com/crislerwin/food-service/pull/71)  
+**PR:** [#71](https://github.com/crislerwin/meu-rango/pull/71)  
 **Data:** 28/04/2026  
 **Autor:** Crisler Wintler
 
@@ -8,7 +8,7 @@
 
 ## 📋 Descrição
 
-Landing page moderna e atrativa para apresentar o Food Service como produto SaaS. Design criado no Lovable.dev com foco em conversão, apresentando features, preços e CTA claro.
+Landing page moderna e atrativa para apresentar o Meu Rango como produto SaaS. Design criado no Lovable.dev com foco em conversão, apresentando features, preços e CTA claro.
 
 ## 🎯 Objetivo
 
@@ -119,5 +119,5 @@ npm run dev
 
 ## 🔗 Links Importantes
 
-- **Preview:** <https://food-service-demo.vercel.app>
+- **Preview:** <https://meu-rango-demo.vercel.app>
 - **Lovable Project:** [Design original](https://lovable.dev)

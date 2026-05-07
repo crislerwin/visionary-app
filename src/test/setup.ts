@@ -1,10 +1,22 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
-import { afterEach, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, vi } from "vitest";
+import { server } from "./mocks/server";
 
-// Clean up after each test
+// Start MSW before all tests
+beforeAll(() => {
+  server.listen({ onUnhandledRequest: "error" });
+});
+
+// Reset handlers after each test
 afterEach(() => {
   cleanup();
+  server.resetHandlers();
+});
+
+// Close MSW after all tests
+afterAll(() => {
+  server.close();
 });
 
 // Mock Next.js router

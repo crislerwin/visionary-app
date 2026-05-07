@@ -2,8 +2,8 @@
 
 ## Project Overview
 
-**Project:** food-service  
-**Type:** SaaS Platform for Restaurants (Food Service)  
+**Project:** meu-rango  
+**Type:** SaaS Platform for Restaurants (Meu Rango)  
 **Analysis Date:** 2026-04-24  
 **Current Status:** Active Development - Foundation Phase
 
@@ -26,7 +26,7 @@ This is a **Next.js 15 + React 19 + TypeScript** application using a modern SaaS
 ├─────────────────────────────────────────────────────────┤
 │  Prisma 6 (Database ORM)                               │
 │  ├── PostgreSQL (Multi-tenant schema)                  │
-│  └── Schema: Auth + Tenant + Food Service Models      │
+│  └── Schema: Auth + Tenant + Meu Rango Models      │
 ├─────────────────────────────────────────────────────────┤
 │  Auth.js v5 Beta (Next-Auth)                           │
 │  ├── Credentials Provider (Email/Password)           │
@@ -50,7 +50,7 @@ This is a **Next.js 15 + React 19 + TypeScript** application using a modern SaaS
 - [x] PostgreSQL + Prisma setup
 - [x] tRPC API layer
 
-#### 🔄 Food Service Core (20% Complete)
+#### 🔄 Meu Rango Core (20% Complete)
 - [x] Database schema (Category, Product, ProductVariant, Customer, Order)
 - [x] Category CRUD (API + UI)
 - [x] Product CRUD (API with variants)
@@ -92,7 +92,7 @@ This is a **Next.js 15 + React 19 + TypeScript** application using a modern SaaS
 5. **Membership** - User-Tenant relationship with roles
 6. **Post** - Example content model
 
-#### Food Service Models (Custom)
+#### Meu Rango Models (Custom)
 1. **Category** - Product categorization
    - Fields: name, slug, description, image, sortOrder, isActive, isDeleted
    - Relations: belongs to Tenant, has many Products

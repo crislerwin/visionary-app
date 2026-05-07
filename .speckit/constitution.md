@@ -1,10 +1,10 @@
-# Food Service SaaS - Project Constitution
+# Meu Rango SaaS - Project Constitution
 
 > Executable specifications for a modern restaurant management platform.
 
 ## Project Identity
 
-**Name:** Food Service  
+**Name:** Meu Rango  
 **Type:** Multi-tenant SaaS Platform  
 **Domain:** Restaurant Operations Management  
 **Architecture:** Next.js / React / PostgreSQL / tRPC
