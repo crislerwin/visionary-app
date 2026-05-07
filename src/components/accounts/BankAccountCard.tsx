@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { BankAccountType } from "@prisma/client";
+import { ConnectBankModal } from "./ConnectBankModal";
 
 interface BankAccountCardProps {
   account: {
@@ -105,6 +106,11 @@ export function BankAccountCard({ account, onEdit, onDelete }: BankAccountCardPr
           <p className="text-sm text-muted-foreground">
             {transactionCount} transaction{transactionCount !== 1 ? "s" : ""}
           </p>
+        </div>
+
+        {/* Pluggy Connect Bank — UI placeholder */}
+        <div className="mt-4">
+          <ConnectBankModal accountName={account.name} />
         </div>
       </CardContent>
     </Card>
