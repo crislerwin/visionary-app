@@ -1,15 +1,13 @@
 "use client";
 
-import { api } from "@/lib/trpc/react";
-import { ArrowLeft, Loader2, Wallet } from "lucide-react";
-
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
+import { api } from "@/lib/trpc/react";
 import { cn } from "@/lib/utils";
 import type { TransactionStatus, TransactionType } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
+import { ArrowLeft, Loader2, Wallet } from "lucide-react";
 
 // ── Types ──
 
@@ -115,7 +113,7 @@ const transactionColumns: ColumnDef<TransactionRow>[] = [
   },
 ];
 
-// ── Account Card (minimalista) ──
+// ── Account Card (ultra-compacto) ──
 
 function AccountCard({
   account,
@@ -125,28 +123,31 @@ function AccountCard({
   onClick: () => void;
 }) {
   return (
-    <Card
-      className="cursor-pointer transition-colors hover:border-primary/50 hover:bg-accent/40"
+    <button
+      type="button"
+      className="w-full cursor-pointer rounded-md border bg-card p-2.5 text-left transition-colors hover:border-primary/50 hover:bg-accent/40"
       onClick={onClick}
     >
-      <CardContent className="p-3">
-        <div className="flex items-center justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{account.name}</p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[13px] font-medium leading-tight">{account.name}</p>
+          <div className="flex items-center gap-1.5">
             {account.bankName && (
               <p className="truncate text-[11px] text-muted-foreground">{account.bankName}</p>
             )}
+            <span className="rounded border px-1 py-0 text-[9px] uppercase tracking-wider text-muted-foreground">
+              {account.type}
+            </span>
           </div>
-          <Badge variant="outline" className="shrink-0 text-[9px] uppercase tracking-wider">
-            {account.type}
-          </Badge>
         </div>
-        <p className="mt-1.5 text-lg font-bold leading-tight">{currency(account.currentBalance)}</p>
-        <p className="text-[11px] text-muted-foreground">
-          {account._count.transactions} transações
-        </p>
-      </CardContent>
-    </Card>
+        <div className="text-right">
+          <p className="text-[13px] font-bold leading-tight">{currency(account.currentBalance)}</p>
+          <p className="text-[10px] tabular-nums text-muted-foreground">
+            {account._count.transactions}x
+          </p>
+        </div>
+      </div>
+    </button>
   );
 }
 
