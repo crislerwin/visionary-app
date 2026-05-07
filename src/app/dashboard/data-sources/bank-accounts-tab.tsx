@@ -10,12 +10,11 @@ import {
   Trash2,
   Wallet,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DataTable } from "@/components/ui/data-table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,70 +73,6 @@ export function BankAccountsTab() {
 
   const active = accounts.find((a) => a.id === activeId) ?? null;
 
-  const { data: txPage, error: txError } = api.transaction.list.useQuery(
-    activeId ? { bankAccountId: activeId, page: 1, pageSize: 1000 } : {},
-    { enabled: !!activeId },
-  );
-
-  const transactions: Txn[] =
-    txPage?.transactions?.map((t) => ({
-      id: t.id,
-      date: t.date,
-      description: t.description,
-      category: t.category?.name ?? null,
-      amount: Number(t.amount),
-      type: t.type,
-    })) ?? [];
-
-  // ── Transaction columns for DataTable ──
-
-  const transactionColumns: ColumnDef<Txn>[] = [
-    {
-      accessorKey: "date",
-      header: "Data",
-      cell: ({ row }) => (
-        <span className="whitespace-nowrap font-mono text-xs">
-          {new Date(row.getValue("date") as string).toLocaleDateString("pt-BR")}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "description",
-      header: "Descrição",
-      cell: ({ row }) => (
-        <span className="text-sm font-medium">{row.getValue("description") as string}</span>
-      ),
-    },
-    {
-      accessorKey: "category",
-      header: "Categoria",
-      cell: ({ row }) => (
-        <Badge variant="secondary">{(row.getValue("category") as string) ?? "—"}</Badge>
-      ),
-    },
-    {
-      accessorKey: "amount",
-      header: "Valor",
-      cell: ({ row }) => {
-        const amount = Number(row.getValue("amount"));
-        const type = (row.original as Txn).type;
-        return (
-          <span
-            className={cn(
-              "font-medium",
-              type === "INCOME"
-                ? "text-emerald-600 dark:text-emerald-400"
-                : "text-rose-600 dark:text-rose-400",
-            )}
-          >
-            {type === "INCOME" ? "+" : "−"}
-            {currency(Math.abs(amount))}
-          </span>
-        );
-      },
-    },
-  ];
-
   const deleteAccount = api.bankAccount.delete.useMutation({
     onSuccess: () => {
       if (activeId === confirmDeleteId) {
@@ -148,9 +83,6 @@ export function BankAccountsTab() {
     },
     onError: () => setConfirmDeleteId(null),
   });
-
-  // Refresh mutation (placeholder – implement refreshBalance router if needed)
-  // const _refreshAccount = api.bankAccount.refreshBalance.useMutation();
 
   // ── Render ──
 
@@ -281,20 +213,7 @@ export function BankAccountsTab() {
           </CardHeader>
 
           <CardContent className="space-y-3">
-            {/* Error */}
-            {txError && (
-              <div className="rounded border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
-                {txError.message}
-              </div>
-            )}
-
-            {/* DataTable */}
-            <DataTable
-              columns={transactionColumns}
-              data={transactions}
-              searchKey="description"
-              searchPlaceholder="Filtrar transações..."
-            />
+            <AccountTransactionsTable accountId={activeId} />
           </CardContent>
         </>
       ) : (
@@ -303,5 +222,114 @@ export function BankAccountsTab() {
         </CardContent>
       )}
     </Card>
+  );
+}
+
+// ── Isolated Transactions Table (prevents full card re-render on pagination) ──
+
+import { DataTable } from "@/components/ui/data-table";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const transactionColumns: ColumnDef<Txn>[] = [
+  {
+    accessorKey: "date",
+    header: "Data",
+    cell: ({ row }) => (
+      <span className="whitespace-nowrap font-mono text-xs">
+        {new Date(row.getValue("date") as string).toLocaleDateString("pt-BR")}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "description",
+    header: "Descrição",
+    cell: ({ row }) => (
+      <span className="text-sm font-medium">{row.getValue("description") as string}</span>
+    ),
+  },
+  {
+    accessorKey: "category",
+    header: "Categoria",
+    cell: ({ row }) => (
+      <Badge variant="secondary">{(row.getValue("category") as string) ?? "—"}</Badge>
+    ),
+  },
+  {
+    accessorKey: "amount",
+    header: "Valor",
+    cell: ({ row }) => {
+      const amount = Number(row.getValue("amount"));
+      const type = (row.original as Txn).type;
+      return (
+        <span
+          className={cn(
+            "font-medium",
+            type === "INCOME"
+              ? "text-emerald-600 dark:text-emerald-400"
+              : "text-rose-600 dark:text-rose-400",
+          )}
+        >
+          {type === "INCOME" ? "+" : "−"}
+          {currency(Math.abs(amount))}
+        </span>
+      );
+    },
+  },
+];
+
+function AccountTransactionsTable({ accountId }: { accountId: string | null }) {
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 8 });
+
+  const { data: txPage, error: txError, isLoading: txLoading } = api.transaction.list.useQuery(
+    accountId
+      ? { bankAccountId: accountId, page: pagination.pageIndex + 1, pageSize: pagination.pageSize }
+      : {},
+    { enabled: !!accountId },
+  );
+
+  const transactions: Txn[] = useMemo(() => {
+    return (
+      txPage?.transactions?.map((t) => ({
+        id: t.id,
+        date: t.date,
+        description: t.description,
+        category: t.category?.name ?? null,
+        amount: Number(t.amount),
+        type: t.type,
+      })) ?? []
+    );
+  }, [txPage]);
+
+  const txTotal = txPage?.total ?? 0;
+  const txPageCount = Math.ceil(txTotal / pagination.pageSize) || 1;
+
+  return (
+    <>
+      {txError && (
+        <div className="rounded border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
+          {txError.message}
+        </div>
+      )}
+
+      {txLoading ? (
+        <div className="space-y-2 rounded-md border p-2">
+          {Array.from({ length: pagination.pageSize }).map((_, i) => (
+            <Skeleton key={i} className="h-10 w-full" />
+          ))}
+        </div>
+      ) : (
+        <DataTable
+          columns={transactionColumns}
+          data={transactions}
+          searchKey="description"
+          searchPlaceholder="Filtrar transações..."
+          manualPagination
+          pageCount={txPageCount}
+          pagination={pagination}
+          onPaginationChange={setPagination}
+          totalRows={txTotal}
+        />
+      )}
+    </>
   );
 }

@@ -396,22 +396,6 @@ function TransactionsTable({ dateRange }: { dateRange: { from: Date; to: Date } 
   const txTotal = transactionsData?.total ?? 0;
   const txPageCount = Math.ceil(txTotal / pagination.pageSize) || 1;
 
-  if (txLoading) {
-    return (
-      <section className="mt-3 min-w-0">
-        <Card className="min-h-0 min-w-0 overflow-hidden py-3">
-          <CardContent className="min-w-0 px-4 pb-3 pt-0">
-            <div className="mb-2">
-              <Skeleton className="h-5 w-32" />
-              <Skeleton className="mt-1 h-4 w-40" />
-            </div>
-            <Skeleton className="h-[300px] w-full" />
-          </CardContent>
-        </Card>
-      </section>
-    );
-  }
-
   return (
     <section className="mt-3 min-w-0">
       <Card className="min-h-0 min-w-0 overflow-hidden py-3">
@@ -425,7 +409,13 @@ function TransactionsTable({ dateRange }: { dateRange: { from: Date; to: Date } 
 
           {/* Desktop: tabela */}
           <div className="hidden md:block">
-            {transactions.length > 0 ? (
+            {txLoading ? (
+              <div className="space-y-2 rounded-md border p-2">
+                {Array.from({ length: pagination.pageSize }).map((_, i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
+              </div>
+            ) : transactions.length > 0 ? (
               <DataTable
                 columns={transactionColumns}
                 data={transactions}
