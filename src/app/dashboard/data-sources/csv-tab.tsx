@@ -122,8 +122,8 @@ export function CsvTab() {
 
   // Mapping state
   const [mappingOpen, setMappingOpen] = useState(false);
-  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
-  const [dateFormat, setDateFormat] = useState("YYYY-MM-DD");
+  const [columnMapping, setColumnMapping] = useState<Record<string, string | undefined>>({});
+  const [dateFormat, setDateFormat] = useState<typeof DATE_FORMATS[number]["value"]>("YYYY-MM-DD");
   const [inferTypeFromSign] = useState(true);
   const [sourceName, setSourceName] = useState("");
 
@@ -555,7 +555,7 @@ export function CsvTab() {
             <div className="grid gap-2 sm:grid-cols-3 rounded-md border p-2">
               <div className="space-y-0.5">
                 <Label className="text-[10px] font-medium">Formato de Data</Label>
-                <Select value={dateFormat} onValueChange={setDateFormat}>
+                <Select value={dateFormat} onValueChange={(v) => setDateFormat(v as typeof DATE_FORMATS[number]["value"])}>
                   <SelectTrigger className="h-7 text-xs">
                     <SelectValue />
                   </SelectTrigger>

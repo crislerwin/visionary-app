@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Settings, User } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -60,11 +60,6 @@ export function UserNav() {
             <User className="mr-2 h-4 w-4" />
             Profile
             <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
-            <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

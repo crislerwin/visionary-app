@@ -181,7 +181,7 @@ export const dataSourceRouter = router({
 
         // Parse amount
         const amountVal = parseAmount(row[mapping.amount] ?? "");
-        if (Number.isNaN(amountVal)) {
+        if (amountVal === null || Number.isNaN(amountVal)) {
           errors.push(`Row ${i + 1}: Invalid amount "${row[mapping.amount]}"`);
           skipped++;
           continue;
