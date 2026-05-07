@@ -1,4 +1,4 @@
-import { Landmark, LayoutDashboard, type LucideIcon, Settings } from "lucide-react";
+import { Database, Landmark, LayoutDashboard, type LucideIcon, Settings } from "lucide-react";
 
 export interface NavItem {
   title: string;
@@ -26,9 +26,9 @@ export const sidebarNavigation: NavSection[] = [
     title: "Finance",
     items: [
       {
-        title: "Accounts",
-        href: "/dashboard/accounts",
-        icon: Landmark,
+        title: "Data Sources",
+        href: "/dashboard/data-sources",
+        icon: Database,
       },
     ],
   },
