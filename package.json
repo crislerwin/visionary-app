@@ -14,10 +14,12 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "db:push": "prisma db push",
+    "db:wait": "./scripts/wait-for-db.sh",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
-    "dev:setup": "npm run docker:up && sleep 3 && npm run db:push && npm run db:seed",
+    "dev:setup": "npm run docker:up && npm run db:wait && npm run db:push && npm run db:seed",
+    "dev:db": "npm run docker:up && npm run db:wait",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "type-check": "tsc --noEmit"
