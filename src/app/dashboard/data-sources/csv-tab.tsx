@@ -1,13 +1,33 @@
 "use client";
 
 import { api } from "@/lib/trpc/react";
-import { AlertTriangle, CheckCircle2, FileText, Loader2, Plus, Table2 } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Columns3,
+  FileText,
+  Loader2,
+  Plus,
+  Search,
+  Table2,
+  Upload,
+} from "lucide-react";
 import Papa from "papaparse";
 import { useMemo, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DataTable } from "@/components/ui/data-table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -17,9 +37,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import type { TransactionStatus, TransactionType } from "@prisma/client";
-import type { ColumnDef } from "@tanstack/react-table";
 
 // ── Types ──
 
@@ -35,108 +62,55 @@ interface ImportResult {
 // ── Field meta ──
 
 const FIELD_META = [
-  { key: "date", label: "Data", required: true },
-  { key: "description", label: "Descrição", required: true },
-  { key: "amount", label: "Valor", required: true },
-  { key: "type", label: "Tipo", required: false },
-  { key: "category", label: "Categoria", required: false },
-  { key: "status", label: "Status", required: false },
+  {
+    key: "date",
+    label: "Data",
+    required: true,
+    description: "Data da transação (DD/MM/AAAA, AAAA-MM-DD, etc.)",
+  },
+  {
+    key: "description",
+    label: "Descrição",
+    required: true,
+    description: "Texto descritivo do lançamento.",
+  },
+  {
+    key: "amount",
+    label: "Valor",
+    required: true,
+    description: "Valor monetário (positivo ou negativo).",
+  },
+  {
+    key: "type",
+    label: "Tipo",
+    required: false,
+    description: "Entrada/Saída. Se ausente, infere pelo sinal.",
+  },
+  {
+    key: "category",
+    label: "Categoria",
+    required: false,
+    description: "Classificação do lançamento.",
+  },
+  {
+    key: "status",
+    label: "Status",
+    required: false,
+    description: "completed, pending ou cancelled.",
+  },
 ] as const;
 
 const DATE_FORMATS = [
-  { value: "YYYY-MM-DD", label: "AAAA-MM-DD" },
-  { value: "DD/MM/YYYY", label: "DD/MM/AAAA" },
-  { value: "MM/DD/YYYY", label: "MM/DD/AAAA" },
+  { value: "YYYY-MM-DD", label: "AAAA-MM-DD (ISO)" },
+  { value: "DD/MM/YYYY", label: "DD/MM/AAAA (Brasil)" },
+  { value: "MM/DD/YYYY", label: "MM/DD/AAAA (EUA)" },
 ] as const;
 
-const COLORS = [
-  "bg-blue-100",
-  "bg-green-100",
-  "bg-purple-100",
-  "bg-amber-100",
-  "bg-rose-100",
-  "bg-cyan-100",
-];
+// ── Helpers ──
 
-// ── Preview Row (transacional) ──
+const currency = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-interface PreviewRow {
-  id: string;
-  date: string;
-  description: string;
-  category: string | null;
-  amount: string;
-  type: TransactionType;
-  status: TransactionStatus;
-}
-
-// ── Preview Columns (mesmo formato do dashboard) ──
-
-const previewColumns: ColumnDef<PreviewRow>[] = [
-  {
-    accessorKey: "date",
-    header: "Data",
-    cell: ({ row }) => (
-      <span className="whitespace-nowrap text-xs">{row.getValue("date") as string}</span>
-    ),
-  },
-  {
-    accessorKey: "description",
-    header: "Descrição",
-    cell: ({ row }) => (
-      <span className="truncate text-xs font-medium">{row.getValue("description") as string}</span>
-    ),
-  },
-  {
-    accessorKey: "category",
-    header: "Categoria",
-    cell: ({ row }) => (
-      <span className="text-xs text-muted-foreground">
-        {(row.getValue("category") as string) ?? "—"}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "amount",
-    header: "Valor",
-    cell: ({ row }) => {
-      const amount = Number(row.getValue("amount"));
-      const type = row.original.type;
-      return (
-        <span
-          className={cn(
-            "text-xs font-medium",
-            type === "INCOME"
-              ? "text-emerald-600 dark:text-emerald-400"
-              : "text-rose-600 dark:text-rose-400",
-          )}
-        >
-          {type === "INCOME" ? "+" : "−"}
-          {Number(amount).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-        </span>
-      );
-    },
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const status = row.getValue("status") as TransactionStatus;
-      return (
-        <span
-          className={cn(
-            "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium",
-            status === "COMPLETED"
-              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
-              : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
-          )}
-        >
-          {status === "COMPLETED" ? "Concluído" : "Pendente"}
-        </span>
-      );
-    },
-  },
-];
+const IGNORE = "__ignore__";
 
 // ── Main ──
 
@@ -149,6 +123,8 @@ export function CsvTab() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
 
+  // Mapping state
+  const [mappingOpen, setMappingOpen] = useState(false);
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
   const [dateFormat, setDateFormat] = useState("YYYY-MM-DD");
   const [inferTypeFromSign] = useState(true);
@@ -156,6 +132,11 @@ export function CsvTab() {
 
   const { data: accounts } = api.bankAccount.list.useQuery();
   const [bankAccountId, setBankAccountId] = useState("");
+
+  // Preview state
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 8;
 
   const csvImport = api.dataSource.csvImport.useMutation({
     onSuccess: (data) => {
@@ -254,246 +235,431 @@ export function CsvTab() {
     });
   };
 
-  const mappedCount = Object.values(columnMapping).filter(Boolean).length;
+  const _mappedCount = Object.values(columnMapping).filter(Boolean).length;
   const hasRequired = columnMapping.date && columnMapping.description && columnMapping.amount;
 
-  // ── Transform CSV rows → Preview rows ──
+  // ── Preview data ──
 
-  const previewData = useMemo(
-    () =>
-      rows.slice(0, 50).map(
-        (r, i) =>
-          ({
-            id: String(i),
-            date: columnMapping.date ? (r[columnMapping.date] ?? "") : "",
-            description: columnMapping.description ? (r[columnMapping.description] ?? "") : "",
-            category: columnMapping.category ? (r[columnMapping.category] ?? null) : null,
-            amount: columnMapping.amount ? (r[columnMapping.amount] ?? "0") : "0",
-            type: (() => {
-              if (columnMapping.type) {
-                const v = r[columnMapping.type]?.toLowerCase() ?? "";
-                if (v.includes("entrada") || v.includes("income") || v.includes("receita"))
-                  return "INCOME" as TransactionType;
-                if (v.includes("saida") || v.includes("expense") || v.includes("despesa"))
-                  return "EXPENSE" as TransactionType;
-              }
-              const amt = Number(r[columnMapping.amount ?? ""] ?? 0);
-              return amt < 0 ? ("INCOME" as TransactionType) : ("EXPENSE" as TransactionType);
-            })(),
-            status: (() => {
-              if (columnMapping.status) {
-                const v = r[columnMapping.status]?.toLowerCase() ?? "";
-                if (v.includes("pendente") || v.includes("pending"))
-                  return "PENDING" as TransactionStatus;
-                if (v.includes("cancelado") || v.includes("cancelled"))
-                  return "CANCELLED" as TransactionStatus;
-              }
-              return "COMPLETED" as TransactionStatus;
-            })(),
-          }) as PreviewRow,
-      ),
-    [rows, columnMapping],
-  );
+  interface PreviewRow {
+    id: string;
+    date: string;
+    description: string;
+    category: string | null;
+    amount: string;
+    type: TransactionType;
+    status: TransactionStatus;
+  }
+
+  const previewRows = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    const filtered = q
+      ? rows.filter((r) => Object.values(r).some((v) => v.toLowerCase().includes(q)))
+      : rows;
+    return filtered.slice(0, 50).map((r, i) => {
+      const amt = Number(r[columnMapping.amount ?? ""] ?? 0);
+      const mappedType = columnMapping.type ? (r[columnMapping.type]?.toLowerCase() ?? "") : "";
+      return {
+        id: String(i),
+        date: columnMapping.date ? (r[columnMapping.date] ?? "") : "",
+        description: columnMapping.description ? (r[columnMapping.description] ?? "") : "",
+        category: columnMapping.category ? (r[columnMapping.category] ?? null) : null,
+        amount: r[columnMapping.amount ?? ""] ?? "0",
+        type: (() => {
+          if (mappedType.includes("entrada") || mappedType.includes("income"))
+            return "INCOME" as TransactionType;
+          if (mappedType.includes("saida") || mappedType.includes("expense"))
+            return "EXPENSE" as TransactionType;
+          return amt < 0 ? ("INCOME" as TransactionType) : ("EXPENSE" as TransactionType);
+        })(),
+        status: (() => {
+          if (columnMapping.status) {
+            const v = r[columnMapping.status]?.toLowerCase() ?? "";
+            if (v.includes("pendente") || v.includes("pending"))
+              return "PENDING" as TransactionStatus;
+            if (v.includes("cancelado") || v.includes("cancelled"))
+              return "CANCELLED" as TransactionStatus;
+          }
+          return "COMPLETED" as TransactionStatus;
+        })(),
+      } as PreviewRow;
+    });
+  }, [rows, columnMapping, search]);
+
+  const totalPages = Math.max(1, Math.ceil(previewRows.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = previewRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // ── Render ──
 
   return (
-    <div className="space-y-3">
-      {/* Upload */}
-      <button
-        type="button"
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragOver(true);
-        }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragOver(false);
-          onFiles(e.dataTransfer.files);
-        }}
-        onClick={() => inputRef.current?.click()}
-        className={cn(
-          "flex w-full cursor-pointer items-center gap-3 rounded-md border border-dashed p-3 transition-colors",
-          dragOver
-            ? "border-primary bg-accent/40"
-            : "border-border hover:border-primary/50 hover:bg-accent/20",
-        )}
-      >
-        <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
-        <div className="min-w-0 text-left">
-          <p className="truncate text-sm font-medium">{fileName ?? "Arraste CSV ou clique"}</p>
-          <p className="text-[11px] text-muted-foreground">
-            .csv, .txt · até 20MB · vírgula, ponto-e-vírgula, tab
-          </p>
-        </div>
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".csv,.txt"
-          className="hidden"
-          onChange={(e) => onFiles(e.target.files)}
-        />
-      </button>
+    <div className="space-y-4">
+      {/* Upload Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5" />
+            Importar arquivo CSV
+          </CardTitle>
+          <CardDescription>
+            Envie um arquivo <code className="rounded bg-muted px-1.5 py-0.5 text-xs">.csv</code> ou{" "}
+            <code className="rounded bg-muted px-1.5 py-0.5 text-xs">.txt</code> com colunas: Data,
+            Descrição, Valor, Categoria.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Drop zone */}
+          <button
+            type="button"
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOver(false);
+              onFiles(e.dataTransfer.files);
+            }}
+            onClick={() => inputRef.current?.click()}
+            className={cn(
+              "flex w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-10 text-center transition-colors",
+              dragOver
+                ? "border-primary bg-accent/40"
+                : "border-border hover:border-primary/50 hover:bg-accent/20",
+            )}
+          >
+            <FileText className="mb-3 h-8 w-8 text-muted-foreground" />
+            <p className="text-sm font-medium text-foreground">
+              {fileName ?? "Arraste e solte o arquivo aqui"}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              ou clique para selecionar (.csv, .txt — até 20MB)
+            </p>
+            <input
+              ref={inputRef}
+              type="file"
+              accept=".csv,.txt"
+              className="hidden"
+              onChange={(e) => onFiles(e.target.files)}
+            />
+          </button>
 
-      {/* Column Mapping */}
+          {/* Buttons */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-muted-foreground">
+              {fileName ? `Arquivo: ${fileName}` : "Nenhum arquivo selecionado"}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                disabled={!rows.length}
+                onClick={() => setMappingOpen(true)}
+              >
+                <Columns3 className="h-4 w-4" />
+                Mapear Colunas
+              </Button>
+              <Button
+                disabled={!hasRequired || !bankAccountId || !sourceName.trim() || loading}
+                onClick={handleImport}
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+                Importar {rows.length} transações
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Result */}
+      {result && (
+        <Card className={cn(result.imported > 0 ? "border-green-500/30" : "border-destructive/30")}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              {result.imported > 0 ? (
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+              ) : (
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              )}
+              {result.imported > 0 ? "Importação concluída" : "Falha na importação"}
+            </CardTitle>
+            <CardDescription>
+              {result.imported > 0
+                ? `${result.imported} transações importadas com sucesso`
+                : (result.errors[0] ?? "Erro desconhecido")}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-3">
+              <div className="flex-1 rounded-lg bg-green-50 p-3">
+                <p className="text-xs text-muted-foreground">Importadas</p>
+                <p className="text-2xl font-bold text-green-700">{result.imported}</p>
+              </div>
+              <div className="flex-1 rounded-lg bg-amber-50 p-3">
+                <p className="text-xs text-muted-foreground">Puladas</p>
+                <p className="text-2xl font-bold text-amber-700">{result.skipped}</p>
+              </div>
+              <div className="flex-1 rounded-lg bg-blue-50 p-3">
+                <p className="text-xs text-muted-foreground">Total</p>
+                <p className="text-2xl font-bold text-blue-700">{result.total}</p>
+              </div>
+            </div>
+            {result.errors.length > 0 && (
+              <ul className="mt-3 max-h-32 space-y-1 overflow-y-auto rounded border p-2 text-xs">
+                {result.errors.map((err, i) => (
+                  <li key={i} className="text-destructive">
+                    {err}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Preview Card */}
       {rows.length > 0 && (
-        <div className="space-y-3 rounded-md border p-3">
-          {/* Selects */}
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {FIELD_META.map((field, idx) => (
-              <div key={field.key} className="space-y-0.5">
-                <Label className="text-[11px] font-medium">
-                  {field.label}
-                  {field.required && <span className="text-destructive">*</span>}
-                </Label>
-                <Select
-                  value={columnMapping[field.key] ?? ""}
-                  onValueChange={(v) =>
-                    setColumnMapping((prev) => ({ ...prev, [field.key]: v || undefined }))
-                  }
+        <Card>
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Table2 className="h-5 w-5" />
+                Prévia dos dados
+              </CardTitle>
+              <CardDescription>
+                {previewRows.length} linhas · {headers.length} colunas detectadas
+              </CardDescription>
+            </div>
+            <div className="relative w-full sm:w-72">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Filtrar por descrição, categoria, data..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                className="pl-8 text-xs"
+              />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pageItems.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                        Nenhum resultado encontrado.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    pageItems.map((row) => (
+                      <TableRow key={row.id}>
+                        <TableCell className="font-mono text-xs">{row.date}</TableCell>
+                        <TableCell className="text-sm">{row.description}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{row.category ?? "—"}</Badge>
+                        </TableCell>
+                        <TableCell
+                          className={cn(
+                            "text-right font-medium",
+                            row.type === "INCOME" ? "text-emerald-600" : "text-rose-600",
+                          )}
+                        >
+                          {row.type === "INCOME" ? "+" : "−"}
+                          {currency(Number(row.amount))}
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium",
+                              row.status === "COMPLETED"
+                                ? "bg-emerald-100 text-emerald-700"
+                                : row.status === "PENDING"
+                                  ? "bg-amber-100 text-amber-700"
+                                  : "bg-rose-100 text-rose-700",
+                            )}
+                          >
+                            {row.status === "COMPLETED"
+                              ? "Concluído"
+                              : row.status === "PENDING"
+                                ? "Pendente"
+                                : "Cancelado"}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Pagination */}
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Página {currentPage} de {totalPages} — {previewRows.length} registros
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
                 >
-                  <SelectTrigger className={cn("h-7 text-[11px]", COLORS[idx % COLORS.length])}>
-                    <SelectValue placeholder={`Coluna ${field.label.toLowerCase()}`} />
+                  <ChevronLeft className="h-4 w-4" />
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Próxima
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Mapping Dialog */}
+      <Dialog open={mappingOpen} onOpenChange={setMappingOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Columns3 className="h-5 w-5" />
+              Mapear colunas do CSV
+            </DialogTitle>
+            <DialogDescription>
+              Associe cada coluna detectada no arquivo aos campos do sistema. Campos marcados como
+              obrigatórios precisam de um mapeamento válido.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            {/* Headers */}
+            <div className="grid grid-cols-12 gap-3 px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <div className="col-span-5">Campo do sistema</div>
+              <div className="col-span-7">Coluna do arquivo</div>
+            </div>
+
+            {FIELD_META.map((f) => (
+              <div
+                key={f.key}
+                className="grid grid-cols-12 items-start gap-3 rounded-md border p-3"
+              >
+                <div className="col-span-5 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Label className="font-medium">{f.label}</Label>
+                    {f.required && (
+                      <Badge variant="outline" className="h-5 px-1.5 text-[10px]">
+                        obrigatório
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{f.description}</p>
+                </div>
+                <div className="col-span-7">
+                  <Select
+                    value={columnMapping[f.key] || IGNORE}
+                    onValueChange={(v) =>
+                      setColumnMapping((prev) => ({
+                        ...prev,
+                        [f.key]: v === IGNORE ? undefined : v,
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma coluna" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={IGNORE}>— Ignorar —</SelectItem>
+                      {headers.map((h) => (
+                        <SelectItem key={h} value={h}>
+                          {h}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            ))}
+
+            {/* Config row inside dialog */}
+            <div className="grid gap-3 sm:grid-cols-3 rounded-md border p-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Formato de Data</Label>
+                <Select value={dateFormat} onValueChange={setDateFormat}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {!field.required && <SelectItem value="__none__">Não mapear</SelectItem>}
-                    {headers.map((h) => (
-                      <SelectItem key={h} value={h}>
-                        {h}
+                    {DATE_FORMATS.map((fmt) => (
+                      <SelectItem key={fmt.value} value={fmt.value}>
+                        {fmt.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-            ))}
-          </div>
-
-          {/* Config row */}
-          <div className="grid gap-2 sm:grid-cols-3">
-            <div className="space-y-0.5">
-              <Label className="text-[11px] font-medium">Formato de Data</Label>
-              <Select value={dateFormat} onValueChange={setDateFormat}>
-                <SelectTrigger className="h-7 text-[11px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {DATE_FORMATS.map((fmt) => (
-                    <SelectItem key={fmt.value} value={fmt.value}>
-                      {fmt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-0.5">
-              <Label className="text-[11px] font-medium">Conta Destino</Label>
-              <Select value={bankAccountId} onValueChange={setBankAccountId}>
-                <SelectTrigger className="h-7 text-[11px]">
-                  <SelectValue placeholder="Conta..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {accounts?.map((acc) => (
-                    <SelectItem key={acc.id} value={acc.id}>
-                      {acc.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>{" "}
-            <div className="space-y-0.5">
-              <Label className="text-[11px] font-medium">Nome da Fonte</Label>
-              <Input
-                value={sourceName}
-                onChange={(e) => setSourceName(e.target.value)}
-                className="h-7 text-[11px]"
-                placeholder="Ex: Extrato Itaú Maio/2026"
-              />
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Conta Destino</Label>
+                <Select value={bankAccountId} onValueChange={setBankAccountId}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts?.map((acc) => (
+                      <SelectItem key={acc.id} value={acc.id}>
+                        {acc.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Nome da Fonte</Label>
+                <Input
+                  value={sourceName}
+                  onChange={(e) => setSourceName(e.target.value)}
+                  className="h-8 text-xs"
+                  placeholder="Ex: Extrato Itaú"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Bottom bar */}
-          <div className="flex items-center justify-between pt-1">
-            <p className="text-[11px] text-muted-foreground">
-              {mappedCount}/{FIELD_META.length} campos · {rows.length} linhas
-            </p>
-            <Button
-              onClick={handleImport}
-              disabled={!hasRequired || !bankAccountId || !sourceName.trim() || loading}
-              size="sm"
-              className="h-7 gap-1 text-xs"
-            >
-              {loading ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Plus className="h-3 w-3" />
-              )}
-              Importar
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMappingOpen(false)}>
+              Cancelar
             </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Result */}
-      {result && (
-        <div
-          className={cn(
-            "space-y-2 rounded-md border p-3",
-            result.imported > 0 ? "border-green-500/30" : "border-destructive/30",
-          )}
-        >
-          <div className="flex items-center gap-2">
-            {result.imported > 0 ? (
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-            ) : (
-              <AlertTriangle className="h-4 w-4 text-destructive" />
-            )}
-            <span className="text-sm font-medium">
-              {result.imported > 0 ? `${result.imported} importadas` : "Falha"}
-            </span>
-          </div>
-          <div className="flex gap-2">
-            <div className="flex-1 rounded bg-green-50 p-2">
-              <p className="text-[10px] text-muted-foreground">OK</p>
-              <p className="text-lg font-bold text-green-700">{result.imported}</p>
-            </div>
-            <div className="flex-1 rounded bg-amber-50 p-2">
-              <p className="text-[10px] text-muted-foreground">Puladas</p>
-              <p className="text-lg font-bold text-amber-700">{result.skipped}</p>
-            </div>
-            <div className="flex-1 rounded bg-blue-50 p-2">
-              <p className="text-[10px] text-muted-foreground">Total</p>
-              <p className="text-lg font-bold text-blue-700">{result.total}</p>
-            </div>
-          </div>
-          {result.errors.length > 0 && (
-            <div className="rounded border border-destructive/20 bg-destructive/5 p-2">
-              <p className="text-[11px] text-destructive">{result.errors[0]}</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Preview DataTable */}
-      {previewData.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Table2 className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-sm font-medium">Preview</span>
-              <Badge variant="secondary" className="text-[10px]">
-                {previewData.length} linhas
-              </Badge>
-            </div>
-          </div>
-          <DataTable
-            columns={previewColumns}
-            data={previewData}
-            searchKey="description"
-            searchPlaceholder="Buscar transação..."
-          />
-        </div>
-      )}
+            <Button
+              disabled={!hasRequired || !bankAccountId || !sourceName.trim()}
+              onClick={() => {
+                setMappingOpen(false);
+                handleImport();
+              }}
+            >
+              Confirmar e Importar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
