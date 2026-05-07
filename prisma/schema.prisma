@@ -83,12 +83,13 @@ model Tenant {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  owner        User          @relation("TenantOwner", fields: [ownerId], references: [id])
-  memberships  Membership[]
-  sessions     Session[]
-  posts        Post[]
-  bankAccounts BankAccount[]
-  categories   Category[]
+  owner             User              @relation("TenantOwner", fields: [ownerId], references: [id])
+  memberships       Membership[]
+  sessions          Session[]
+  posts             Post[]
+  bankAccounts      BankAccount[]
+  categories        Category[]
+  pluggyConnections PluggyConnection[]
 
   @@map("tenants")
 }
@@ -172,6 +173,7 @@ enum TransactionStatus {
 model BankAccount {
   id              String          @id @default(cuid())
   name            String
+  bankName        String?         @map("bank_name")
   type            BankAccountType
   currency        String          @default("BRL")
   initialBalance  Decimal         @map("initial_balance") @db.Decimal(15, 2)
@@ -229,4 +231,21 @@ model Transaction {
   @@index([date])
   @@index([status])
   @@map("transactions")
+}
+
+model PluggyConnection {
+  id           String   @id @default(cuid())
+  itemId       String   @map("item_id")
+  connectorId  Int      @map("connector_id")
+  connectorName String  @map("connector_name")
+  status       String   @default("UPDATING")
+  tenantId     String   @map("tenant_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, tenantId])
+  @@index([tenantId])
+  @@map("pluggy_connections")
 }

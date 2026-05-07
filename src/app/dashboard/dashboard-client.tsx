@@ -54,6 +54,8 @@ interface TransactionRow {
   amount: number;
   type: TransactionType;
   category: string;
+  bankName: string;
+  accountName: string;
   status: TransactionStatus;
 }
 
@@ -66,6 +68,20 @@ const transactionColumns: ColumnDef<TransactionRow>[] = [
   {
     accessorKey: "category",
     header: "Categoria",
+  },
+  {
+    accessorKey: "bankName",
+    header: "Banco",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">{row.getValue("bankName")}</span>
+    ),
+  },
+  {
+    accessorKey: "accountName",
+    header: "Conta",
+    cell: ({ row }) => (
+      <span className="font-medium">{row.getValue("accountName")}</span>
+    ),
   },
   {
     accessorKey: "date",
@@ -137,7 +153,7 @@ export function DashboardClient() {
   // Latest transactions
   const { data: transactionsData, isLoading: txLoading } = api.transaction.list.useQuery(
     {
-      limit: 8,
+      limit: 50,
       offset: 0,
       startDate: dateRange.from,
       endDate: dateRange.to,
@@ -199,6 +215,8 @@ export function DashboardClient() {
         amount: typeof t.amount === "string" ? Number(t.amount) : t.amount,
         type: t.type,
         category: t.category?.name ?? "—",
+        bankName: t.bankAccount?.bankName ?? "—",
+        accountName: t.bankAccount?.name ?? "—",
         status: t.status,
       })) ?? []
     );
@@ -218,7 +236,7 @@ export function DashboardClient() {
           </div>
         </div>
 
-        <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {["kpi-a", "kpi-b", "kpi-c", "kpi-d"].map((key) => (
             <Card key={key} className="py-3">
               <CardHeader className="px-4 pb-1 pt-0">
@@ -232,6 +250,20 @@ export function DashboardClient() {
           ))}
         </section>
 
+        <section className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {["chart-a", "chart-b"].map((key) => (
+            <Card key={key} className="min-h-0 py-3">
+              <CardHeader className="px-4 pb-2 pt-0">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="mt-1 h-4 w-40" />
+              </CardHeader>
+              <CardContent className="px-4 pb-3 pt-0">
+                <Skeleton className="h-[200px] w-full sm:h-[240px]" />
+              </CardContent>
+            </Card>
+          ))}
+        </section>
+
         <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
           {["chart-a", "chart-b"].map((key) => (
             <Card key={key} className="min-h-0 py-3">
@@ -240,7 +272,7 @@ export function DashboardClient() {
                 <Skeleton className="mt-1 h-4 w-40" />
               </CardHeader>
               <CardContent className="px-4 pb-3 pt-0">
-                <Skeleton className="h-[260px] w-full sm:h-[300px]" />
+                <Skeleton className="h-[200px] w-full sm:h-[240px]" />
               </CardContent>
             </Card>
           ))}
@@ -253,10 +285,10 @@ export function DashboardClient() {
     <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
             Visão geral
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             Acompanhe seus principais indicadores financeiros
           </p>
         </div>
@@ -264,7 +296,7 @@ export function DashboardClient() {
         <DateRangePicker range={dateRange} onChange={setDateRange} />
       </div>
 
-      <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           title="Saldo Atual"
           value={currency(cards.saldo)}
@@ -292,14 +324,14 @@ export function DashboardClient() {
         />
       </section>
 
-      <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <section className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
         <Card className="min-h-0 py-3">
           <CardHeader className="px-4 pb-2 pt-0">
             <CardTitle>Evolução do Saldo</CardTitle>
             <CardDescription>Período selecionado</CardDescription>
           </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
-            <ChartContainer config={balanceChartConfig} className="h-[260px] w-full sm:h-[300px]">
+            <ChartContainer config={balanceChartConfig} className="h-[200px] w-full sm:h-[240px]">
               <AreaChart data={balanceSeries} margin={{ left: 4, right: 12, top: 8 }}>
                 <defs>
                   <linearGradient id="fillSaldo" x1="0" y1="0" x2="0" y2="1">
@@ -336,7 +368,7 @@ export function DashboardClient() {
             <CardDescription>Período selecionado</CardDescription>
           </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
-            <ChartContainer config={compareChartConfig} className="h-[260px] w-full sm:h-[300px]">
+            <ChartContainer config={compareChartConfig} className="h-[200px] w-full sm:h-[240px]">
               <BarChart data={compareSeries} margin={{ left: 4, right: 12, top: 8 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
@@ -362,7 +394,7 @@ export function DashboardClient() {
         </Card>
       </section>
 
-      <section className="mt-6 min-w-0">
+      <section className="mt-3 min-w-0">
         <Card className="min-h-0 min-w-0 overflow-hidden py-3">
           <CardContent className="min-w-0 px-4 pb-3 pt-0">
             <div className="mb-2 flex items-start justify-between gap-4">
@@ -550,16 +582,16 @@ function KpiCard({
   const isUp = delta >= 0;
   const isPositive = invertDelta ? !isUp : isUp;
   return (
-    <Card className="py-3">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 pb-1 pt-0">
+    <Card className="py-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 pb-0.5 pt-0">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted text-muted-foreground">
           {icon}
         </div>
       </CardHeader>
-      <CardContent className="px-4 pb-3 pt-0">
+      <CardContent className="px-4 pb-2 pt-0">
         <div className="text-2xl font-semibold tracking-tight text-foreground">{value}</div>
-        <div className="mt-1 flex items-center gap-1 text-xs">
+        <div className="mt-0.5 flex items-center gap-1 text-xs">
           <span
             className={
               isPositive

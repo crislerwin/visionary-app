@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowRightLeft, CreditCard, Edit2, Landmark, PiggyBank, Trash2 } from "lucide-react";
+import { ArrowRightLeft, CreditCard, Edit2, Landmark, Link2, PiggyBank, Trash2 } from "lucide-react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -105,6 +106,16 @@ export function BankAccountCard({ account, onEdit, onDelete }: BankAccountCardPr
           <p className="text-sm text-muted-foreground">
             {transactionCount} transaction{transactionCount !== 1 ? "s" : ""}
           </p>
+        </div>
+
+        {/* Pluggy Connect Bank */}
+        <div className="mt-4">
+          <Button variant="outline" size="sm" className="gap-2" asChild>
+            <Link href="/dashboard/settings">
+              <Link2 className="h-4 w-4" />
+              Conectar Banco
+            </Link>
+          </Button>
         </div>
       </CardContent>
     </Card>
