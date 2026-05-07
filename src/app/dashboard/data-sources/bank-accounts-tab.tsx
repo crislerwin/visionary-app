@@ -2,11 +2,10 @@
 
 import { api } from "@/lib/trpc/react";
 import { ArrowLeft, Loader2, Wallet } from "lucide-react";
-import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { cn } from "@/lib/utils";
 import type { TransactionStatus, TransactionType } from "@prisma/client";
@@ -230,43 +229,35 @@ export function BankAccountsTab() {
   }
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Wallet className="h-5 w-5" />
-            Contas Importadas
-          </CardTitle>
-          <CardDescription>Clique em uma conta para ver suas transações.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Carregando contas...
-            </div>
-          ) : error ? (
-            <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4">
-              <p className="text-sm font-medium text-destructive">Erro ao carregar contas</p>
-              <p className="mt-1 text-xs text-muted-foreground">{error.message}</p>
-            </div>
-          ) : !accounts?.length ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">
-              Nenhuma conta importada ainda.
-            </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {accounts.map((acc) => (
-                <AccountCard
-                  key={acc.id}
-                  account={acc as unknown as BankAccount}
-                  onClick={() => setSelectedAccountId(acc.id)}
-                />
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <Wallet className="h-4 w-4 text-muted-foreground" />
+        <h2 className="text-base font-semibold">Contas Importadas</h2>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Carregando contas...
+        </div>
+      ) : error ? (
+        <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4">
+          <p className="text-sm font-medium text-destructive">Erro ao carregar contas</p>
+          <p className="mt-1 text-xs text-muted-foreground">{error.message}</p>
+        </div>
+      ) : !accounts?.length ? (
+        <p className="text-sm text-muted-foreground">Nenhuma conta importada ainda.</p>
+      ) : (
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          {accounts.map((acc) => (
+            <AccountCard
+              key={acc.id}
+              account={acc as unknown as BankAccount}
+              onClick={() => setSelectedAccountId(acc.id)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
