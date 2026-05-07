@@ -90,6 +90,7 @@ model Tenant {
   bankAccounts      BankAccount[]
   categories        Category[]
   pluggyConnections PluggyConnection[]
+  dataSources       DataSource[]
 
   @@map("tenants")
 }
@@ -170,6 +171,23 @@ enum TransactionStatus {
   @@map("transaction_statuses")
 }
 
+enum DataSourceType {
+  PLUGGY
+  WEBHOOK
+  CSV
+  XLSX
+
+  @@map("data_source_types")
+}
+
+enum DataSourceStatus {
+  ACTIVE
+  ERROR
+  DISCONNECTED
+
+  @@map("data_source_statuses")
+}
+
 model BankAccount {
   id              String          @id @default(cuid())
   name            String
@@ -248,4 +266,36 @@ model PluggyConnection {
   @@unique([itemId, tenantId])
   @@index([tenantId])
   @@map("pluggy_connections")
+}
+
+model DataSource {
+  id          String             @id @default(cuid())
+  name        String
+  type        DataSourceType
+  status      DataSourceStatus   @default(ACTIVE)
+  config      Json?
+  tenantId    String             @map("tenant_id")
+  lastSyncAt  DateTime?          @map("last_sync_at")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  tenant       Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  webhookCalls WebhookCall[]
+
+  @@unique([tenantId, type, name])
+  @@index([tenantId])
+  @@map("data_sources")
+}
+
+model WebhookCall {
+  id        String   @id @default(cuid())
+  sourceId  String   @map("source_id")
+  payload   Json
+  status    Int
+  createdAt DateTime @default(now()) @map("created_at")
+
+  source DataSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId])
+  @@map("webhook_calls")
 }
