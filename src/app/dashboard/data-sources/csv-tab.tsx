@@ -12,14 +12,13 @@ import {
   Plus,
   Search,
   Table2,
-  Upload,
 } from "lucide-react";
 import Papa from "papaparse";
 import { useMemo, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -295,77 +294,64 @@ export function CsvTab() {
     <div className="space-y-4">
       {/* Upload Card */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Importar arquivo CSV
-          </CardTitle>
-          <CardDescription>
-            Envie um arquivo <code className="rounded bg-muted px-1.5 py-0.5 text-xs">.csv</code> ou{" "}
-            <code className="rounded bg-muted px-1.5 py-0.5 text-xs">.txt</code> com colunas: Data,
-            Descrição, Valor, Categoria.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Drop zone */}
-          <button
-            type="button"
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragOver(true);
-            }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragOver(false);
-              onFiles(e.dataTransfer.files);
-            }}
-            onClick={() => inputRef.current?.click()}
-            className={cn(
-              "flex w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-10 text-center transition-colors",
-              dragOver
-                ? "border-primary bg-accent/40"
-                : "border-border hover:border-primary/50 hover:bg-accent/20",
-            )}
-          >
-            <FileText className="mb-3 h-8 w-8 text-muted-foreground" />
-            <p className="text-sm font-medium text-foreground">
-              {fileName ?? "Arraste e solte o arquivo aqui"}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              ou clique para selecionar (.csv, .txt — até 20MB)
-            </p>
-            <input
-              ref={inputRef}
-              type="file"
-              accept=".csv,.txt"
-              className="hidden"
-              onChange={(e) => onFiles(e.target.files)}
-            />
-          </button>
+        <CardContent className="p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+            {/* Drop zone */}
+            <button
+              type="button"
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOver(false);
+                onFiles(e.dataTransfer.files);
+              }}
+              onClick={() => inputRef.current?.click()}
+              className={cn(
+                "flex flex-1 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-4 text-center transition-colors",
+                dragOver
+                  ? "border-primary bg-accent/40"
+                  : "border-border hover:border-primary/50 hover:bg-accent/20",
+              )}
+            >
+              <FileText className="mb-1 h-5 w-5 text-muted-foreground" />
+              <p className="text-xs font-medium text-foreground">
+                {fileName ?? "Arraste um .csv aqui ou clique para selecionar"}
+              </p>
+              <input
+                ref={inputRef}
+                type="file"
+                accept=".csv,.txt"
+                className="hidden"
+                onChange={(e) => onFiles(e.target.files)}
+              />
+            </button>
 
-          {/* Buttons */}
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-muted-foreground">
-              {fileName ? `Arquivo: ${fileName}` : "Nenhum arquivo selecionado"}
-            </p>
-            <div className="flex gap-2">
+            {/* Buttons */}
+            <div className="flex flex-col gap-2 sm:w-auto">
               <Button
                 variant="outline"
+                size="sm"
                 disabled={!rows.length}
                 onClick={() => setMappingOpen(true)}
+                className="h-8 text-xs"
               >
-                <Columns3 className="h-4 w-4" />
+                <Columns3 className="mr-1 h-3.5 w-3.5" />
                 Mapear Colunas
               </Button>
               <Button
+                size="sm"
                 disabled={!hasRequired || !bankAccountId || !sourceName.trim() || loading}
                 onClick={handleImport}
+                className="h-8 text-xs"
               >
                 {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <Plus className="h-4 w-4" />
+                  <Plus className="mr-1 h-3.5 w-3.5" />
                 )}
                 Importar {rows.length} transações
               </Button>
@@ -377,34 +363,36 @@ export function CsvTab() {
       {/* Result */}
       {result && (
         <Card className={cn(result.imported > 0 ? "border-green-500/30" : "border-destructive/30")}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-3">
               {result.imported > 0 ? (
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
               ) : (
                 <AlertTriangle className="h-5 w-5 text-destructive" />
               )}
-              {result.imported > 0 ? "Importação concluída" : "Falha na importação"}
-            </CardTitle>
-            <CardDescription>
-              {result.imported > 0
-                ? `${result.imported} transações importadas com sucesso`
-                : (result.errors[0] ?? "Erro desconhecido")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+              <div>
+                <p className="text-sm font-medium">
+                  {result.imported > 0 ? "Importação concluída" : "Falha na importação"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {result.imported > 0
+                    ? `${result.imported} transações importadas com sucesso`
+                    : (result.errors[0] ?? "Erro desconhecido")}
+                </p>
+              </div>
+            </div>
             <div className="flex gap-3">
-              <div className="flex-1 rounded-lg bg-green-50 p-3">
-                <p className="text-xs text-muted-foreground">Importadas</p>
-                <p className="text-2xl font-bold text-green-700">{result.imported}</p>
+              <div className="flex-1 rounded-lg bg-green-50 p-2">
+                <p className="text-[10px] uppercase text-muted-foreground">Importadas</p>
+                <p className="text-lg font-bold text-green-700">{result.imported}</p>
               </div>
-              <div className="flex-1 rounded-lg bg-amber-50 p-3">
-                <p className="text-xs text-muted-foreground">Puladas</p>
-                <p className="text-2xl font-bold text-amber-700">{result.skipped}</p>
+              <div className="flex-1 rounded-lg bg-amber-50 p-2">
+                <p className="text-[10px] uppercase text-muted-foreground">Puladas</p>
+                <p className="text-lg font-bold text-amber-700">{result.skipped}</p>
               </div>
-              <div className="flex-1 rounded-lg bg-blue-50 p-3">
-                <p className="text-xs text-muted-foreground">Total</p>
-                <p className="text-2xl font-bold text-blue-700">{result.total}</p>
+              <div className="flex-1 rounded-lg bg-blue-50 p-2">
+                <p className="text-[10px] uppercase text-muted-foreground">Total</p>
+                <p className="text-lg font-bold text-blue-700">{result.total}</p>
               </div>
             </div>
             {result.errors.length > 0 && (
@@ -423,30 +411,28 @@ export function CsvTab() {
       {/* Preview Card */}
       {rows.length > 0 && (
         <Card>
-          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Table2 className="h-5 w-5" />
-                Prévia dos dados
-              </CardTitle>
-              <CardDescription>
-                {previewRows.length} linhas · {headers.length} colunas detectadas
-              </CardDescription>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Table2 className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Prévia dos dados</span>
+                <Badge variant="outline" className="text-[10px]">
+                  {previewRows.length} linhas · {headers.length} colunas
+                </Badge>
+              </div>
+              <div className="relative w-full sm:w-56">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar..."
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
+                  className="h-7 pl-7 text-xs"
+                />
+              </div>
             </div>
-            <div className="relative w-full sm:w-72">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Filtrar por descrição, categoria, data..."
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
-                className="pl-8 text-xs"
-              />
-            </div>
-          </CardHeader>
-          <CardContent>
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
@@ -551,28 +537,28 @@ export function CsvTab() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 py-2">
+          <div className="space-y-2 py-2">
             {/* Headers */}
-            <div className="grid grid-cols-12 gap-3 px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              <div className="col-span-5">Campo do sistema</div>
+            <div className="grid grid-cols-12 gap-3 px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              <div className="col-span-5">Campo</div>
               <div className="col-span-7">Coluna do arquivo</div>
             </div>
 
             {FIELD_META.map((f) => (
               <div
                 key={f.key}
-                className="grid grid-cols-12 items-start gap-3 rounded-md border p-3"
+                className="grid grid-cols-12 items-start gap-3 rounded-md border p-2"
               >
-                <div className="col-span-5 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Label className="font-medium">{f.label}</Label>
+                <div className="col-span-5 space-y-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <Label className="text-xs font-medium">{f.label}</Label>
                     {f.required && (
-                      <Badge variant="outline" className="h-5 px-1.5 text-[10px]">
-                        obrigatório
+                      <Badge variant="outline" className="h-4 px-1 text-[9px]">
+                        *
                       </Badge>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">{f.description}</p>
+                  <p className="text-[10px] text-muted-foreground">{f.description}</p>
                 </div>
                 <div className="col-span-7">
                   <Select
@@ -584,8 +570,8 @@ export function CsvTab() {
                       }))
                     }
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma coluna" />
+                    <SelectTrigger className="h-7 text-xs">
+                      <SelectValue placeholder="Selecione..." />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={IGNORE}>— Ignorar —</SelectItem>
@@ -601,11 +587,11 @@ export function CsvTab() {
             ))}
 
             {/* Config row inside dialog */}
-            <div className="grid gap-3 sm:grid-cols-3 rounded-md border p-3">
-              <div className="space-y-1">
-                <Label className="text-xs font-medium">Formato de Data</Label>
+            <div className="grid gap-2 sm:grid-cols-3 rounded-md border p-2">
+              <div className="space-y-0.5">
+                <Label className="text-[10px] font-medium">Formato de Data</Label>
                 <Select value={dateFormat} onValueChange={setDateFormat}>
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger className="h-7 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -617,10 +603,10 @@ export function CsvTab() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-medium">Conta Destino</Label>
+              <div className="space-y-0.5">
+                <Label className="text-[10px] font-medium">Conta Destino</Label>
                 <Select value={bankAccountId} onValueChange={setBankAccountId}>
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger className="h-7 text-xs">
                     <SelectValue placeholder="Selecione..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -632,12 +618,12 @@ export function CsvTab() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-medium">Nome da Fonte</Label>
+              <div className="space-y-0.5">
+                <Label className="text-[10px] font-medium">Nome da Fonte</Label>
                 <Input
                   value={sourceName}
                   onChange={(e) => setSourceName(e.target.value)}
-                  className="h-8 text-xs"
+                  className="h-7 text-xs"
                   placeholder="Ex: Extrato Itaú"
                 />
               </div>
