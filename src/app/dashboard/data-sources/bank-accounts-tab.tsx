@@ -7,14 +7,10 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DataTable } from "@/components/ui/data-table";
+import { cn } from "@/lib/utils";
+import type { TransactionStatus, TransactionType } from "@prisma/client";
+import type { ColumnDef } from "@tanstack/react-table";
 
 // ── Types ──
 
@@ -22,24 +18,103 @@ interface BankAccount {
   id: string;
   name: string;
   type: string;
-  balance: number;
-  currency: string;
   bankName: string | null;
   accountNumber: string | null;
-  createdAt: Date;
+  currency: string;
+  initialBalance: string | number;
+  currentBalance: string | number;
+  createdAt: string;
+  _count: { transactions: number };
+}
+
+interface TransactionRow {
+  id: string;
+  date: string;
+  description: string;
+  categoryName: string | null;
+  amount: string | number;
+  type: TransactionType;
+  currency: string;
+  status: TransactionStatus;
 }
 
 // ── Helpers ──
 
-const fmoney = (n: number | string | null | undefined, currency = "BRL") =>
-  Number(n ?? 0).toLocaleString("pt-BR", { style: "currency", currency });
+function currency(value: string | number | null | undefined) {
+  const n = Number(value ?? 0);
+  return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
 
-const fdate = (d: Date | string) =>
+const fdate = (d: string | Date) =>
   new Date(d).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   });
+
+// ── Transaction Columns ──
+
+const transactionColumns: ColumnDef<TransactionRow>[] = [
+  {
+    accessorKey: "date",
+    header: "Data",
+    cell: ({ row }) => <span className="whitespace-nowrap">{fdate(row.getValue("date"))}</span>,
+  },
+  {
+    accessorKey: "description",
+    header: "Descrição",
+    cell: ({ row }) => <span className="font-medium">{row.getValue("description")}</span>,
+  },
+  {
+    accessorKey: "categoryName",
+    header: "Categoria",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">{row.getValue("categoryName") ?? "—"}</span>
+    ),
+  },
+  {
+    accessorKey: "amount",
+    header: "Valor",
+    cell: ({ row }) => {
+      const amount = Number(row.getValue("amount"));
+      const type = row.original.type;
+      return (
+        <span
+          className={cn(
+            "font-medium",
+            type === "INCOME"
+              ? "text-emerald-600 dark:text-emerald-400"
+              : "text-rose-600 dark:text-rose-400",
+          )}
+        >
+          {type === "INCOME" ? "+" : "−"}
+          {currency(amount)}
+        </span>
+      );
+    },
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.getValue("status") as TransactionStatus;
+      return (
+        <span
+          className={cn(
+            "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+            status === "COMPLETED"
+              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+              : status === "PENDING"
+                ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                : "bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300",
+          )}
+        >
+          {status === "COMPLETED" ? "Concluído" : status === "PENDING" ? "Pendente" : "Cancelado"}
+        </span>
+      );
+    },
+  },
+];
 
 // ── Account Card ──
 
@@ -72,16 +147,17 @@ function AccountCard({
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-2xl font-bold">{fmoney(account.balance, account.currency)}</p>
-        <p className="text-xs text-muted-foreground">
-          {account.accountNumber ?? "Sem número de conta"}
-        </p>
+        <p className="text-2xl font-bold">{currency(account.currentBalance)}</p>
+        <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+          <span>{account.accountNumber ?? "Sem número"}</span>
+          <span>{account._count.transactions} transações</span>
+        </div>
       </CardContent>
     </Card>
   );
 }
 
-// ── Transaction Table ──
+// ── Transaction Table (DataTable) ──
 
 function TransactionTable({ accountId, onBack }: { accountId: string; onBack: () => void }) {
   const { data: account } = api.bankAccount.byId.useQuery({ id: accountId });
@@ -91,7 +167,23 @@ function TransactionTable({ accountId, onBack }: { accountId: string; onBack: ()
     offset: 0,
   });
 
-  const transactions = txPage?.transactions ?? [];
+  const transactions =
+    txPage?.transactions.map(
+      (tx) =>
+        ({
+          id: tx.id,
+          date: tx.date,
+          description: tx.description,
+          categoryName: tx.category?.name ?? null,
+          amount: tx.amount,
+          type: tx.type,
+          currency: tx.currency,
+          status: tx.status,
+        }) as TransactionRow,
+    ) ?? [];
+
+  const accountName = account?.name ?? "Conta";
+  const accountBalance = account?.currentBalance ?? 0;
 
   return (
     <div className="space-y-4">
@@ -101,81 +193,32 @@ function TransactionTable({ accountId, onBack }: { accountId: string; onBack: ()
           Voltar
         </Button>
         <div>
-          <h2 className="text-lg font-semibold">{account?.name ?? "Conta"}</h2>
+          <h2 className="text-lg font-semibold">{accountName}</h2>
           <p className="text-xs text-muted-foreground">
-            {account && fmoney(account.balance, account.currency)} · {transactions.length}{" "}
-            transações
+            {currency(accountBalance)} · {transactions.length} transações
           </p>
         </div>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-xs">Data</TableHead>
-                  <TableHead className="text-xs">Descrição</TableHead>
-                  <TableHead className="text-xs">Categoria</TableHead>
-                  <TableHead className="text-right text-xs">Valor</TableHead>
-                  <TableHead className="text-xs">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                      <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
-                    </TableCell>
-                  </TableRow>
-                ) : transactions.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="h-24 text-center text-sm text-muted-foreground"
-                    >
-                      Nenhuma transação nesta conta.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  transactions.map((tx) => (
-                    <TableRow key={tx.id}>
-                      <TableCell className="whitespace-nowrap text-xs">{fdate(tx.date)}</TableCell>
-                      <TableCell className="max-w-[200px] truncate text-xs">
-                        {tx.description}
-                      </TableCell>
-                      <TableCell className="text-xs">{tx.category?.name ?? "—"}</TableCell>
-                      <TableCell
-                        className={`text-right text-xs font-medium ${
-                          tx.type === "INCOME" ? "text-green-600" : "text-red-600"
-                        }`}
-                      >
-                        {tx.type === "INCOME" ? "+" : "−"}
-                        {fmoney(tx.amount, tx.currency)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            tx.status === "COMPLETED"
-                              ? "default"
-                              : tx.status === "PENDING"
-                                ? "secondary"
-                                : "destructive"
-                          }
-                          className="text-[10px]"
-                        >
-                          {tx.status}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      {isLoading ? (
+        <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Carregando transações...
+        </div>
+      ) : transactions.length > 0 ? (
+        <DataTable
+          columns={transactionColumns}
+          data={transactions}
+          searchKey="description"
+          searchPlaceholder="Buscar transação..."
+        />
+      ) : (
+        <Card>
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
+            Nenhuma transação nesta conta.
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
@@ -222,7 +265,7 @@ export function BankAccountsTab() {
               {accounts.map((acc) => (
                 <AccountCard
                   key={acc.id}
-                  account={acc as BankAccount}
+                  account={acc as unknown as BankAccount}
                   onClick={() => setSelectedAccountId(acc.id)}
                 />
               ))}
