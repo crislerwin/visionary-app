@@ -1,12 +1,13 @@
 "use client";
 
-import { Database, FileSpreadsheet, FileText, Link2 } from "lucide-react";
+import { Database, FileSpreadsheet, FileText, Landmark, Link2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useState } from "react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+import { BankAccountsTab } from "./bank-accounts-tab";
 import { PluggyConnectionsTab } from "./pluggy-connections-tab";
 
 // Dynamic import — papaparse is browser-only
@@ -14,7 +15,7 @@ const CsvTab = dynamic(() => import("./csv-tab").then((m) => ({ default: m.CsvTa
   ssr: false,
 });
 
-type TabId = "connections" | "webhooks" | "csv" | "xlsx";
+type TabId = "accounts" | "connections" | "csv" | "webhooks" | "xlsx";
 
 interface TabMeta {
   id: TabId;
@@ -24,29 +25,35 @@ interface TabMeta {
 }
 
 const TAB_META: Record<TabId, TabMeta> = {
+  accounts: {
+    id: "accounts",
+    label: "Contas",
+    icon: Landmark,
+    description: "Visualize contas importadas e suas transações.",
+  },
   connections: {
     id: "connections",
-    label: "Conexões Bancárias",
+    label: "Conexões",
     icon: Link2,
-    description: "Conecte suas contas bancárias via Open Finance para importar automaticamente.",
-  },
-  webhooks: {
-    id: "webhooks",
-    label: "Webhooks",
-    icon: Database,
-    description: "Receba transações via HTTP POST de gateways, ERPs e outros sistemas.",
+    description: "Conecte contas bancárias via Open Finance.",
   },
   csv: {
     id: "csv",
     label: "CSV",
     icon: FileText,
-    description: "Importe transações em lote a partir de arquivos CSV (.csv).",
+    description: "Importe transações em lote a partir de CSV.",
+  },
+  webhooks: {
+    id: "webhooks",
+    label: "Webhooks",
+    icon: Database,
+    description: "Receba transações via HTTP POST.",
   },
   xlsx: {
     id: "xlsx",
     label: "XLSX",
     icon: FileSpreadsheet,
-    description: "Importe transações em lote a partir de planilhas Excel (.xlsx).",
+    description: "Importe transações via planilhas Excel.",
   },
 };
 
@@ -76,7 +83,7 @@ function PlaceholderPanel({ tabId }: { tabId: TabId }) {
 }
 
 export function DataSourcesClient() {
-  const [tab, setTab] = useState<TabId>("connections");
+  const [tab, setTab] = useState<TabId>("accounts");
 
   return (
     <div className="space-y-4">
@@ -97,17 +104,18 @@ export function DataSourcesClient() {
           ))}
         </TabsList>
 
-        {/* Pluggy Connections Tab — real implementation */}
+        <TabsContent value="accounts">
+          <BankAccountsTab />
+        </TabsContent>
+
         <TabsContent value="connections">
           <PluggyConnectionsTab />
         </TabsContent>
 
-        {/* CSV Tab — real implementation */}
         <TabsContent value="csv">
           <CsvTab />
         </TabsContent>
 
-        {/* Placeholder tabs */}
         {PLACEHOLDER_TABS.map((id) => (
           <TabsContent key={id} value={id}>
             <PlaceholderPanel tabId={id} />
