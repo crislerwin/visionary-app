@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   type ChartConfig,
@@ -10,65 +12,23 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { DataTable } from "@/components/ui/data-table";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useCurrentTenant } from "@/hooks/use-current-tenant";
+import { api } from "@/lib/trpc/react";
+import { cn, formatDate } from "@/lib/utils";
+import { TransactionStatus, TransactionType } from "@prisma/client";
+import type { ColumnDef } from "@tanstack/react-table";
+import { format, startOfMonth, subMonths } from "date-fns";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-import {
-  ArrowDownRight,
-  ArrowUpRight,
+  Calendar as CalendarIcon,
   DollarSign,
   TrendingDown,
   TrendingUp,
   Wallet,
 } from "lucide-react";
-import type { ColumnDef } from "@tanstack/react-table";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-
-interface Transaction {
-  id: string;
-  description: string;
-  date: string;
-  amount: number;
-  type: "INCOME" | "EXPENSE";
-  category: string;
-  status: "COMPLETED" | "PENDING";
-}
-
-const MONTHS = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
-];
-
-const SHORT_MONTHS = [
-  "Jan",
-  "Fev",
-  "Mar",
-  "Abr",
-  "Mai",
-  "Jun",
-  "Jul",
-  "Ago",
-  "Set",
-  "Out",
-  "Nov",
-  "Dez",
-];
 
 function currency(value: number) {
   return new Intl.NumberFormat("pt-BR", {
@@ -76,63 +36,6 @@ function currency(value: number) {
     currency: "BRL",
     maximumFractionDigits: 0,
   }).format(value);
-}
-
-function seeded(seed: number) {
-  let s = seed;
-  return () => {
-    s = (s * 9301 + 49297) % 233280;
-    return s / 233280;
-  };
-}
-
-function buildData(month: number, year: number) {
-  const rand = seeded(year * 100 + month + 1);
-
-  const balanceSeries = Array.from({ length: 12 }, (_, i) => {
-    const idx = (month + 1 + i) % 12;
-    const base = 80000 + i * 4500 + rand() * 20000;
-    return {
-      month: SHORT_MONTHS[idx],
-      saldo: Math.round(base),
-    };
-  });
-
-  const compareSeries = Array.from({ length: 12 }, (_, i) => {
-    const idx = (month + 1 + i) % 12;
-    const receitas = Math.round(40000 + rand() * 35000);
-    const despesas = Math.round(25000 + rand() * 28000);
-    return {
-      month: SHORT_MONTHS[idx],
-      receitas,
-      despesas,
-    };
-  });
-
-  const last = compareSeries[compareSeries.length - 1];
-  const prev = compareSeries[compareSeries.length - 2];
-
-  const saldo = balanceSeries[balanceSeries.length - 1].saldo;
-  const saldoPrev = balanceSeries[balanceSeries.length - 2].saldo;
-  const lucro = last.receitas - last.despesas;
-  const lucroPrev = prev.receitas - prev.despesas;
-
-  const pct = (a: number, b: number) => (b === 0 ? 0 : ((a - b) / Math.abs(b)) * 100);
-
-  return {
-    balanceSeries,
-    compareSeries,
-    cards: {
-      saldo,
-      saldoDelta: pct(saldo, saldoPrev),
-      receitas: last.receitas,
-      receitasDelta: pct(last.receitas, prev.receitas),
-      despesas: last.despesas,
-      despesasDelta: pct(last.despesas, prev.despesas),
-      lucro,
-      lucroDelta: pct(lucro, lucroPrev),
-    },
-  };
 }
 
 const balanceChartConfig = {
@@ -144,24 +47,21 @@ const compareChartConfig = {
   despesas: { label: "Despesas", color: "var(--chart-5)" },
 } satisfies ChartConfig;
 
-const MOCK_TRANSACTIONS: Transaction[] = [
-  { id: "1", description: "Salário mensal", date: "06/05/2026", amount: 8500.0, type: "INCOME", category: "Salário", status: "COMPLETED" },
-  { id: "2", description: "Aluguel apartamento", date: "05/05/2026", amount: 2200.0, type: "EXPENSE", category: "Moradia", status: "COMPLETED" },
-  { id: "3", description: "Supermercado Extra", date: "04/05/2026", amount: 680.5, type: "EXPENSE", category: "Alimentação", status: "COMPLETED" },
-  { id: "4", description: "Freelance projeto web", date: "03/05/2026", amount: 3200.0, type: "INCOME", category: "Freelance", status: "PENDING" },
-  { id: "5", description: "Uber / 99", date: "02/05/2026", amount: 145.8, type: "EXPENSE", category: "Transporte", status: "COMPLETED" },
-  { id: "6", description: "Netflix + Spotify", date: "01/05/2026", amount: 59.9, type: "EXPENSE", category: "Lazer", status: "COMPLETED" },
-  { id: "7", description: "Dividendos FIIs", date: "30/04/2026", amount: 420.0, type: "INCOME", category: "Investimentos", status: "COMPLETED" },
-  { id: "8", description: "Farmácia", date: "29/04/2026", amount: 210.35, type: "EXPENSE", category: "Saúde", status: "COMPLETED" },
-];
+interface TransactionRow {
+  id: string;
+  description: string;
+  date: string;
+  amount: number;
+  type: TransactionType;
+  category: string;
+  status: TransactionStatus;
+}
 
-const transactionColumns: ColumnDef<Transaction>[] = [
+const transactionColumns: ColumnDef<TransactionRow>[] = [
   {
     accessorKey: "description",
     header: "Descrição",
-    cell: ({ row }) => (
-      <span className="font-medium">{row.getValue("description")}</span>
-    ),
+    cell: ({ row }) => <span className="font-medium">{row.getValue("description")}</span>,
   },
   {
     accessorKey: "category",
@@ -181,10 +81,12 @@ const transactionColumns: ColumnDef<Transaction>[] = [
         <span
           className={cn(
             "font-medium",
-            type === "INCOME" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400",
+            type === TransactionType.INCOME
+              ? "text-emerald-600 dark:text-emerald-400"
+              : "text-rose-600 dark:text-rose-400",
           )}
         >
-          {type === "INCOME" ? "+" : "-"}
+          {type === TransactionType.INCOME ? "+" : "-"}
           {currency(amount)}
         </span>
       );
@@ -194,32 +96,158 @@ const transactionColumns: ColumnDef<Transaction>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue("status") as string;
+      const status = row.getValue("status") as TransactionStatus;
       return (
         <span
           className={cn(
             "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-            status === "COMPLETED"
+            status === TransactionStatus.COMPLETED
               ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
               : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
           )}
         >
-          {status === "COMPLETED" ? "Concluído" : "Pendente"}
+          {status === TransactionStatus.COMPLETED ? "Concluído" : "Pendente"}
         </span>
       );
     },
   },
 ];
 
+function pct(a: number, b: number) {
+  return b === 0 ? 0 : ((a - b) / Math.abs(b)) * 100;
+}
+
 export function DashboardClient() {
+  const { currentTenant, isLoading: tenantLoading } = useCurrentTenant();
+  const tenantReady = !tenantLoading && !!currentTenant;
+
   const now = new Date();
-  const [month, setMonth] = useState(now.getMonth());
-  const [year, setYear] = useState(now.getFullYear());
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
+    from: startOfMonth(subMonths(now, 11)),
+    to: now,
+  });
 
-  const data = useMemo(() => buildData(month, year), [month, year]);
-  const { cards } = data;
+  const { data: monthlyStats, isLoading: statsLoading } = api.transaction.getMonthlyStats.useQuery(
+    { startDate: dateRange.from, endDate: dateRange.to },
+    { enabled: tenantReady },
+  );
+  const { data: totalBalanceData, isLoading: balanceLoading } =
+    api.bankAccount.getTotalBalance.useQuery(undefined, { enabled: tenantReady });
 
-  const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i);
+  // Latest transactions
+  const { data: transactionsData, isLoading: txLoading } = api.transaction.list.useQuery(
+    {
+      limit: 8,
+      offset: 0,
+      startDate: dateRange.from,
+      endDate: dateRange.to,
+    },
+    { enabled: tenantReady },
+  );
+
+  const isLoading = statsLoading || balanceLoading || txLoading || tenantLoading;
+
+  // Chart data
+  const balanceSeries = monthlyStats?.balanceSeries ?? [];
+  const compareSeries = monthlyStats?.compareSeries ?? [];
+
+  // KPI values — totals for the selected period
+  const saldo = totalBalanceData?.totalBalance ?? 0;
+
+  const cards = useMemo(() => {
+    const totalReceitas = compareSeries.reduce((sum, m) => sum + (m.receitas ?? 0), 0);
+    const totalDespesas = compareSeries.reduce((sum, m) => sum + (m.despesas ?? 0), 0);
+    const totalLucro = totalReceitas - totalDespesas;
+
+    // Delta: compare first half vs second half of the period
+    const mid = Math.floor(compareSeries.length / 2);
+    const firstHalfReceitas = compareSeries
+      .slice(0, mid)
+      .reduce((sum, m) => sum + (m.receitas ?? 0), 0);
+    const secondHalfReceitas = compareSeries
+      .slice(mid)
+      .reduce((sum, m) => sum + (m.receitas ?? 0), 0);
+    const firstHalfDespesas = compareSeries
+      .slice(0, mid)
+      .reduce((sum, m) => sum + (m.despesas ?? 0), 0);
+    const secondHalfDespesas = compareSeries
+      .slice(mid)
+      .reduce((sum, m) => sum + (m.despesas ?? 0), 0);
+
+    const firstHalfSaldo = balanceSeries[0]?.saldo ?? 0;
+    const lastHalfSaldo = balanceSeries[balanceSeries.length - 1]?.saldo ?? 0;
+
+    return {
+      saldo,
+      saldoDelta: pct(lastHalfSaldo, firstHalfSaldo),
+      receitas: totalReceitas,
+      receitasDelta: pct(secondHalfReceitas, firstHalfReceitas),
+      despesas: totalDespesas,
+      despesasDelta: pct(secondHalfDespesas, firstHalfDespesas),
+      lucro: totalLucro,
+      lucroDelta: pct(totalLucro, firstHalfReceitas - firstHalfDespesas),
+    };
+  }, [balanceSeries, compareSeries, saldo]);
+
+  // Format transactions for table
+  const transactions: TransactionRow[] = useMemo(() => {
+    return (
+      transactionsData?.transactions.map((t) => ({
+        id: t.id,
+        description: t.description ?? "—",
+        date: formatDate(new Date(t.date)),
+        amount: typeof t.amount === "string" ? Number(t.amount) : t.amount,
+        type: t.type,
+        category: t.category?.name ?? "—",
+        status: t.status,
+      })) ?? []
+    );
+  }, [transactionsData]);
+
+  if (isLoading) {
+    return (
+      <>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="mt-2 h-4 w-72" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-9 w-40" />
+            <Skeleton className="h-9 w-28" />
+          </div>
+        </div>
+
+        <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {["kpi-a", "kpi-b", "kpi-c", "kpi-d"].map((key) => (
+            <Card key={key} className="py-3">
+              <CardHeader className="px-4 pb-1 pt-0">
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent className="px-4 pb-3 pt-0">
+                <Skeleton className="h-8 w-32" />
+                <Skeleton className="mt-2 h-3 w-24" />
+              </CardContent>
+            </Card>
+          ))}
+        </section>
+
+        <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {["chart-a", "chart-b"].map((key) => (
+            <Card key={key} className="min-h-0 py-3">
+              <CardHeader className="px-4 pb-2 pt-0">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="mt-1 h-4 w-40" />
+              </CardHeader>
+              <CardContent className="px-4 pb-3 pt-0">
+                <Skeleton className="h-[260px] w-full sm:h-[300px]" />
+              </CardContent>
+            </Card>
+          ))}
+        </section>
+      </>
+    );
+  }
 
   return (
     <>
@@ -233,33 +261,7 @@ export function DashboardClient() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
-            <SelectTrigger className="w-[160px] bg-background">
-              <SelectValue placeholder="Mês" />
-            </SelectTrigger>
-            <SelectContent>
-              {MONTHS.map((m, i) => (
-                <SelectItem key={m} value={String(i)}>
-                  {m}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
-            <SelectTrigger className="w-[110px] bg-background">
-              <SelectValue placeholder="Ano" />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map((y) => (
-                <SelectItem key={y} value={String(y)}>
-                  {y}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <DateRangePicker range={dateRange} onChange={setDateRange} />
       </div>
 
       <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -270,20 +272,20 @@ export function DashboardClient() {
           icon={<Wallet className="h-4 w-4" />}
         />
         <KpiCard
-          title="Receitas do Mês"
+          title="Receitas do Período"
           value={currency(cards.receitas)}
           delta={cards.receitasDelta}
           icon={<TrendingUp className="h-4 w-4" />}
         />
         <KpiCard
-          title="Despesas do Mês"
+          title="Despesas do Período"
           value={currency(cards.despesas)}
           delta={cards.despesasDelta}
           invertDelta
           icon={<TrendingDown className="h-4 w-4" />}
         />
         <KpiCard
-          title={cards.lucro >= 0 ? "Lucro do Mês" : "Prejuízo do Mês"}
+          title={cards.lucro >= 0 ? "Lucro do Período" : "Prejuízo do Período"}
           value={currency(cards.lucro)}
           delta={cards.lucroDelta}
           icon={<DollarSign className="h-4 w-4" />}
@@ -294,11 +296,11 @@ export function DashboardClient() {
         <Card className="min-h-0 py-3">
           <CardHeader className="px-4 pb-2 pt-0">
             <CardTitle>Evolução do Saldo</CardTitle>
-            <CardDescription>Últimos 12 meses</CardDescription>
+            <CardDescription>Período selecionado</CardDescription>
           </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
             <ChartContainer config={balanceChartConfig} className="h-[260px] w-full sm:h-[300px]">
-              <AreaChart data={data.balanceSeries} margin={{ left: 4, right: 12, top: 8 }}>
+              <AreaChart data={balanceSeries} margin={{ left: 4, right: 12, top: 8 }}>
                 <defs>
                   <linearGradient id="fillSaldo" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="var(--color-saldo)" stopOpacity={0.4} />
@@ -331,11 +333,11 @@ export function DashboardClient() {
         <Card className="min-h-0 py-3">
           <CardHeader className="px-4 pb-2 pt-0">
             <CardTitle>Receitas vs Despesas</CardTitle>
-            <CardDescription>Comparativo mensal</CardDescription>
+            <CardDescription>Período selecionado</CardDescription>
           </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
             <ChartContainer config={compareChartConfig} className="h-[260px] w-full sm:h-[300px]">
-              <BarChart data={data.compareSeries} margin={{ left: 4, right: 12, top: 8 }}>
+              <BarChart data={compareSeries} margin={{ left: 4, right: 12, top: 8 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
                 <YAxis
@@ -372,59 +374,163 @@ export function DashboardClient() {
 
             {/* Desktop: tabela */}
             <div className="hidden md:block">
-              <DataTable
-                columns={transactionColumns}
-                data={MOCK_TRANSACTIONS}
-                searchKey="description"
-                searchPlaceholder="Buscar transação..."
-              />
+              {transactions.length > 0 ? (
+                <DataTable
+                  columns={transactionColumns}
+                  data={transactions}
+                  searchKey="description"
+                  searchPlaceholder="Buscar transação..."
+                />
+              ) : (
+                <div className="rounded-md border py-8 text-center text-sm text-muted-foreground">
+                  Nenhuma transação encontrada.
+                </div>
+              )}
             </div>
 
             {/* Mobile: lista de cards */}
             <div className="space-y-2 md:hidden">
-              {MOCK_TRANSACTIONS.map((t) => (
-                <div
-                  key={t.id}
-                  className="flex items-center justify-between rounded-lg border bg-card px-3 py-2.5"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-medium">{t.description}</span>
-                      <span
-                        className={cn(
-                          "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none",
-                          t.status === "COMPLETED"
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
-                            : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
-                        )}
-                      >
-                        {t.status === "COMPLETED" ? "OK" : "PEN"}
-                      </span>
-                    </div>
-                    <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <span>{t.date}</span>
-                      <span className="text-border">·</span>
-                      <span className="truncate">{t.category}</span>
-                    </div>
-                  </div>
-                  <span
-                    className={cn(
-                      "ml-3 shrink-0 text-sm font-semibold tabular-nums",
-                      t.type === "INCOME"
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-rose-600 dark:text-rose-400",
-                    )}
+              {transactions.length > 0 ? (
+                transactions.map((t) => (
+                  <div
+                    key={t.id}
+                    className="flex items-center justify-between rounded-lg border bg-card px-3 py-2.5"
                   >
-                    {t.type === "INCOME" ? "+" : "-"}
-                    {currency(t.amount)}
-                  </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-sm font-medium">{t.description}</span>
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none",
+                            t.status === TransactionStatus.COMPLETED
+                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+                              : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
+                          )}
+                        >
+                          {t.status === TransactionStatus.COMPLETED ? "OK" : "PEN"}
+                        </span>
+                      </div>
+                      <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span>{t.date}</span>
+                        <span className="text-border">·</span>
+                        <span className="truncate">{t.category}</span>
+                      </div>
+                    </div>
+                    <span
+                      className={cn(
+                        "ml-3 shrink-0 text-sm font-semibold tabular-nums",
+                        t.type === TransactionType.INCOME
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-rose-600 dark:text-rose-400",
+                      )}
+                    >
+                      {t.type === TransactionType.INCOME ? "+" : "-"}
+                      {currency(t.amount)}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-md border py-8 text-center text-sm text-muted-foreground">
+                  Nenhuma transação encontrada.
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
       </section>
     </>
+  );
+}
+
+function DateRangePicker({
+  range,
+  onChange,
+}: {
+  range: { from: Date; to: Date };
+  onChange: (range: { from: Date; to: Date }) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<{ from?: Date; to?: Date }>(range);
+  const [months, setMonths] = useState(1);
+
+  useEffect(() => {
+    const handleResize = () => setMonths(window.innerWidth >= 640 ? 2 : 1);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const handleApply = () => {
+    if (draft.from && draft.to) {
+      onChange({ from: draft.from, to: draft.to });
+      setOpen(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setDraft(range);
+    setOpen(false);
+  };
+
+  return (
+    <div className="flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto sm:justify-start">
+      <Popover
+        open={open}
+        onOpenChange={(isOpen) => {
+          if (isOpen) setDraft(range);
+          setOpen(isOpen);
+        }}
+      >
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn("justify-start text-left font-normal", !range && "text-muted-foreground")}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {range?.from ? (
+              range.to ? (
+                <>
+                  {format(range.from, "dd/MM/yyyy")} - {format(range.to, "dd/MM/yyyy")}
+                </>
+              ) : (
+                format(range.from, "dd/MM/yyyy")
+              )
+            ) : (
+              <span>Selecione um período</span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="center">
+          <div className="p-3">
+            <Calendar
+              key={`${range.from.toISOString()}-${range.to.toISOString()}`}
+              initialFocus
+              mode="range"
+              defaultMonth={draft?.from ?? range.from}
+              selected={{
+                from: draft?.from,
+                to: draft?.to,
+              }}
+              onSelect={(selected) => {
+                setDraft({
+                  from: selected?.from,
+                  to: selected?.to,
+                });
+              }}
+              numberOfMonths={months}
+            />
+            <div className="mt-3 flex items-center justify-end gap-2 border-t pt-3">
+              <Button variant="ghost" size="sm" onClick={handleCancel}>
+                Cancelar
+              </Button>
+              <Button size="sm" onClick={handleApply} disabled={!draft.from || !draft.to}>
+                Aplicar
+              </Button>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
 
@@ -461,10 +567,10 @@ function KpiCard({
                 : "inline-flex items-center gap-0.5 font-medium text-rose-600 dark:text-rose-400"
             }
           >
-            {isUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+            {isUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
             {Math.abs(delta).toFixed(1)}%
           </span>
-          <span className="text-muted-foreground">vs mês anterior</span>
+          <span className="text-muted-foreground">vs metade anterior</span>
         </div>
       </CardContent>
     </Card>

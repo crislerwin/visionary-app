@@ -2,6 +2,15 @@ import { prisma } from "@/lib/db";
 import { router, tenantProcedure } from "@/lib/trpc/trpc";
 import { TransactionStatus, TransactionType } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
+import {
+  eachMonthOfInterval,
+  endOfDay,
+  format,
+  parseISO,
+  startOfDay,
+  startOfMonth,
+} from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { z } from "zod";
 
 const createTransactionSchema = z.object({
@@ -378,6 +387,100 @@ export const transactionRouter = router({
         totalExpense,
         balance: totalIncome - totalExpense,
         byCategory,
+      };
+    }),
+
+  getMonthlyStats: tenantProcedure
+    .input(
+      z.object({
+        startDate: z.coerce.date(),
+        endDate: z.coerce.date(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const startDate = startOfDay(input.startDate);
+      const endDate = endOfDay(input.endDate);
+
+      const transactions = await prisma.transaction.findMany({
+        where: {
+          bankAccount: { tenantId: ctx.tenantId },
+          status: TransactionStatus.COMPLETED,
+          date: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        select: {
+          amount: true,
+          type: true,
+          date: true,
+        },
+        orderBy: { date: "asc" },
+      });
+
+      // Initialize all months in the range with zero
+      const monthsInRange = eachMonthOfInterval({
+        start: startOfMonth(startDate),
+        end: startOfMonth(endDate),
+      });
+
+      const monthlyData = new Map<string, { income: number; expense: number; label: string }>();
+
+      for (const month of monthsInRange) {
+        const key = format(month, "yyyy-MM");
+        const label = format(month, "MMM", { locale: ptBR });
+        monthlyData.set(key, { income: 0, expense: 0, label });
+      }
+
+      // Aggregate transactions
+      for (const t of transactions) {
+        const d = parseISO(t.date.toISOString());
+        const key = format(d, "yyyy-MM");
+        const existing = monthlyData.get(key);
+        if (existing) {
+          if (t.type === TransactionType.INCOME) {
+            existing.income += Number(t.amount);
+          } else {
+            existing.expense += Number(t.amount);
+          }
+        }
+      }
+
+      // Build series arrays
+      const sortedKeys = Array.from(monthlyData.keys()).sort();
+      const compareSeries = sortedKeys.map((key) => {
+        const data = monthlyData.get(key)!;
+        return {
+          month: data.label.charAt(0).toUpperCase() + data.label.slice(1),
+          receitas: Math.round(data.income),
+          despesas: Math.round(data.expense),
+        };
+      });
+
+      // Calculate running balance
+      const totalBalance = await prisma.bankAccount.aggregate({
+        where: { tenantId: ctx.tenantId },
+        _sum: { currentBalance: true },
+      });
+      const currentBalance = Number(totalBalance._sum.currentBalance ?? 0);
+
+      // Work backwards from current balance
+      const balanceSeries = [] as { month: string; saldo: number }[];
+      let runningBalance = currentBalance;
+
+      for (let i = sortedKeys.length - 1; i >= 0; i--) {
+        const key = sortedKeys[i];
+        const data = monthlyData.get(key)!;
+        balanceSeries.unshift({
+          month: data.label.charAt(0).toUpperCase() + data.label.slice(1),
+          saldo: Math.round(runningBalance),
+        });
+        runningBalance -= data.income - data.expense;
+      }
+
+      return {
+        balanceSeries,
+        compareSeries,
       };
     }),
 });
