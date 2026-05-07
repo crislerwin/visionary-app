@@ -4,12 +4,9 @@ import { api } from "@/lib/trpc/react";
 import {
   AlertTriangle,
   Building2,
-  ChevronLeft,
-  ChevronRight,
   Loader2,
   MoreVertical,
   Pencil,
-  Search,
   Trash2,
   Wallet,
 } from "lucide-react";
@@ -18,6 +15,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataTable } from "@/components/ui/data-table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,16 +23,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import type { ColumnDef } from "@tanstack/react-table";
 
 // ── Helpers ──
 
@@ -65,9 +55,6 @@ interface Txn {
 export function BankAccountsTab() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const pageSize = 8;
 
   const { data: rawAccounts, isLoading: accountsLoading } = api.bankAccount.list.useQuery();
   const accounts: Account[] =
@@ -87,19 +74,8 @@ export function BankAccountsTab() {
 
   const active = accounts.find((a) => a.id === activeId) ?? null;
 
-  const {
-    data: txPage,
-    isLoading: txLoading,
-    error: txError,
-  } = api.transaction.list.useQuery(
-    activeId
-      ? {
-          bankAccountId: activeId,
-          page,
-          pageSize,
-          search: search.trim() || undefined,
-        }
-      : undefined,
+  const { data: txPage, error: txError } = api.transaction.list.useQuery(
+    activeId ? { bankAccountId: activeId, page: 1, pageSize: 1000 } : undefined,
     { enabled: !!activeId },
   );
 
@@ -113,8 +89,54 @@ export function BankAccountsTab() {
       type: t.type,
     })) ?? [];
 
-  const totalPages = txPage?.total ? Math.ceil(txPage.total / pageSize) : 1;
-  const totalCount = txPage?.total ?? 0;
+  // ── Transaction columns for DataTable ──
+
+  const transactionColumns: ColumnDef<Txn>[] = [
+    {
+      accessorKey: "date",
+      header: "Data",
+      cell: ({ row }) => (
+        <span className="whitespace-nowrap font-mono text-xs">
+          {new Date(row.getValue("date") as string).toLocaleDateString("pt-BR")}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "description",
+      header: "Descrição",
+      cell: ({ row }) => (
+        <span className="text-sm font-medium">{row.getValue("description") as string}</span>
+      ),
+    },
+    {
+      accessorKey: "category",
+      header: "Categoria",
+      cell: ({ row }) => (
+        <Badge variant="secondary">{(row.getValue("category") as string) ?? "—"}</Badge>
+      ),
+    },
+    {
+      accessorKey: "amount",
+      header: "Valor",
+      cell: ({ row }) => {
+        const amount = Number(row.getValue("amount"));
+        const type = (row.original as Txn).type;
+        return (
+          <span
+            className={cn(
+              "font-medium",
+              type === "INCOME"
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-rose-600 dark:text-rose-400",
+            )}
+          >
+            {type === "INCOME" ? "+" : "−"}
+            {currency(Math.abs(amount))}
+          </span>
+        );
+      },
+    },
+  ];
 
   const deleteAccount = api.bankAccount.delete.useMutation({
     onSuccess: () => {
@@ -152,8 +174,6 @@ export function BankAccountsTab() {
                 key={acc.id}
                 onClick={() => {
                   setActiveId(acc.id);
-                  setPage(1);
-                  setSearch("");
                 }}
                 className={cn(
                   "group flex min-w-[180px] max-w-[240px] cursor-pointer items-center gap-2 rounded-t-lg border border-b-0 px-3 py-2 text-sm transition-colors",
@@ -261,20 +281,6 @@ export function BankAccountsTab() {
           </CardHeader>
 
           <CardContent className="space-y-3">
-            {/* Search */}
-            <div className="relative w-full sm:w-72">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Filtrar transações..."
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
-                className="pl-8 text-xs"
-              />
-            </div>
-
             {/* Error */}
             {txError && (
               <div className="rounded border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
@@ -282,82 +288,13 @@ export function BankAccountsTab() {
               </div>
             )}
 
-            {/* Table */}
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead className="text-right">Valor</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {txLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center">
-                        <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
-                      </TableCell>
-                    </TableRow>
-                  ) : transactions.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                        Nenhuma transação para esta conta.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    transactions.map((t) => (
-                      <TableRow key={t.id}>
-                        <TableCell className="font-mono text-xs">
-                          {new Date(t.date).toLocaleDateString("pt-BR")}
-                        </TableCell>
-                        <TableCell className="text-sm">{t.description}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{t.category ?? "—"}</Badge>
-                        </TableCell>
-                        <TableCell
-                          className={cn(
-                            "text-right font-medium",
-                            t.type === "INCOME" ? "text-emerald-600" : "text-rose-600",
-                          )}
-                        >
-                          {t.type === "INCOME" ? "+" : "−"}
-                          {currency(Math.abs(t.amount))}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Pagination */}
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">
-                Página {page} de {totalPages} — {totalCount} registros
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page >= totalPages}
-                >
-                  Próxima
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            {/* DataTable */}
+            <DataTable
+              columns={transactionColumns}
+              data={transactions}
+              searchKey="description"
+              searchPlaceholder="Filtrar transações..."
+            />
           </CardContent>
         </>
       ) : (
