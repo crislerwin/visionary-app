@@ -31,8 +31,8 @@ interface BankAccount {
 
 // ── Helpers ──
 
-const fmoney = (n: number, currency = "BRL") =>
-  n.toLocaleString("pt-BR", { style: "currency", currency });
+const fmoney = (n: number | null | undefined, currency = "BRL") =>
+  (n ?? 0).toLocaleString("pt-BR", { style: "currency", currency });
 
 const fdate = (d: Date | string) =>
   new Date(d).toLocaleDateString("pt-BR", {
