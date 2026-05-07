@@ -285,10 +285,10 @@ export function DashboardClient() {
     <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
             Visão geral
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             Acompanhe seus principais indicadores financeiros
           </p>
         </div>
