@@ -4,8 +4,6 @@ import { api } from "@/lib/trpc/react";
 import {
   AlertTriangle,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Columns3,
   FileText,
   Loader2,
@@ -134,8 +132,6 @@ export function CsvTab() {
 
   // Preview state
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const pageSize = 8;
 
   const csvImport = api.dataSource.csvImport.useMutation({
     onSuccess: (data) => {
@@ -249,6 +245,7 @@ export function CsvTab() {
     status: TransactionStatus;
   }
 
+  // Removido page/pageSize — exibe TODAS as linhas
   const previewRows = useMemo(() => {
     const q = search.toLowerCase().trim();
     const filtered = q
@@ -283,10 +280,6 @@ export function CsvTab() {
       } as PreviewRow;
     });
   }, [rows, columnMapping, search]);
-
-  const totalPages = Math.max(1, Math.ceil(previewRows.length / pageSize));
-  const currentPage = Math.min(page, totalPages);
-  const pageItems = previewRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // ── Render ──
 
@@ -427,7 +420,6 @@ export function CsvTab() {
                   value={search}
                   onChange={(e) => {
                     setSearch(e.target.value);
-                    setPage(1);
                   }}
                   className="h-7 pl-7 text-xs"
                 />
@@ -445,14 +437,14 @@ export function CsvTab() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pageItems.length === 0 ? (
+                  {previewRows.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                         Nenhum resultado encontrado.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    pageItems.map((row) => (
+                    previewRows.map((row) => (
                       <TableRow key={row.id}>
                         <TableCell className="font-mono text-xs">{row.date}</TableCell>
                         <TableCell className="text-sm">{row.description}</TableCell>
@@ -491,33 +483,6 @@ export function CsvTab() {
                   )}
                 </TableBody>
               </Table>
-            </div>
-
-            {/* Pagination */}
-            <div className="mt-4 flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">
-                Página {currentPage} de {totalPages} — {previewRows.length} registros
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  Próxima
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
             </div>
           </CardContent>
         </Card>
