@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { protectedProcedure, router, tenantProcedure } from "@/lib/trpc/trpc";
 import { PluggyClient } from "pluggy-sdk";
+import { BankAccountType, CategoryType, TransactionStatus, TransactionType } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -18,6 +19,50 @@ function getPluggyClient() {
   return new PluggyClient({ clientId, clientSecret });
 }
 
+function mapPluggyAccountSubtype(subtype: string | null | undefined): BankAccountType {
+  switch (subtype) {
+    case "SAVINGS_ACCOUNT":
+      return BankAccountType.SAVINGS;
+    case "CHECKING_ACCOUNT":
+      return BankAccountType.CHECKING;
+    case "CREDIT_CARD":
+      return BankAccountType.CREDIT;
+    default:
+      return BankAccountType.CHECKING;
+  }
+}
+
+function mapPluggyTransactionType(txType: string): TransactionType {
+  return txType === "CREDIT" ? TransactionType.INCOME : TransactionType.EXPENSE;
+}
+
+async function getOrCreateCategory(
+  tenantId: string,
+  categoryName: string | null | undefined,
+  defaultType: CategoryType,
+): Promise<string | undefined> {
+  if (!categoryName) return undefined;
+
+  const normalized = categoryName.trim();
+  if (!normalized) return undefined;
+
+  const existing = await prisma.category.findFirst({
+    where: { tenantId, name: { equals: normalized, mode: "insensitive" } },
+  });
+
+  if (existing) return existing.id;
+
+  const created = await prisma.category.create({
+    data: {
+      name: normalized,
+      type: defaultType,
+      tenantId,
+    },
+  });
+
+  return created.id;
+}
+
 export const pluggyRouter = router({
   createConnectToken: protectedProcedure.query(async () => {
     const client = getPluggyClient();
@@ -31,7 +76,6 @@ export const pluggyRouter = router({
       orderBy: { createdAt: "desc" },
     });
 
-    // Enrich with live status from Pluggy if credentials are configured
     if (process.env.PLUGGY_CLIENT_ID && process.env.PLUGGY_CLIENT_SECRET) {
       const client = getPluggyClient();
       const enriched = await Promise.all(
@@ -99,13 +143,12 @@ export const pluggyRouter = router({
         });
       }
 
-      // Delete from Pluggy if credentials are configured
       if (process.env.PLUGGY_CLIENT_ID && process.env.PLUGGY_CLIENT_SECRET) {
         try {
           const client = getPluggyClient();
           await client.deleteItem(connection.itemId);
         } catch {
-          // Ignore errors deleting from Pluggy
+          // Ignore
         }
       }
 
@@ -147,23 +190,25 @@ export const pluggyRouter = router({
         });
       }
 
-      // Fetch accounts
       const accountsResponse = await client.fetchAccounts(connection.itemId);
 
-      // For each account, create/update a bank account and fetch transactions
       for (const account of accountsResponse.results) {
+        const accountType = mapPluggyAccountSubtype(account.subtype);
+
         const bankAccount = await prisma.bankAccount.upsert({
-          where: {
-            id: account.id,
-          },
+          where: { id: account.id },
           update: {
             name: account.name,
+            bankName: connection.connectorName,
             currentBalance: account.balance ?? 0,
+            type: accountType,
+            currency: account.currencyCode ?? "BRL",
           },
           create: {
             id: account.id,
             name: account.name,
-            type: "CHECKING",
+            bankName: connection.connectorName,
+            type: accountType,
             currency: account.currencyCode ?? "BRL",
             initialBalance: account.balance ?? 0,
             currentBalance: account.balance ?? 0,
@@ -171,26 +216,35 @@ export const pluggyRouter = router({
           },
         });
 
-        // Fetch transactions
-        const transactionsResponse = await client.fetchTransactionsCursor(account.id);
-        for (const tx of transactionsResponse.results) {
+        // Fetch ALL transactions using full pagination
+        const allTransactions = await client.fetchAllTransactions(account.id);
+
+        for (const tx of allTransactions) {
+          const txType = mapPluggyTransactionType(tx.type);
+          const categoryId = await getOrCreateCategory(
+            ctx.tenantId,
+            tx.category,
+            txType === TransactionType.INCOME ? CategoryType.INCOME : CategoryType.EXPENSE,
+          );
+
           await prisma.transaction.upsert({
-            where: {
-              id: tx.id,
-            },
+            where: { id: tx.id },
             update: {
-              amount: tx.amount ?? 0,
-              description: tx.description ?? undefined,
+              amount: Math.abs(tx.amount ?? 0),
+              description: tx.description ?? tx.descriptionRaw ?? undefined,
               date: tx.date ? new Date(tx.date) : new Date(),
+              type: txType,
+              categoryId: categoryId ?? undefined,
             },
             create: {
               id: tx.id,
-              amount: tx.amount ?? 0,
-              type: (tx.amount ?? 0) >= 0 ? "INCOME" : "EXPENSE",
-              description: tx.description ?? "Transaction",
+              amount: Math.abs(tx.amount ?? 0),
+              type: txType,
+              description: tx.description ?? tx.descriptionRaw ?? "Transaction",
               date: tx.date ? new Date(tx.date) : new Date(),
               bankAccountId: bankAccount.id,
-              status: "COMPLETED",
+              status: TransactionStatus.COMPLETED,
+              categoryId: categoryId ?? undefined,
             },
           });
         }

@@ -1,7 +1,7 @@
 "use client";
 
-import type * as React from "react";
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Banknote, Link2, Loader2, RefreshCw, Trash2, Unlink } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -12,17 +12,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { api } from "@/lib/trpc/react";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const PluggyConnect = require("react-pluggy-connect").PluggyConnect as React.FC<any>;
+const PluggyConnectWidget = dynamic(
+  () => import("@/components/pluggy/pluggy-connect-widget"),
+  { ssr: false },
+);
 
 export function PluggySettingsClient() {
   const [open, setOpen] = useState(false);
@@ -167,36 +162,25 @@ export function PluggySettingsClient() {
         </CardContent>
       </Card>
 
-      {/* Pluggy Connect Modal */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Conectar Banco</DialogTitle>
-            <DialogDescription>
-              Selecione sua instituição financeira para conectar via Open Finance.
-            </DialogDescription>
-          </DialogHeader>
+      {/* Pluggy Connect Widget — renderizado diretamente, ele gerencia seu próprio overlay */}
+      {open && tokenLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Iniciando conexão segura...
+          </div>
+        </div>
+      )}
 
-          {tokenLoading && (
-            <div className="flex items-center justify-center gap-2 py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">
-                Iniciando conexão segura...
-              </span>
-            </div>
-          )}
-
-          {tokenData?.connectToken && (
-            <PluggyConnect
-              connectToken={tokenData.connectToken}
-              includeSandbox
-              onSuccess={handleSuccess}
-              onError={handleError}
-              onClose={() => setOpen(false)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {open && tokenData?.connectToken && (
+        <PluggyConnectWidget
+          connectToken={tokenData.connectToken}
+          includeSandbox
+          onSuccess={handleSuccess}
+          onError={handleError}
+          onClose={() => setOpen(false)}
+        />
+      )}
     </div>
   );
 }

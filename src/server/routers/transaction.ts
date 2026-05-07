@@ -78,6 +78,7 @@ export const transactionRouter = router({
             select: {
               id: true,
               name: true,
+              bankName: true,
               currency: true,
             },
           },

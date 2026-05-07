@@ -54,6 +54,8 @@ interface TransactionRow {
   amount: number;
   type: TransactionType;
   category: string;
+  bankName: string;
+  accountName: string;
   status: TransactionStatus;
 }
 
@@ -66,6 +68,20 @@ const transactionColumns: ColumnDef<TransactionRow>[] = [
   {
     accessorKey: "category",
     header: "Categoria",
+  },
+  {
+    accessorKey: "bankName",
+    header: "Banco",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">{row.getValue("bankName")}</span>
+    ),
+  },
+  {
+    accessorKey: "accountName",
+    header: "Conta",
+    cell: ({ row }) => (
+      <span className="font-medium">{row.getValue("accountName")}</span>
+    ),
   },
   {
     accessorKey: "date",
@@ -137,7 +153,7 @@ export function DashboardClient() {
   // Latest transactions
   const { data: transactionsData, isLoading: txLoading } = api.transaction.list.useQuery(
     {
-      limit: 8,
+      limit: 50,
       offset: 0,
       startDate: dateRange.from,
       endDate: dateRange.to,
@@ -199,6 +215,8 @@ export function DashboardClient() {
         amount: typeof t.amount === "string" ? Number(t.amount) : t.amount,
         type: t.type,
         category: t.category?.name ?? "—",
+        bankName: t.bankAccount?.bankName ?? "—",
+        accountName: t.bankAccount?.name ?? "—",
         status: t.status,
       })) ?? []
     );

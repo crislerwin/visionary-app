@@ -173,6 +173,7 @@ enum TransactionStatus {
 model BankAccount {
   id              String          @id @default(cuid())
   name            String
+  bankName        String?         @map("bank_name")
   type            BankAccountType
   currency        String          @default("BRL")
   initialBalance  Decimal         @map("initial_balance") @db.Decimal(15, 2)

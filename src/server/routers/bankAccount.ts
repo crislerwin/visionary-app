@@ -6,6 +6,7 @@ import { z } from "zod";
 
 const createBankAccountSchema = z.object({
   name: z.string().min(1).max(100),
+  bankName: z.string().optional(),
   type: z.enum([BankAccountType.CHECKING, BankAccountType.SAVINGS, BankAccountType.CREDIT]),
   currency: z.string().default("BRL"),
   initialBalance: z.number().default(0),
@@ -14,6 +15,7 @@ const createBankAccountSchema = z.object({
 const updateBankAccountSchema = z.object({
   id: z.string(),
   name: z.string().min(1).max(100).optional(),
+  bankName: z.string().optional(),
   type: z
     .enum([BankAccountType.CHECKING, BankAccountType.SAVINGS, BankAccountType.CREDIT])
     .optional(),
@@ -70,6 +72,7 @@ export const bankAccountRouter = router({
     const bankAccount = await prisma.bankAccount.create({
       data: {
         name: input.name,
+        bankName: input.bankName,
         type: input.type,
         currency: input.currency,
         initialBalance: input.initialBalance,
@@ -100,6 +103,7 @@ export const bankAccountRouter = router({
       where: { id: input.id },
       data: {
         ...(input.name !== undefined && { name: input.name }),
+        ...(input.bankName !== undefined && { bankName: input.bankName }),
         ...(input.type !== undefined && { type: input.type }),
         ...(input.currency !== undefined && { currency: input.currency }),
       },
