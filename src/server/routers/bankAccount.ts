@@ -7,7 +7,14 @@ import { z } from "zod";
 const createBankAccountSchema = z.object({
   name: z.string().min(1).max(100),
   bankName: z.string().optional(),
-  type: z.enum([BankAccountType.CHECKING, BankAccountType.SAVINGS, BankAccountType.CREDIT]),
+  type: z.enum([
+    BankAccountType.CHECKING,
+    BankAccountType.SAVINGS,
+    BankAccountType.CREDIT,
+    BankAccountType.INVESTMENT,
+    BankAccountType.DIGITAL_WALLET,
+    BankAccountType.OTHER,
+  ]),
   currency: z.string().default("BRL"),
   initialBalance: z.number().default(0),
 });
@@ -17,7 +24,14 @@ const updateBankAccountSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   bankName: z.string().optional(),
   type: z
-    .enum([BankAccountType.CHECKING, BankAccountType.SAVINGS, BankAccountType.CREDIT])
+    .enum([
+      BankAccountType.CHECKING,
+      BankAccountType.SAVINGS,
+      BankAccountType.CREDIT,
+      BankAccountType.INVESTMENT,
+      BankAccountType.DIGITAL_WALLET,
+      BankAccountType.OTHER,
+    ])
     .optional(),
   currency: z.string().optional(),
 });
