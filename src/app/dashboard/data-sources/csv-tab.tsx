@@ -254,7 +254,7 @@ export function CsvTab() {
     const filtered = q
       ? rows.filter((r) => Object.values(r).some((v) => v.toLowerCase().includes(q)))
       : rows;
-    return filtered.slice(0, 50).map((r, i) => {
+    return filtered.map((r, i) => {
       const amt = Number(r[columnMapping.amount ?? ""] ?? 0);
       const mappedType = columnMapping.type ? (r[columnMapping.type]?.toLowerCase() ?? "") : "";
       return {
