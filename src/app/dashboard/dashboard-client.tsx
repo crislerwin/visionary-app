@@ -219,8 +219,8 @@ export function DashboardClient() {
         </div>
 
         <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i} className="py-3">
+          {["kpi-a", "kpi-b", "kpi-c", "kpi-d"].map((key) => (
+            <Card key={key} className="py-3">
               <CardHeader className="px-4 pb-1 pt-0">
                 <Skeleton className="h-4 w-24" />
               </CardHeader>
@@ -233,8 +233,8 @@ export function DashboardClient() {
         </section>
 
         <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <Card key={i} className="min-h-0 py-3">
+          {["chart-a", "chart-b"].map((key) => (
+            <Card key={key} className="min-h-0 py-3">
               <CardHeader className="px-4 pb-2 pt-0">
                 <Skeleton className="h-5 w-32" />
                 <Skeleton className="mt-1 h-4 w-40" />
