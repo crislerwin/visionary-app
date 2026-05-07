@@ -44,7 +44,7 @@ interface Account {
 interface Txn {
   id: string;
   date: string | Date;
-  description: string;
+  description: string | null;
   category: string | null;
   amount: number;
   type: string;
@@ -75,7 +75,7 @@ export function BankAccountsTab() {
   const active = accounts.find((a) => a.id === activeId) ?? null;
 
   const { data: txPage, error: txError } = api.transaction.list.useQuery(
-    activeId ? { bankAccountId: activeId, page: 1, pageSize: 1000 } : undefined,
+    activeId ? { bankAccountId: activeId, page: 1, pageSize: 1000 } : {},
     { enabled: !!activeId },
   );
 
@@ -149,8 +149,8 @@ export function BankAccountsTab() {
     onError: () => setConfirmDeleteId(null),
   });
 
-  // Refresh mutation
-  const _refreshAccount = api.bankAccount.refreshBalance.useMutation();
+  // Refresh mutation (placeholder – implement refreshBalance router if needed)
+  // const _refreshAccount = api.bankAccount.refreshBalance.useMutation();
 
   // ── Render ──
 
