@@ -1,11 +1,16 @@
 "use client";
 
-import { Database, FileSpreadsheet, FileText, Link2, Plus } from "lucide-react";
+import { Database, FileSpreadsheet, FileText, Link2 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+// Dynamic import — papaparse is browser-only
+const CsvTab = dynamic(() => import("./csv-tab").then((m) => ({ default: m.CsvTab })), {
+  ssr: false,
+});
 
 type TabId = "connections" | "webhooks" | "csv" | "xlsx";
 
@@ -14,45 +19,59 @@ interface TabMeta {
   label: string;
   icon: React.ElementType;
   description: string;
-  placeholderLabel: string;
-  placeholderAction: string;
 }
 
-const TABS: TabMeta[] = [
-  {
+const TAB_META: Record<TabId, TabMeta> = {
+  connections: {
     id: "connections",
     label: "Conexões Bancárias",
     icon: Link2,
     description: "Conecte suas contas bancárias via Open Finance para importar automaticamente.",
-    placeholderLabel: "Nenhuma conexão bancária ativa.",
-    placeholderAction: "Conectar banco",
   },
-  {
+  webhooks: {
     id: "webhooks",
     label: "Webhooks",
     icon: Database,
-    description:
-      "Receba transações via HTTP POST de gateways de pagamento, ERPs e outros sistemas.",
-    placeholderLabel: "Nenhum webhook configurado.",
-    placeholderAction: "Novo webhook",
+    description: "Receba transações via HTTP POST de gateways, ERPs e outros sistemas.",
   },
-  {
+  csv: {
     id: "csv",
     label: "CSV",
     icon: FileText,
     description: "Importe transações em lote a partir de arquivos CSV (.csv).",
-    placeholderLabel: "Nenhum arquivo CSV importado.",
-    placeholderAction: "Importar CSV",
   },
-  {
+  xlsx: {
     id: "xlsx",
     label: "XLSX",
     icon: FileSpreadsheet,
     description: "Importe transações em lote a partir de planilhas Excel (.xlsx).",
-    placeholderLabel: "Nenhuma planilha XLSX importada.",
-    placeholderAction: "Importar XLSX",
   },
-];
+};
+
+const PLACEHOLDER_TABS: TabId[] = ["connections", "webhooks", "xlsx"];
+
+function PlaceholderPanel({ tabId }: { tabId: TabId }) {
+  const meta = TAB_META[tabId];
+  const Icon = meta.icon;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Icon className="h-5 w-5" />
+          {meta.label}
+        </CardTitle>
+        <CardDescription>{meta.description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <Icon className="mb-3 h-10 w-10 text-muted-foreground/50" />
+          <p className="text-sm text-muted-foreground">Em breve.</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export function DataSourcesClient() {
   const [tab, setTab] = useState<TabId>("connections");
@@ -68,36 +87,23 @@ export function DataSourcesClient() {
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabId)}>
         <TabsList>
-          {TABS.map((t) => (
-            <TabsTrigger key={t.id} value={t.id} className="gap-1.5">
-              <t.icon className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{t.label}</span>
+          {Object.entries(TAB_META).map(([key, meta]) => (
+            <TabsTrigger key={key} value={key} className="gap-1.5">
+              <meta.icon className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{meta.label}</span>
             </TabsTrigger>
           ))}
         </TabsList>
 
-        {TABS.map((t) => (
-          <TabsContent key={t.id} value={t.id}>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <t.icon className="h-5 w-5" />
-                  {t.label}
-                </CardTitle>
-                <CardDescription>{t.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {/* Placeholder — cada tab será implementada em PRs separadas */}
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <t.icon className="mb-3 h-10 w-10 text-muted-foreground/50" />
-                  <p className="mb-2 text-sm text-muted-foreground">{t.placeholderLabel}</p>
-                  <Button variant="outline" size="sm" disabled className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    {t.placeholderAction}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+        {/* CSV Tab — real implementation */}
+        <TabsContent value="csv">
+          <CsvTab />
+        </TabsContent>
+
+        {/* Placeholder tabs */}
+        {PLACEHOLDER_TABS.map((id) => (
+          <TabsContent key={id} value={id}>
+            <PlaceholderPanel tabId={id} />
           </TabsContent>
         ))}
       </Tabs>

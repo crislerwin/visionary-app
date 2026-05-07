@@ -2,6 +2,7 @@ import { createCallerFactory, createTRPCContext, router } from "@/lib/trpc/trpc"
 import { authRouter } from "./auth";
 import { bankAccountRouter } from "./bankAccount";
 import { categoryRouter } from "./category";
+import { dataSourceRouter } from "./dataSource";
 import { pluggyRouter } from "./pluggy";
 import { postRouter } from "./post";
 import { teamRouter } from "./team";
@@ -18,6 +19,7 @@ export const appRouter = router({
   transaction: transactionRouter,
   bankAccount: bankAccountRouter,
   category: categoryRouter,
+  dataSource: dataSourceRouter,
   pluggy: pluggyRouter,
 });
 
