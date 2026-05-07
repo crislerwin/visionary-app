@@ -24,12 +24,6 @@ export function MainNav({ className }: MainNavProps) {
       >
         Team
       </Link>
-      <Link
-        href="/dashboard/settings"
-        className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-      >
-        Settings
-      </Link>
     </div>
   );
 }

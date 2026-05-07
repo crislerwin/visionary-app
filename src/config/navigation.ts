@@ -1,4 +1,4 @@
-import { Database, LayoutDashboard, type LucideIcon, Settings } from "lucide-react";
+import { Database, LayoutDashboard, type LucideIcon } from "lucide-react";
 
 export interface NavItem {
   title: string;
@@ -29,16 +29,6 @@ export const sidebarNavigation: NavSection[] = [
         title: "Data Sources",
         href: "/dashboard/data-sources",
         icon: Database,
-      },
-    ],
-  },
-  {
-    title: "Management",
-    items: [
-      {
-        title: "Settings",
-        href: "/dashboard/settings",
-        icon: Settings,
       },
     ],
   },

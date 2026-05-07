@@ -111,7 +111,7 @@ export function BankAccountCard({ account, onEdit, onDelete }: BankAccountCardPr
         {/* Pluggy Connect Bank */}
         <div className="mt-4">
           <Button variant="outline" size="sm" className="gap-2" asChild>
-            <Link href="/dashboard/settings">
+            <Link href="/dashboard/data-sources">
               <Link2 className="h-4 w-4" />
               Conectar Banco
             </Link>
