@@ -7,6 +7,8 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+import { PluggyConnectionsTab } from "./pluggy-connections-tab";
+
 // Dynamic import — papaparse is browser-only
 const CsvTab = dynamic(() => import("./csv-tab").then((m) => ({ default: m.CsvTab })), {
   ssr: false,
@@ -48,7 +50,7 @@ const TAB_META: Record<TabId, TabMeta> = {
   },
 };
 
-const PLACEHOLDER_TABS: TabId[] = ["connections", "webhooks", "xlsx"];
+const PLACEHOLDER_TABS: TabId[] = ["webhooks", "xlsx"];
 
 function PlaceholderPanel({ tabId }: { tabId: TabId }) {
   const meta = TAB_META[tabId];
@@ -94,6 +96,11 @@ export function DataSourcesClient() {
             </TabsTrigger>
           ))}
         </TabsList>
+
+        {/* Pluggy Connections Tab — real implementation */}
+        <TabsContent value="connections">
+          <PluggyConnectionsTab />
+        </TabsContent>
 
         {/* CSV Tab — real implementation */}
         <TabsContent value="csv">
