@@ -24,6 +24,7 @@ export function PluggyConnectionsTab() {
   const {
     data: connections,
     isLoading: connectionsLoading,
+    error: connectionsError,
     refetch,
   } = api.pluggy.listConnections.useQuery();
 
@@ -32,14 +33,23 @@ export function PluggyConnectionsTab() {
       refetch();
       setOpen(false);
     },
+    onError: (err) => {
+      setError(err.message);
+    },
   });
 
   const deleteConnection = api.pluggy.deleteConnection.useMutation({
     onSuccess: () => refetch(),
+    onError: (err) => {
+      setError(err.message);
+    },
   });
 
   const syncConnection = api.pluggy.syncConnection.useMutation({
     onSuccess: () => refetch(),
+    onError: (err) => {
+      setError(err.message);
+    },
   });
 
   const handleSuccess = (data: {
@@ -109,6 +119,11 @@ export function PluggyConnectionsTab() {
             <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               Carregando conexões...
+            </div>
+          ) : connectionsError ? (
+            <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4">
+              <p className="text-sm font-medium text-destructive">Erro ao carregar conexões</p>
+              <p className="mt-1 text-xs text-muted-foreground">{connectionsError.message}</p>
             </div>
           ) : !connections?.length ? (
             <div className="py-8 text-center text-sm text-muted-foreground">
