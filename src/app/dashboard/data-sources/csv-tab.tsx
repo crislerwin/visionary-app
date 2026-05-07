@@ -3,7 +3,7 @@
 import { api } from "@/lib/trpc/react";
 import { AlertTriangle, CheckCircle2, FileText, Loader2, Plus, Table2 } from "lucide-react";
 import Papa from "papaparse";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import type { TransactionStatus, TransactionType } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
 
 // ── Types ──
@@ -57,17 +58,85 @@ const COLORS = [
   "bg-cyan-100",
 ];
 
-// ── Preview columns ──
+// ── Preview Row (transacional) ──
 
-function makePreviewColumns(headers: string[]): ColumnDef<CsvRow>[] {
-  return headers.map((h) => ({
-    accessorKey: h,
-    header: h,
-    cell: ({ row }) => (
-      <span className="whitespace-nowrap text-xs">{(row.getValue(h) as string) ?? ""}</span>
-    ),
-  }));
+interface PreviewRow {
+  id: string;
+  date: string;
+  description: string;
+  category: string | null;
+  amount: string;
+  type: TransactionType;
+  status: TransactionStatus;
 }
+
+// ── Preview Columns (mesmo formato do dashboard) ──
+
+const previewColumns: ColumnDef<PreviewRow>[] = [
+  {
+    accessorKey: "date",
+    header: "Data",
+    cell: ({ row }) => (
+      <span className="whitespace-nowrap text-xs">{row.getValue("date") as string}</span>
+    ),
+  },
+  {
+    accessorKey: "description",
+    header: "Descrição",
+    cell: ({ row }) => (
+      <span className="truncate text-xs font-medium">{row.getValue("description") as string}</span>
+    ),
+  },
+  {
+    accessorKey: "category",
+    header: "Categoria",
+    cell: ({ row }) => (
+      <span className="text-xs text-muted-foreground">
+        {(row.getValue("category") as string) ?? "—"}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "amount",
+    header: "Valor",
+    cell: ({ row }) => {
+      const amount = Number(row.getValue("amount"));
+      const type = row.original.type;
+      return (
+        <span
+          className={cn(
+            "text-xs font-medium",
+            type === "INCOME"
+              ? "text-emerald-600 dark:text-emerald-400"
+              : "text-rose-600 dark:text-rose-400",
+          )}
+        >
+          {type === "INCOME" ? "+" : "−"}
+          {Number(amount).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+        </span>
+      );
+    },
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.getValue("status") as TransactionStatus;
+      return (
+        <span
+          className={cn(
+            "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium",
+            status === "COMPLETED"
+              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+              : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
+          )}
+        >
+          {status === "COMPLETED" ? "Concluído" : "Pendente"}
+        </span>
+      );
+    },
+  },
+];
 
 // ── Main ──
 
@@ -187,6 +256,44 @@ export function CsvTab() {
 
   const mappedCount = Object.values(columnMapping).filter(Boolean).length;
   const hasRequired = columnMapping.date && columnMapping.description && columnMapping.amount;
+
+  // ── Transform CSV rows → Preview rows ──
+
+  const previewData = useMemo(
+    () =>
+      rows.slice(0, 50).map(
+        (r, i) =>
+          ({
+            id: String(i),
+            date: columnMapping.date ? (r[columnMapping.date] ?? "") : "",
+            description: columnMapping.description ? (r[columnMapping.description] ?? "") : "",
+            category: columnMapping.category ? (r[columnMapping.category] ?? null) : null,
+            amount: columnMapping.amount ? (r[columnMapping.amount] ?? "0") : "0",
+            type: (() => {
+              if (columnMapping.type) {
+                const v = r[columnMapping.type]?.toLowerCase() ?? "";
+                if (v.includes("entrada") || v.includes("income") || v.includes("receita"))
+                  return "INCOME" as TransactionType;
+                if (v.includes("saida") || v.includes("expense") || v.includes("despesa"))
+                  return "EXPENSE" as TransactionType;
+              }
+              const amt = Number(r[columnMapping.amount ?? ""] ?? 0);
+              return amt < 0 ? ("INCOME" as TransactionType) : ("EXPENSE" as TransactionType);
+            })(),
+            status: (() => {
+              if (columnMapping.status) {
+                const v = r[columnMapping.status]?.toLowerCase() ?? "";
+                if (v.includes("pendente") || v.includes("pending"))
+                  return "PENDING" as TransactionStatus;
+                if (v.includes("cancelado") || v.includes("cancelled"))
+                  return "CANCELLED" as TransactionStatus;
+              }
+              return "COMPLETED" as TransactionStatus;
+            })(),
+          }) as PreviewRow,
+      ),
+    [rows, columnMapping],
+  );
 
   // ── Render ──
 
@@ -368,22 +475,22 @@ export function CsvTab() {
       )}
 
       {/* Preview DataTable */}
-      {rows.length > 0 && (
+      {previewData.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <Table2 className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-sm font-medium">Preview</span>
               <Badge variant="secondary" className="text-[10px]">
-                {rows.length} linhas · {headers.length} colunas
+                {previewData.length} linhas
               </Badge>
             </div>
           </div>
           <DataTable
-            columns={makePreviewColumns(headers)}
-            data={rows.slice(0, 50)}
-            searchKey={headers[0]}
-            searchPlaceholder="Filtrar..."
+            columns={previewColumns}
+            data={previewData}
+            searchKey="description"
+            searchPlaceholder="Buscar transação..."
           />
         </div>
       )}
