@@ -4,7 +4,6 @@ import { Database, FileSpreadsheet, FileText, Landmark, Link2 } from "lucide-rea
 import dynamic from "next/dynamic";
 import { useState } from "react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { BankAccountsTab } from "./bank-accounts-tab";
@@ -61,24 +60,12 @@ const PLACEHOLDER_TABS: TabId[] = ["webhooks", "xlsx"];
 
 function PlaceholderPanel({ tabId }: { tabId: TabId }) {
   const meta = TAB_META[tabId];
-  const Icon = meta.icon;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Icon className="h-5 w-5" />
-          {meta.label}
-        </CardTitle>
-        <CardDescription>{meta.description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <Icon className="mb-3 h-10 w-10 text-muted-foreground/50" />
-          <p className="text-sm text-muted-foreground">Em breve.</p>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="flex flex-col items-center justify-center rounded-md border py-8 text-center">
+      <meta.icon className="mb-2 h-6 w-6 text-muted-foreground/40" />
+      <p className="text-xs text-muted-foreground">Em breve.</p>
+    </div>
   );
 }
 
@@ -86,19 +73,19 @@ export function DataSourcesClient() {
   const [tab, setTab] = useState<TabId>("accounts");
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Fontes de Dados</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-xl font-bold tracking-tight">Fontes de Dados</h1>
+        <p className="text-sm text-muted-foreground">
           Gerencie as origens dos seus dados financeiros — bancos, webhooks e arquivos.
         </p>
       </div>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabId)}>
-        <TabsList>
+        <TabsList className="h-8">
           {Object.entries(TAB_META).map(([key, meta]) => (
-            <TabsTrigger key={key} value={key} className="gap-1.5">
-              <meta.icon className="h-3.5 w-3.5" />
+            <TabsTrigger key={key} value={key} className="gap-1 text-xs">
+              <meta.icon className="h-3 w-3" />
               <span className="hidden sm:inline">{meta.label}</span>
             </TabsTrigger>
           ))}

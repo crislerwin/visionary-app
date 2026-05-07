@@ -125,7 +125,7 @@ function AccountCard({
   return (
     <button
       type="button"
-      className="w-full cursor-pointer rounded-md border bg-card p-2.5 text-left transition-colors hover:border-primary/50 hover:bg-accent/40"
+      className="w-full cursor-pointer rounded-md border bg-card p-2 text-left transition-colors hover:border-primary/50 hover:bg-accent/40"
       onClick={onClick}
     >
       <div className="flex items-center justify-between gap-3">
@@ -230,10 +230,10 @@ export function BankAccountsTab() {
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <Wallet className="h-4 w-4 text-muted-foreground" />
-        <h2 className="text-base font-semibold">Contas Importadas</h2>
+    <div className="space-y-2">
+      <div className="flex items-center gap-1.5">
+        <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-sm font-semibold">Contas</span>
       </div>
 
       {isLoading ? (
