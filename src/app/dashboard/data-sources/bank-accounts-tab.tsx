@@ -1,7 +1,7 @@
 "use client";
 
 import { api } from "@/lib/trpc/react";
-import { ArrowLeft, Landmark, Loader2, Wallet } from "lucide-react";
+import { ArrowLeft, Loader2, Wallet } from "lucide-react";
 import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -116,7 +116,7 @@ const transactionColumns: ColumnDef<TransactionRow>[] = [
   },
 ];
 
-// ── Account Card ──
+// ── Account Card (minimalista) ──
 
 function AccountCard({
   account,
@@ -130,28 +130,22 @@ function AccountCard({
       className="cursor-pointer transition-colors hover:border-primary/50 hover:bg-accent/40"
       onClick={onClick}
     >
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <Landmark className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="font-medium">{account.name}</p>
-              {account.bankName && (
-                <p className="text-xs text-muted-foreground">{account.bankName}</p>
-              )}
-            </div>
+      <CardContent className="p-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium">{account.name}</p>
+            {account.bankName && (
+              <p className="truncate text-[11px] text-muted-foreground">{account.bankName}</p>
+            )}
           </div>
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="shrink-0 text-[9px] uppercase tracking-wider">
             {account.type}
           </Badge>
         </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-2xl font-bold">{currency(account.currentBalance)}</p>
-        <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-          <span>{account.accountNumber ?? "Sem número"}</span>
-          <span>{account._count.transactions} transações</span>
-        </div>
+        <p className="mt-1.5 text-lg font-bold leading-tight">{currency(account.currentBalance)}</p>
+        <p className="text-[11px] text-muted-foreground">
+          {account._count.transactions} transações
+        </p>
       </CardContent>
     </Card>
   );
