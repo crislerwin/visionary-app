@@ -1,4 +1,4 @@
-import { Database, Landmark, LayoutDashboard, type LucideIcon, Settings } from "lucide-react";
+import { Database, LayoutDashboard, type LucideIcon, Settings } from "lucide-react";
 
 export interface NavItem {
   title: string;

@@ -1,25 +1,10 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import {
-  Database,
-  FileSpreadsheet,
-  FileText,
-  Link2,
-  Loader2,
-  Plus,
-  RefreshCw,
-} from "lucide-react";
+import { Database, FileSpreadsheet, FileText, Link2, Plus } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type TabId = "connections" | "webhooks" | "csv" | "xlsx";
@@ -46,7 +31,8 @@ const TABS: TabMeta[] = [
     id: "webhooks",
     label: "Webhooks",
     icon: Database,
-    description: "Receba transações via HTTP POST de gateways de pagamento, ERPs e outros sistemas.",
+    description:
+      "Receba transações via HTTP POST de gateways de pagamento, ERPs e outros sistemas.",
     placeholderLabel: "Nenhum webhook configurado.",
     placeholderAction: "Novo webhook",
   },
