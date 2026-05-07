@@ -1,0 +1,202 @@
+"use client";
+
+import type * as React from "react";
+import { useState } from "react";
+import { Banknote, Link2, Loader2, RefreshCw, Trash2, Unlink } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { api } from "@/lib/trpc/react";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const PluggyConnect = require("react-pluggy-connect").PluggyConnect as React.FC<any>;
+
+export function PluggySettingsClient() {
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const { data: tokenData, isLoading: tokenLoading } = api.pluggy.createConnectToken.useQuery(
+    undefined,
+    { enabled: open },
+  );
+
+  const { data: connections, isLoading: connectionsLoading, refetch } =
+    api.pluggy.listConnections.useQuery();
+
+  const saveConnection = api.pluggy.saveConnection.useMutation({
+    onSuccess: () => {
+      refetch();
+      setOpen(false);
+    },
+  });
+
+  const deleteConnection = api.pluggy.deleteConnection.useMutation({
+    onSuccess: () => refetch(),
+  });
+
+  const syncConnection = api.pluggy.syncConnection.useMutation({
+    onSuccess: () => refetch(),
+  });
+
+  const handleSuccess = (data: {
+    item: { id: string; connector: { id: number; name: string } | null };
+  }) => {
+    saveConnection.mutate({
+      itemId: data.item.id,
+      connectorId: data.item.connector?.id ?? 0,
+      connectorName: data.item.connector?.name ?? "Unknown",
+    });
+  };
+
+  const handleError = (err: { message: string }) => {
+    setError(err.message);
+  };
+
+  const isLoading = connectionsLoading || tokenLoading;
+
+  return (
+    <div className="space-y-6">
+      {/* Pluggy Connect Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Link2 className="h-5 w-5" />
+            Conectar Banco
+          </CardTitle>
+          <CardDescription>
+            Conecte suas contas bancárias via Pluggy Open Finance para importar transações
+            automaticamente.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={() => { setOpen(true); setError(null); }} className="gap-2">
+            <Banknote className="h-4 w-4" />
+            Conectar nova conta
+          </Button>
+
+          {error && (
+            <p className="mt-3 text-sm text-destructive">{error}</p>
+          )}
+
+          {!process.env.NEXT_PUBLIC_PLUGGY_CONFIGURED && (
+            <p className="mt-3 text-sm text-amber-600 dark:text-amber-400">
+              ⚠️ Credenciais do Pluggy não configuradas. Adicione PLUGGY_CLIENT_ID e
+              PLUGGY_CLIENT_SECRET no arquivo .env para habilitar a integração.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Connected Institutions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Unlink className="h-5 w-5" />
+            Instituições Conectadas
+          </CardTitle>
+          <CardDescription>
+            Gerencie as conexões ativas e sincronize transações.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Carregando conexões...
+            </div>
+          ) : !connections?.length ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              Nenhuma instituição conectada ainda.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {connections.map((conn) => (
+                <div
+                  key={conn.id}
+                  className="flex items-center justify-between rounded-lg border p-4"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium">{conn.connectorName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Status: {conn.status} ·{" "}
+                      {new Date(conn.createdAt).toLocaleDateString("pt-BR")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => syncConnection.mutate({ id: conn.id })}
+                      disabled={syncConnection.isPending}
+                      title="Sincronizar"
+                    >
+                      <RefreshCw
+                        className={`h-4 w-4 ${
+                          syncConnection.isPending ? "animate-spin" : ""
+                        }`}
+                      />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => deleteConnection.mutate({ id: conn.id })}
+                      disabled={deleteConnection.isPending}
+                      className="text-destructive hover:text-destructive"
+                      title="Remover"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Pluggy Connect Modal */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Conectar Banco</DialogTitle>
+            <DialogDescription>
+              Selecione sua instituição financeira para conectar via Open Finance.
+            </DialogDescription>
+          </DialogHeader>
+
+          {tokenLoading && (
+            <div className="flex items-center justify-center gap-2 py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">
+                Iniciando conexão segura...
+              </span>
+            </div>
+          )}
+
+          {tokenData?.connectToken && (
+            <PluggyConnect
+              connectToken={tokenData.connectToken}
+              includeSandbox
+              onSuccess={handleSuccess}
+              onError={handleError}
+              onClose={() => setOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

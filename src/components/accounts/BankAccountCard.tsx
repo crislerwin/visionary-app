@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowRightLeft, CreditCard, Edit2, Landmark, PiggyBank, Trash2 } from "lucide-react";
+import { ArrowRightLeft, CreditCard, Edit2, Landmark, Link2, PiggyBank, Trash2 } from "lucide-react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { BankAccountType } from "@prisma/client";
-import { ConnectBankModal } from "./ConnectBankModal";
 
 interface BankAccountCardProps {
   account: {
@@ -108,9 +108,14 @@ export function BankAccountCard({ account, onEdit, onDelete }: BankAccountCardPr
           </p>
         </div>
 
-        {/* Pluggy Connect Bank — UI placeholder */}
+        {/* Pluggy Connect Bank */}
         <div className="mt-4">
-          <ConnectBankModal accountName={account.name} />
+          <Button variant="outline" size="sm" className="gap-2" asChild>
+            <Link href="/dashboard/settings">
+              <Link2 className="h-4 w-4" />
+              Conectar Banco
+            </Link>
+          </Button>
         </div>
       </CardContent>
     </Card>
