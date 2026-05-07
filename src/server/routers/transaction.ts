@@ -47,8 +47,10 @@ const listTransactionsSchema = z.object({
   status: z
     .enum([TransactionStatus.COMPLETED, TransactionStatus.PENDING, TransactionStatus.CANCELLED])
     .optional(),
-  limit: z.number().default(50),
+  limit: z.number().min(1).max(999999).default(999999),
   offset: z.number().default(0),
+  page: z.number().optional(),
+  pageSize: z.number().optional(),
 });
 
 export const transactionRouter = router({
@@ -69,6 +71,12 @@ export const transactionRouter = router({
           },
         }),
     };
+
+    // Suporte para page/pageSize (frontend) ou limit/offset (legacy)
+    const pageSize = input.pageSize ?? input.limit ?? 50;
+    const skip = input.page
+      ? (input.page - 1) * pageSize
+      : input.offset ?? 0;
 
     const [transactions, total] = await Promise.all([
       prisma.transaction.findMany({
@@ -92,8 +100,8 @@ export const transactionRouter = router({
           },
         },
         orderBy: { date: "desc" },
-        skip: input.offset,
-        take: input.limit,
+        skip,
+        take: pageSize,
       }),
       prisma.transaction.count({ where }),
     ]);

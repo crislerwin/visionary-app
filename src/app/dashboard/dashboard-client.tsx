@@ -252,27 +252,13 @@ export function DashboardClient() {
 
         <section className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
           {["chart-a", "chart-b"].map((key) => (
-            <Card key={key} className="min-h-0 py-3">
-              <CardHeader className="px-4 pb-2 pt-0">
-                <Skeleton className="h-5 w-32" />
-                <Skeleton className="mt-1 h-4 w-40" />
+            <Card key={key} className="min-h-0 py-2">
+              <CardHeader className="px-3 pb-1 pt-0">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="mt-0.5 h-3 w-36" />
               </CardHeader>
-              <CardContent className="px-4 pb-3 pt-0">
-                <Skeleton className="h-[200px] w-full sm:h-[240px]" />
-              </CardContent>
-            </Card>
-          ))}
-        </section>
-
-        <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {["chart-a", "chart-b"].map((key) => (
-            <Card key={key} className="min-h-0 py-3">
-              <CardHeader className="px-4 pb-2 pt-0">
-                <Skeleton className="h-5 w-32" />
-                <Skeleton className="mt-1 h-4 w-40" />
-              </CardHeader>
-              <CardContent className="px-4 pb-3 pt-0">
-                <Skeleton className="h-[200px] w-full sm:h-[240px]" />
+              <CardContent className="px-3 pb-2 pt-0">
+                <Skeleton className="h-[140px] w-full sm:h-[170px]" />
               </CardContent>
             </Card>
           ))}
@@ -325,13 +311,13 @@ export function DashboardClient() {
       </section>
 
       <section className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <Card className="min-h-0 py-3">
-          <CardHeader className="px-4 pb-2 pt-0">
-            <CardTitle>Evolução do Saldo</CardTitle>
-            <CardDescription>Período selecionado</CardDescription>
+        <Card className="min-h-0 py-2">
+          <CardHeader className="px-3 pb-1 pt-0">
+            <CardTitle className="text-sm">Evolução do Saldo</CardTitle>
+            <CardDescription className="text-xs">Período selecionado</CardDescription>
           </CardHeader>
-          <CardContent className="px-4 pb-3 pt-0">
-            <ChartContainer config={balanceChartConfig} className="h-[200px] w-full sm:h-[240px]">
+          <CardContent className="px-3 pb-2 pt-0">
+            <ChartContainer config={balanceChartConfig} className="h-[140px] w-full sm:h-[170px]">
               <AreaChart data={balanceSeries} margin={{ left: 4, right: 12, top: 8 }}>
                 <defs>
                   <linearGradient id="fillSaldo" x1="0" y1="0" x2="0" y2="1">
@@ -362,13 +348,13 @@ export function DashboardClient() {
           </CardContent>
         </Card>
 
-        <Card className="min-h-0 py-3">
-          <CardHeader className="px-4 pb-2 pt-0">
-            <CardTitle>Receitas vs Despesas</CardTitle>
-            <CardDescription>Período selecionado</CardDescription>
+        <Card className="min-h-0 py-2">
+          <CardHeader className="px-3 pb-1 pt-0">
+            <CardTitle className="text-sm">Receitas vs Despesas</CardTitle>
+            <CardDescription className="text-xs">Período selecionado</CardDescription>
           </CardHeader>
-          <CardContent className="px-4 pb-3 pt-0">
-            <ChartContainer config={compareChartConfig} className="h-[200px] w-full sm:h-[240px]">
+          <CardContent className="px-3 pb-2 pt-0">
+            <ChartContainer config={compareChartConfig} className="h-[140px] w-full sm:h-[170px]">
               <BarChart data={compareSeries} margin={{ left: 4, right: 12, top: 8 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />

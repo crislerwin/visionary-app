@@ -1,25 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import dynamic from "next/dynamic";
 import { Banknote, Link2, Loader2, RefreshCw, Trash2, Unlink } from "lucide-react";
+import dynamic from "next/dynamic";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/trpc/react";
 
-const PluggyConnectWidget = dynamic(
-  () => import("@/components/pluggy/pluggy-connect-widget"),
-  { ssr: false },
-);
+const PluggyConnectWidget = dynamic(() => import("@/components/pluggy/pluggy-connect-widget"), {
+  ssr: false,
+});
 
-export function PluggySettingsClient() {
+export function PluggyConnectionsTab() {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,22 +21,35 @@ export function PluggySettingsClient() {
     { enabled: open },
   );
 
-  const { data: connections, isLoading: connectionsLoading, refetch } =
-    api.pluggy.listConnections.useQuery();
+  const {
+    data: connections,
+    isLoading: connectionsLoading,
+    error: connectionsError,
+    refetch,
+  } = api.pluggy.listConnections.useQuery();
 
   const saveConnection = api.pluggy.saveConnection.useMutation({
     onSuccess: () => {
       refetch();
       setOpen(false);
     },
+    onError: (err) => {
+      setError(err.message);
+    },
   });
 
   const deleteConnection = api.pluggy.deleteConnection.useMutation({
     onSuccess: () => refetch(),
+    onError: (err) => {
+      setError(err.message);
+    },
   });
 
   const syncConnection = api.pluggy.syncConnection.useMutation({
     onSuccess: () => refetch(),
+    onError: (err) => {
+      setError(err.message);
+    },
   });
 
   const handleSuccess = (data: {
@@ -77,14 +83,18 @@ export function PluggySettingsClient() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={() => { setOpen(true); setError(null); }} className="gap-2">
+          <Button
+            onClick={() => {
+              setOpen(true);
+              setError(null);
+            }}
+            className="gap-2"
+          >
             <Banknote className="h-4 w-4" />
             Conectar nova conta
           </Button>
 
-          {error && (
-            <p className="mt-3 text-sm text-destructive">{error}</p>
-          )}
+          {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 
           {!process.env.NEXT_PUBLIC_PLUGGY_CONFIGURED && (
             <p className="mt-3 text-sm text-amber-600 dark:text-amber-400">
@@ -102,15 +112,18 @@ export function PluggySettingsClient() {
             <Unlink className="h-5 w-5" />
             Instituições Conectadas
           </CardTitle>
-          <CardDescription>
-            Gerencie as conexões ativas e sincronize transações.
-          </CardDescription>
+          <CardDescription>Gerencie as conexões ativas e sincronize transações.</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               Carregando conexões...
+            </div>
+          ) : connectionsError ? (
+            <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4">
+              <p className="text-sm font-medium text-destructive">Erro ao carregar conexões</p>
+              <p className="mt-1 text-xs text-muted-foreground">{connectionsError.message}</p>
             </div>
           ) : !connections?.length ? (
             <div className="py-8 text-center text-sm text-muted-foreground">
@@ -126,8 +139,7 @@ export function PluggySettingsClient() {
                   <div className="min-w-0">
                     <p className="font-medium">{conn.connectorName}</p>
                     <p className="text-xs text-muted-foreground">
-                      Status: {conn.status} ·{" "}
-                      {new Date(conn.createdAt).toLocaleDateString("pt-BR")}
+                      Status: {conn.status} · {new Date(conn.createdAt).toLocaleDateString("pt-BR")}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -139,9 +151,7 @@ export function PluggySettingsClient() {
                       title="Sincronizar"
                     >
                       <RefreshCw
-                        className={`h-4 w-4 ${
-                          syncConnection.isPending ? "animate-spin" : ""
-                        }`}
+                        className={`h-4 w-4 ${syncConnection.isPending ? "animate-spin" : ""}`}
                       />
                     </Button>
                     <Button
@@ -162,7 +172,7 @@ export function PluggySettingsClient() {
         </CardContent>
       </Card>
 
-      {/* Pluggy Connect Widget — renderizado diretamente, ele gerencia seu próprio overlay */}
+      {/* Pluggy Connect Widget overlay */}
       {open && tokenLoading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
