@@ -46,6 +46,7 @@ export interface AgentConfig {
   autoConfirm: boolean;
   workingHours?: WorkingHours | null;
   isActive: boolean;
+  agentName?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -150,6 +151,7 @@ export interface AgentConfigResponse {
   autoConfirm: boolean;
   workingHours?: WorkingHours | null;
   isActive: boolean;
+  agentName?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -161,4 +163,5 @@ export interface UpdateAgentConfigInput {
   autoConfirm?: boolean;
   workingHours?: WorkingHours | null;
   isActive?: boolean;
+  agentName?: string | null;
 }

@@ -478,6 +478,7 @@ model AgentConfig {
   workingHours    Json?    @map("working_hours")
   webhookSecret   String?  @map("webhook_secret")
   isActive        Boolean  @default(true) @map("is_active")
+  agentName       String?  @default("Sofia") @map("agent_name")
   
   // Evolution API fields
   evolutionInstanceName String? @map("evolution_instance_name")

@@ -34,6 +34,25 @@ describe("Agent Router", () => {
   });
 
   describe("createConfig", () => {
+    it("should create agent config with default agentName", async () => {
+      const result = await caller.agent.createConfig({
+        promptSystem: "Você é um atendente simpático.",
+        tone: "CASUAL" as const,
+      });
+
+      expect(result.config.agentName).toBe("Sofia");
+    });
+
+    it("should create agent config with custom agentName", async () => {
+      const result = await caller.agent.createConfig({
+        promptSystem: "Você é um atendente simpático.",
+        tone: "CASUAL" as const,
+        agentName: "Roberto",
+      });
+
+      expect(result.config.agentName).toBe("Roberto");
+    });
+
     it("should create agent config successfully", async () => {
       const result = await caller.agent.createConfig({
         promptSystem: "Você é um atendente simpático.",
@@ -116,6 +135,15 @@ describe("Agent Router", () => {
       expect(result.config.promptSystem).toBe("Novo prompt atualizado");
       expect(result.config.tone).toBe("FORMAL");
       expect(result.config.autoConfirm).toBe(true);
+    });
+
+    it("should update agentName", async () => {
+      const result = await caller.agent.updateConfig({
+        agentName: "Carolina",
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.config.agentName).toBe("Carolina");
     });
 
     it("should regenerate webhook secret", async () => {

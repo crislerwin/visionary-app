@@ -28,6 +28,7 @@ const createAgentConfigSchema = z.object({
   tone: z.nativeEnum(AgentTone).default(AgentTone.FRIENDLY),
   autoConfirm: z.boolean().default(false),
   workingHours: workingHoursSchema.optional().nullable(),
+  agentName: z.string().optional().nullable(),
 });
 
 const updateAgentConfigSchema = z.object({
@@ -38,6 +39,7 @@ const updateAgentConfigSchema = z.object({
   workingHours: workingHoursSchema.optional().nullable(),
   isActive: z.boolean().optional(),
   webhookSecret: z.string().optional().nullable(),
+  agentName: z.string().optional().nullable(),
 });
 
 export const agentRouter = router({
@@ -63,6 +65,7 @@ export const agentRouter = router({
         workingHours: config.workingHours as Record<string, unknown> | null,
         isActive: config.isActive,
         webhookSecret: config.webhookSecret,
+        agentName: config.agentName,
         createdAt: config.createdAt.toISOString(),
         updatedAt: config.updatedAt.toISOString(),
       },
@@ -95,6 +98,9 @@ export const agentRouter = router({
         workingHours: input.workingHours
           ? (input.workingHours as Prisma.InputJsonValue)
           : undefined,
+        ...(input.agentName !== undefined && {
+          agentName: input.agentName,
+        }),
         webhookSecret,
       },
     });
@@ -111,6 +117,7 @@ export const agentRouter = router({
         workingHours: config.workingHours as Record<string, unknown> | null,
         isActive: config.isActive,
         webhookSecret: config.webhookSecret,
+        agentName: config.agentName,
         createdAt: config.createdAt.toISOString(),
         updatedAt: config.updatedAt.toISOString(),
       },
@@ -155,6 +162,9 @@ export const agentRouter = router({
         ...(input.webhookSecret !== undefined && {
           webhookSecret: input.webhookSecret,
         }),
+        ...(input.agentName !== undefined && {
+          agentName: input.agentName,
+        }),
       },
     });
 
@@ -170,6 +180,7 @@ export const agentRouter = router({
         workingHours: updated.workingHours as Record<string, unknown> | null,
         isActive: updated.isActive,
         webhookSecret: updated.webhookSecret,
+        agentName: updated.agentName,
         createdAt: updated.createdAt.toISOString(),
         updatedAt: updated.updatedAt.toISOString(),
       },
