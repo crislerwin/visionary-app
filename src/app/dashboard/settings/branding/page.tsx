@@ -12,6 +12,7 @@ import {
   type CustomerForm,
   type PaymentOptions,
 } from "@/components/settings/checkout-config-editor";
+import { WhatsAppConfig } from "@/components/settings/whatsapp-config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImageCropperDialog } from "@/components/ui/image-cropper-dialog";
@@ -35,6 +36,7 @@ import {
   Phone,
   QrCode,
   Share2,
+  Smartphone,
   Star,
   Store,
 } from "lucide-react";
@@ -438,6 +440,11 @@ export default function BrandingSettingsPage() {
               <QrCode className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">QR Code</span>
               <span className="sm:hidden">QR</span>
+            </TabsTrigger>
+            <TabsTrigger value="whatsapp" className="text-xs sm:text-sm">
+              <Smartphone className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">WhatsApp</span>
+              <span className="sm:hidden">Zap</span>
             </TabsTrigger>
             <TabsTrigger value="preview" className="text-xs sm:text-sm">
               <Eye className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -966,6 +973,10 @@ export default function BrandingSettingsPage() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="whatsapp" className="space-y-4">
+            {currentTenant?.id && <WhatsAppConfig tenantId={currentTenant.id} />}
           </TabsContent>
         </Tabs>
       </div>

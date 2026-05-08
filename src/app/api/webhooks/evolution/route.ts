@@ -1,3 +1,4 @@
+import { processMessage } from "@/lib/agent";
 import { prisma } from "@/lib/db";
 import { createEvolutionClient } from "@/lib/evolution-api";
 import { type NextRequest, NextResponse } from "next/server";
@@ -161,43 +162,25 @@ async function handleMessageReceived(
     },
   });
 
-  // Process message with AI agent
+  // Process message with LangChain agent
   try {
-    // Find or create customer
-    let customer = await prisma.customer.findUnique({
-      where: {
-        tenantId_phone: { tenantId, phone: phoneNumber },
-      },
+    const result = await processMessage(tenantId, messageContent, phoneNumber, {
+      promptSystem: config.promptSystem,
+      tone: config.tone,
+      isActive: config.isActive,
     });
 
-    if (!customer) {
-      customer = await prisma.customer.create({
-        data: {
-          tenantId,
-          phone: phoneNumber,
-          name: customerName || null,
-        },
-      });
-    }
-
-    // Process with AI (simplified - integrate with your AI service)
-    const response = await processMessageWithAI(
-      messageContent,
-      config.promptSystem,
-      config.tone,
-      tenantId,
-      phoneNumber,
-    );
-
     // Send response back via Evolution API
-    await sendWhatsAppResponse(effectiveInstanceName, phoneNumber, response);
+    await sendWhatsAppResponse(effectiveInstanceName, phoneNumber, result.response);
 
     // Update log
     await prisma.agentInteractionLog.update({
       where: { id: log.id },
       data: {
-        status: "SUCCESS",
-        output: { response, customerId: customer.id },
+        status: result.error ? "ERROR" : "SUCCESS",
+        output: { response: result.response, durationMs: result.durationMs },
+        error: result.error,
+        durationMs: result.durationMs,
       },
     });
   } catch (error) {
@@ -210,57 +193,6 @@ async function handleMessageReceived(
       },
     });
   }
-}
-
-// Process message with AI agent
-async function processMessageWithAI(
-  message: string,
-  _promptSystem: string,
-  tone: string,
-  _tenantId: string,
-  _phoneNumber: string,
-): Promise<string> {
-  // TODO: Integrate with your AI service (OpenAI, Claude, etc.)
-  // For now, return a simple welcome message
-
-  const toneMessages: Record<string, string> = {
-    FRIENDLY: "Olá! Que bom te ver por aqui! 😊",
-    PROFESSIONAL: "Bem-vindo. Em que posso ajudar?",
-    CASUAL: "E aí! Tudo bem?",
-    FORMAL: "Olá. Seja bem-vindo ao nosso atendimento.",
-  };
-
-  // Check if message is about ordering
-  const orderKeywords = ["pedido", "quero", "gostaria", "comprar", "cardápio", "menu"];
-  const isOrderIntent = orderKeywords.some((k) => message.toLowerCase().includes(k));
-
-  if (isOrderIntent) {
-    return `${toneMessages[tone] || toneMessages.FRIENDLY}
-
-Posso te ajudar a fazer um pedido! Temos várias opções deliciosas no cardápio.
-
-O que você gostaria de pedir hoje?`;
-  }
-
-  // Check if message is about checking orders
-  const checkKeywords = ["pedido", "status", "onde", "entrega", "rastrear"];
-  const isCheckIntent = checkKeywords.some((k) => message.toLowerCase().includes(k));
-
-  if (isCheckIntent) {
-    return `Vou verificar seus pedidos para você...
-
-Poderia me confirmar o número do telefone usado no cadastro?`;
-  }
-
-  return `${toneMessages[tone] || toneMessages.FRIENDLY}
-
-Sou o assistente virtual do restaurante e posso te ajudar a:
-
-📋 Fazer um pedido
-📦 Consultar pedidos existentes
-❓ Tirar dúvidas
-
-Como posso ajudar hoje?`;
 }
 
 // Send response via Evolution API

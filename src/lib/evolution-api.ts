@@ -8,13 +8,16 @@ interface EvolutionConfig {
 
 interface CreateInstancePayload {
   instanceName: string;
+  integration: "WHATSAPP-BAILEYS" | "WHATSAPP-BUSINESS";
   token?: string;
   qrcode?: boolean;
+  number?: string;
   webhook?: {
     url: string;
     headers?: Record<string, string>;
     byEvents?: boolean;
     base64?: boolean;
+    events?: string[];
   };
 }
 

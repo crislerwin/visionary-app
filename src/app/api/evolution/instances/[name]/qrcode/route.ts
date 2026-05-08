@@ -4,7 +4,7 @@ import { createEvolutionClient } from "@/lib/evolution-api";
 import { type NextRequest, NextResponse } from "next/server";
 
 // GET /api/evolution/instances/:name/qrcode - Obter QR code para conectar WhatsApp
-export async function GET(request: NextRequest, { params }: { params: { name: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ name: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest, { params }: { params: { name: st
       return NextResponse.json({ error: "Tenant ID required" }, { status: 400 });
     }
 
-    const { name } = params;
+    const { name } = await params;
 
     // Verify instance belongs to tenant
     const config = await prisma.agentConfig.findUnique({
@@ -40,6 +40,9 @@ export async function GET(request: NextRequest, { params }: { params: { name: st
     const client = createEvolutionClient(evolutionBaseUrl, evolutionApiKey);
     const result = await client.getQRCode(name);
 
+    // Evolution API v2 returns base64 with "data:image/png;base64," prefix — strip it
+    const rawBase64 = result.base64?.replace(/^data:image\/\w+;base64,/, "");
+
     // Update status to connecting
     await prisma.agentConfig.update({
       where: { tenantId },
@@ -48,7 +51,7 @@ export async function GET(request: NextRequest, { params }: { params: { name: st
 
     return NextResponse.json({
       success: true,
-      qrCode: result.base64,
+      qrCode: rawBase64,
       pairingCode: result.pairingCode,
       code: result.code,
     });
