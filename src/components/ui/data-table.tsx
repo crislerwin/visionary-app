@@ -48,6 +48,11 @@ interface DataTableProps<TData, TValue> {
   searchPlaceholder?: string;
   title?: string;
   description?: string;
+  manualPagination?: boolean;
+  pageCount?: number;
+  pagination?: { pageIndex: number; pageSize: number };
+  onPaginationChange?: (pagination: { pageIndex: number; pageSize: number }) => void;
+  totalRows?: number;
 }
 
 export function DataTable<TData, TValue>({
@@ -57,12 +62,40 @@ export function DataTable<TData, TValue>({
   searchPlaceholder = "Filtrar...",
   title,
   description,
+  manualPagination,
+  pageCount,
+  pagination: externalPagination,
+  onPaginationChange,
+  totalRows,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
-  const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 8 });
+  const [internalPagination, setInternalPagination] = React.useState({
+    pageIndex: 0,
+    pageSize: 8,
+  });
+
+  const isControlled = externalPagination !== undefined && !!onPaginationChange;
+  const pagination = isControlled ? externalPagination! : internalPagination;
+
+  // Prevent calling setState in parent during render by deferring with microtask
+  const handlePaginationChange = React.useCallback(
+    (updaterOrValue: React.SetStateAction<{ pageIndex: number; pageSize: number }>) => {
+      const next =
+        typeof updaterOrValue === "function"
+          ? updaterOrValue(pagination)
+          : updaterOrValue;
+
+      if (isControlled && onPaginationChange) {
+        setTimeout(() => onPaginationChange(next), 0);
+      } else {
+        setInternalPagination(next);
+      }
+    },
+    [isControlled, onPaginationChange, pagination],
+  );
 
   const table = useReactTable({
     data,
@@ -70,12 +103,14 @@ export function DataTable<TData, TValue>({
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    getPaginationRowModel: manualPagination ? undefined : getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
-    onPaginationChange: setPagination,
+    onPaginationChange: handlePaginationChange,
+    manualPagination: !!manualPagination,
+    pageCount: manualPagination ? pageCount : undefined,
     state: {
       sorting,
       columnFilters,
@@ -146,21 +181,28 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
 
-      <DataTablePagination table={table} />
+      <DataTablePagination table={table} totalRows={totalRows} />
     </div>
   );
 }
 
 function DataTablePagination<TData>({
   table,
+  totalRows,
 }: {
   table: ReturnType<typeof useReactTable<TData>>;
+  totalRows?: number;
 }) {
+  const rowCount = totalRows ?? table.getFilteredRowModel().rows.length;
+  const pageIndex = table.getState().pagination.pageIndex;
+  const pageSize = table.getState().pagination.pageSize;
+  const fromRow = rowCount > 0 ? pageIndex * pageSize + 1 : 0;
+  const toRow = Math.min((pageIndex + 1) * pageSize, rowCount);
+
   return (
     <div className="flex items-center justify-between px-2 py-1">
       <div className="flex-1 text-xs text-muted-foreground">
-        {table.getFilteredSelectedRowModel().rows.length} de{" "}
-        {table.getFilteredRowModel().rows.length} linha(s) selecionada(s).
+        {fromRow}-{toRow} de {rowCount} registros
       </div>
       <div className="flex items-center space-x-4 lg:space-x-6">
         <div className="flex items-center space-x-2">

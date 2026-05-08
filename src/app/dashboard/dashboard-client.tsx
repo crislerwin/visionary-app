@@ -11,14 +11,11 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { DataTable } from "@/components/ui/data-table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentTenant } from "@/hooks/use-current-tenant";
 import { api } from "@/lib/trpc/react";
-import { cn, formatDate } from "@/lib/utils";
-import { TransactionStatus, TransactionType } from "@prisma/client";
-import type { ColumnDef } from "@tanstack/react-table";
+import { cn } from "@/lib/utils";
 import { format, startOfMonth, subMonths } from "date-fns";
 import {
   Calendar as CalendarIcon,
@@ -47,88 +44,6 @@ const compareChartConfig = {
   despesas: { label: "Despesas", color: "var(--chart-5)" },
 } satisfies ChartConfig;
 
-interface TransactionRow {
-  id: string;
-  description: string;
-  date: string;
-  amount: number;
-  type: TransactionType;
-  category: string;
-  bankName: string;
-  accountName: string;
-  status: TransactionStatus;
-}
-
-const transactionColumns: ColumnDef<TransactionRow>[] = [
-  {
-    accessorKey: "description",
-    header: "Descrição",
-    cell: ({ row }) => <span className="font-medium">{row.getValue("description")}</span>,
-  },
-  {
-    accessorKey: "category",
-    header: "Categoria",
-  },
-  {
-    accessorKey: "bankName",
-    header: "Banco",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.getValue("bankName")}</span>
-    ),
-  },
-  {
-    accessorKey: "accountName",
-    header: "Conta",
-    cell: ({ row }) => (
-      <span className="font-medium">{row.getValue("accountName")}</span>
-    ),
-  },
-  {
-    accessorKey: "date",
-    header: "Data",
-  },
-  {
-    accessorKey: "amount",
-    header: "Valor",
-    cell: ({ row }) => {
-      const amount = Number(row.getValue("amount"));
-      const type = row.original.type;
-      return (
-        <span
-          className={cn(
-            "font-medium",
-            type === TransactionType.INCOME
-              ? "text-emerald-600 dark:text-emerald-400"
-              : "text-rose-600 dark:text-rose-400",
-          )}
-        >
-          {type === TransactionType.INCOME ? "+" : "-"}
-          {currency(amount)}
-        </span>
-      );
-    },
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const status = row.getValue("status") as TransactionStatus;
-      return (
-        <span
-          className={cn(
-            "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-            status === TransactionStatus.COMPLETED
-              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
-              : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
-          )}
-        >
-          {status === TransactionStatus.COMPLETED ? "Concluído" : "Pendente"}
-        </span>
-      );
-    },
-  },
-];
-
 function pct(a: number, b: number) {
   return b === 0 ? 0 : ((a - b) / Math.abs(b)) * 100;
 }
@@ -150,18 +65,7 @@ export function DashboardClient() {
   const { data: totalBalanceData, isLoading: balanceLoading } =
     api.bankAccount.getTotalBalance.useQuery(undefined, { enabled: tenantReady });
 
-  // Latest transactions
-  const { data: transactionsData, isLoading: txLoading } = api.transaction.list.useQuery(
-    {
-      limit: 50,
-      offset: 0,
-      startDate: dateRange.from,
-      endDate: dateRange.to,
-    },
-    { enabled: tenantReady },
-  );
-
-  const isLoading = statsLoading || balanceLoading || txLoading || tenantLoading;
+  const isLoading = statsLoading || balanceLoading || tenantLoading;
 
   // Chart data
   const balanceSeries = monthlyStats?.balanceSeries ?? [];
@@ -204,23 +108,6 @@ export function DashboardClient() {
       lucroDelta: pct(totalLucro, firstHalfReceitas - firstHalfDespesas),
     };
   }, [balanceSeries, compareSeries, saldo]);
-
-  // Format transactions for table
-  const transactions: TransactionRow[] = useMemo(() => {
-    return (
-      transactionsData?.transactions.map((t) => ({
-        id: t.id,
-        description: t.description ?? "—",
-        date: formatDate(new Date(t.date)),
-        amount: typeof t.amount === "string" ? Number(t.amount) : t.amount,
-        type: t.type,
-        category: t.category?.name ?? "—",
-        bankName: t.bankAccount?.bankName ?? "—",
-        accountName: t.bankAccount?.name ?? "—",
-        status: t.status,
-      })) ?? []
-    );
-  }, [transactionsData]);
 
   if (isLoading) {
     return (
@@ -380,85 +267,227 @@ export function DashboardClient() {
         </Card>
       </section>
 
-      <section className="mt-3 min-w-0">
-        <Card className="min-h-0 min-w-0 overflow-hidden py-3">
-          <CardContent className="min-w-0 px-4 pb-3 pt-0">
-            <div className="mb-2 flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <h3 className="text-base font-semibold tracking-tight">Últimas Transações</h3>
-                <p className="text-sm text-muted-foreground">Transações recentes do período</p>
-              </div>
-            </div>
-
-            {/* Desktop: tabela */}
-            <div className="hidden md:block">
-              {transactions.length > 0 ? (
-                <DataTable
-                  columns={transactionColumns}
-                  data={transactions}
-                  searchKey="description"
-                  searchPlaceholder="Buscar transação..."
-                />
-              ) : (
-                <div className="rounded-md border py-8 text-center text-sm text-muted-foreground">
-                  Nenhuma transação encontrada.
-                </div>
-              )}
-            </div>
-
-            {/* Mobile: lista de cards */}
-            <div className="space-y-2 md:hidden">
-              {transactions.length > 0 ? (
-                transactions.map((t) => (
-                  <div
-                    key={t.id}
-                    className="flex items-center justify-between rounded-lg border bg-card px-3 py-2.5"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate text-sm font-medium">{t.description}</span>
-                        <span
-                          className={cn(
-                            "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none",
-                            t.status === TransactionStatus.COMPLETED
-                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
-                              : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
-                          )}
-                        >
-                          {t.status === TransactionStatus.COMPLETED ? "OK" : "PEN"}
-                        </span>
-                      </div>
-                      <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <span>{t.date}</span>
-                        <span className="text-border">·</span>
-                        <span className="truncate">{t.category}</span>
-                      </div>
-                    </div>
-                    <span
-                      className={cn(
-                        "ml-3 shrink-0 text-sm font-semibold tabular-nums",
-                        t.type === TransactionType.INCOME
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-rose-600 dark:text-rose-400",
-                      )}
-                    >
-                      {t.type === TransactionType.INCOME ? "+" : "-"}
-                      {currency(t.amount)}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <div className="rounded-md border py-8 text-center text-sm text-muted-foreground">
-                  Nenhuma transação encontrada.
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </section>
+      <TransactionsTable dateRange={dateRange} />
     </>
   );
 }
+
+// ── Isolated Transactions Table (prevents full dashboard re-render on pagination) ──
+
+import { DataTable } from "@/components/ui/data-table";
+import { formatDate } from "@/lib/utils";
+import { TransactionStatus, TransactionType } from "@prisma/client";
+import type { ColumnDef } from "@tanstack/react-table";
+
+interface TransactionRow {
+  id: string;
+  description: string;
+  date: string;
+  amount: number;
+  type: TransactionType;
+  category: string;
+  bankName: string;
+  accountName: string;
+  status: TransactionStatus;
+}
+
+const transactionColumns: ColumnDef<TransactionRow>[] = [
+  {
+    accessorKey: "description",
+    header: "Descrição",
+    cell: ({ row }) => <span className="font-medium">{row.getValue("description")}</span>,
+  },
+  {
+    accessorKey: "category",
+    header: "Categoria",
+  },
+  {
+    accessorKey: "bankName",
+    header: "Banco",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">{row.getValue("bankName")}</span>
+    ),
+  },
+  {
+    accessorKey: "accountName",
+    header: "Conta",
+    cell: ({ row }) => (
+      <span className="font-medium">{row.getValue("accountName")}</span>
+    ),
+  },
+  {
+    accessorKey: "date",
+    header: "Data",
+  },
+  {
+    accessorKey: "amount",
+    header: "Valor",
+    cell: ({ row }) => {
+      const amount = Number(row.getValue("amount"));
+      const type = row.original.type;
+      return (
+        <span
+          className={cn(
+            "font-medium",
+            type === TransactionType.INCOME
+              ? "text-emerald-600 dark:text-emerald-400"
+              : "text-rose-600 dark:text-rose-400",
+          )}
+        >
+          {type === TransactionType.INCOME ? "+" : "-"}
+          {currency(amount)}
+        </span>
+      );
+    },
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.getValue("status") as TransactionStatus;
+      return (
+        <span
+          className={cn(
+            "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+            status === TransactionStatus.COMPLETED
+              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+              : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
+          )}
+        >
+          {status === TransactionStatus.COMPLETED ? "Concluído" : "Pendente"}
+        </span>
+      );
+    },
+  },
+];
+
+function TransactionsTable({ dateRange }: { dateRange: { from: Date; to: Date } }) {
+  const { currentTenant, isLoading: tenantLoading } = useCurrentTenant();
+  const tenantReady = !tenantLoading && !!currentTenant;
+
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 8 });
+
+  const { data: transactionsData, isLoading: txLoading } = api.transaction.list.useQuery(
+    {
+      page: pagination.pageIndex + 1,
+      pageSize: pagination.pageSize,
+      startDate: dateRange.from,
+      endDate: dateRange.to,
+    },
+    { enabled: tenantReady },
+  );
+
+  const transactions: TransactionRow[] = useMemo(() => {
+    return (
+      transactionsData?.transactions.map((t) => ({
+        id: t.id,
+        description: t.description ?? "—",
+        date: formatDate(new Date(t.date)),
+        amount: typeof t.amount === "string" ? Number(t.amount) : t.amount,
+        type: t.type,
+        category: t.category?.name ?? "—",
+        bankName: t.bankAccount?.bankName ?? "—",
+        accountName: t.bankAccount?.name ?? "—",
+        status: t.status,
+      })) ?? []
+    );
+  }, [transactionsData]);
+
+  const txTotal = transactionsData?.total ?? 0;
+  const txPageCount = Math.ceil(txTotal / pagination.pageSize) || 1;
+
+  return (
+    <section className="mt-3 min-w-0">
+      <Card className="min-h-0 min-w-0 overflow-hidden py-3">
+        <CardContent className="min-w-0 px-4 pb-3 pt-0">
+          <div className="mb-2 flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h3 className="text-base font-semibold tracking-tight">Últimas Transações</h3>
+              <p className="text-sm text-muted-foreground">Transações recentes do período</p>
+            </div>
+          </div>
+
+          {/* Desktop: tabela */}
+          <div className="hidden md:block">
+            {txLoading ? (
+              <div className="space-y-2 rounded-md border p-2">
+                {Array.from({ length: pagination.pageSize }).map((_, i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
+              </div>
+            ) : transactions.length > 0 ? (
+              <DataTable
+                columns={transactionColumns}
+                data={transactions}
+                searchKey="description"
+                searchPlaceholder="Buscar transação..."
+                manualPagination
+                pageCount={txPageCount}
+                pagination={pagination}
+                onPaginationChange={setPagination}
+                totalRows={txTotal}
+              />
+            ) : (
+              <div className="rounded-md border py-8 text-center text-sm text-muted-foreground">
+                Nenhuma transação encontrada.
+              </div>
+            )}
+          </div>
+
+          {/* Mobile: lista de cards */}
+          <div className="space-y-2 md:hidden">
+            {transactions.length > 0 ? (
+              transactions.map((t) => (
+                <div
+                  key={t.id}
+                  className="flex items-center justify-between rounded-lg border bg-card px-3 py-2.5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-sm font-medium">{t.description}</span>
+                      <span
+                        className={cn(
+                          "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none",
+                          t.status === TransactionStatus.COMPLETED
+                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+                            : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
+                        )}
+                      >
+                        {t.status === TransactionStatus.COMPLETED ? "OK" : "PEN"}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <span>{t.date}</span>
+                      <span className="text-border">·</span>
+                      <span className="truncate">{t.category}</span>
+                    </div>
+                  </div>
+                  <span
+                    className={cn(
+                      "ml-3 shrink-0 text-sm font-semibold tabular-nums",
+                      t.type === TransactionType.INCOME
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-rose-600 dark:text-rose-400",
+                    )}
+                  >
+                    {t.type === TransactionType.INCOME ? "+" : "-"}
+                    {currency(t.amount)}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-md border py-8 text-center text-sm text-muted-foreground">
+                Nenhuma transação encontrada.
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
+// ── Helpers ──
 
 function DateRangePicker({
   range,
