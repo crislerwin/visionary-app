@@ -9,6 +9,7 @@ import {
     Plus,
     Trash2,
 } from "lucide-react";
+import { BankAccountType } from "@prisma/client";
 import { useMemo, useState } from "react";
 
 import {
@@ -95,7 +96,11 @@ export function BankAccountsTab() {
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [isCreating, setIsCreating] = useState(false);
-    const [form, setForm] = useState({ name: "", bank: "", type: "CHECKING" });
+    const [form, setForm] = useState<{ name: string; bank: string; type: BankAccountType }>({
+        name: "",
+        bank: "",
+        type: BankAccountType.CHECKING,
+    });
 
     const utils = api.useUtils();
 
@@ -155,13 +160,13 @@ export function BankAccountsTab() {
     const openEdit = (id: string) => {
         const acc = accounts.find((a) => a.id === id);
         if (!acc) return;
-        setForm({ name: acc.name, bank: acc.bankName ?? "", type: acc.type });
+        setForm({ name: acc.name, bank: acc.bankName ?? "", type: acc.type as BankAccountType });
         setEditingId(id);
         setIsCreating(false);
     };
 
     const openCreate = () => {
-        setForm({ name: "", bank: "", type: "CHECKING" });
+        setForm({ name: "", bank: "", type: BankAccountType.CHECKING });
         setEditingId(null);
         setIsCreating(true);
     };
@@ -177,7 +182,7 @@ export function BankAccountsTab() {
             createAccount.mutate({
                 name: form.name.trim(),
                 bankName: form.bank.trim(),
-                type: form.type as string,
+                type: form.type,
                 currency: "BRL",
                 initialBalance: 0,
             });
@@ -186,7 +191,7 @@ export function BankAccountsTab() {
                 id: editingId,
                 name: form.name.trim(),
                 bankName: form.bank.trim(),
-                type: form.type as string,
+                type: form.type,
                 currency: "BRL",
             });
         }
@@ -325,7 +330,7 @@ export function BankAccountsTab() {
                             <Select
                                 value={form.type}
                                 onValueChange={(v) =>
-                                    setForm((f) => ({ ...f, type: v }))
+                                    setForm((f) => ({ ...f, type: v as BankAccountType }))
                                 }
                             >
                                 <SelectTrigger id="acc-type">
