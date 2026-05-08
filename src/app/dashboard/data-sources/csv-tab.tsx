@@ -123,7 +123,8 @@ export function CsvTab() {
   // Mapping state
   const [mappingOpen, setMappingOpen] = useState(false);
   const [columnMapping, setColumnMapping] = useState<Record<string, string | undefined>>({});
-  const [dateFormat, setDateFormat] = useState<typeof DATE_FORMATS[number]["value"]>("YYYY-MM-DD");
+  const [dateFormat, setDateFormat] =
+    useState<(typeof DATE_FORMATS)[number]["value"]>("YYYY-MM-DD");
   const [inferTypeFromSign] = useState(true);
   const [sourceName, setSourceName] = useState("");
 
@@ -502,28 +503,28 @@ export function CsvTab() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-2 py-2">
+          <div className="space-y-4 py-2">
             {/* Headers */}
-            <div className="grid grid-cols-12 gap-3 px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              <div className="col-span-5">Campo</div>
+            <div className="grid grid-cols-12 gap-3 px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <div className="col-span-5">Campo do sistema</div>
               <div className="col-span-7">Coluna do arquivo</div>
             </div>
 
             {FIELD_META.map((f) => (
               <div
                 key={f.key}
-                className="grid grid-cols-12 items-start gap-3 rounded-md border p-2"
+                className="grid grid-cols-12 items-start gap-3 rounded-md border p-3"
               >
-                <div className="col-span-5 space-y-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <Label className="text-xs font-medium">{f.label}</Label>
+                <div className="col-span-5 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Label className="font-medium">{f.label}</Label>
                     {f.required && (
-                      <Badge variant="outline" className="h-4 px-1 text-[9px]">
-                        *
+                      <Badge variant="outline" className="h-5 px-1.5 text-[10px]">
+                        obrigatório
                       </Badge>
                     )}
                   </div>
-                  <p className="text-[10px] text-muted-foreground">{f.description}</p>
+                  <p className="text-xs text-muted-foreground">{f.description}</p>
                 </div>
                 <div className="col-span-7">
                   <Select
@@ -535,8 +536,8 @@ export function CsvTab() {
                       }))
                     }
                   >
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Selecione..." />
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma coluna" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={IGNORE}>— Ignorar —</SelectItem>
@@ -552,11 +553,14 @@ export function CsvTab() {
             ))}
 
             {/* Config row inside dialog */}
-            <div className="grid gap-2 sm:grid-cols-3 rounded-md border p-2">
-              <div className="space-y-0.5">
-                <Label className="text-[10px] font-medium">Formato de Data</Label>
-                <Select value={dateFormat} onValueChange={(v) => setDateFormat(v as typeof DATE_FORMATS[number]["value"])}>
-                  <SelectTrigger className="h-7 text-xs">
+            <div className="grid gap-3 sm:grid-cols-3 rounded-md border p-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Formato de Data</Label>
+                <Select
+                  value={dateFormat}
+                  onValueChange={(v) => setDateFormat(v as (typeof DATE_FORMATS)[number]["value"])}
+                >
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -568,10 +572,10 @@ export function CsvTab() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-0.5">
-                <Label className="text-[10px] font-medium">Conta Destino</Label>
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Conta Destino</Label>
                 <Select value={bankAccountId} onValueChange={setBankAccountId}>
-                  <SelectTrigger className="h-7 text-xs">
+                  <SelectTrigger>
                     <SelectValue placeholder="Selecione..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -583,12 +587,11 @@ export function CsvTab() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-0.5">
-                <Label className="text-[10px] font-medium">Nome da Fonte</Label>
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Nome da Fonte</Label>
                 <Input
                   value={sourceName}
                   onChange={(e) => setSourceName(e.target.value)}
-                  className="h-7 text-xs"
                   placeholder="Ex: Extrato Itaú"
                 />
               </div>
