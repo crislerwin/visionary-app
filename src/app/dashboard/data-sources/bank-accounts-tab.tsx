@@ -243,6 +243,7 @@ export function BankAccountsTab() {
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         <button
+                                            type="button"
                                             aria-label={`Ações para ${acc.name}`}
                                             className="ml-auto rounded p-0.5 opacity-60 transition-opacity hover:bg-accent hover:opacity-100"
                                         >
