@@ -23,7 +23,7 @@ import { useState } from "react";
 import { CloseCashRegisterDialog } from "./_components/close-cash-register-dialog";
 import { OpenCashRegisterDialog } from "./_components/open-cash-register-dialog";
 import { RegisterTransactionDialog } from "./_components/register-transaction-dialog";
-import { TransactionsList } from "./_components/transactions-list";
+import { type Transaction, TransactionsList } from "./_components/transactions-list";
 
 interface CashRegisterHistory {
   id: string;
@@ -253,7 +253,9 @@ export default function CashRegisterPage() {
                     <div className="h-10 w-full bg-muted animate-pulse rounded" />
                   </div>
                 ) : isOpen && cashRegister?.transactions ? (
-                  <TransactionsList transactions={cashRegister.transactions} />
+                  <TransactionsList
+                    transactions={cashRegister.transactions as unknown as Transaction[]}
+                  />
                 ) : (
                   <div className="text-center text-muted-foreground text-sm py-8 px-3">
                     {isOpen

@@ -145,7 +145,7 @@ export const featureFlagRouter = router({
   // Create feature flag (OWNER only)
   create: ownerProcedure.input(createFeatureFlagSchema).mutation(async ({ ctx, input }) => {
     // Check if name already exists
-    const existing = await prisma.featureFlag.findUnique({
+    const existing = await prisma.featureFlag.findFirst({
       where: { name: input.name },
     });
 
@@ -218,7 +218,7 @@ export const featureFlagRouter = router({
 
       // Check name uniqueness if changing
       if (input.data.name && input.data.name !== existing.name) {
-        const duplicate = await prisma.featureFlag.findUnique({
+        const duplicate = await prisma.featureFlag.findFirst({
           where: { name: input.data.name },
         });
         if (duplicate) {

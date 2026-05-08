@@ -87,12 +87,14 @@ export const agentRouter = router({
 
     const config = await prisma.agentConfig.create({
       data: {
-        tenantId: ctx.tenantId,
+        tenantId: ctx.tenantId!,
         promptSystem: input.promptSystem,
         welcomeMessage: input.welcomeMessage ?? null,
         tone: input.tone as "FRIENDLY" | "PROFESSIONAL" | "CASUAL" | "FORMAL",
         autoConfirm: input.autoConfirm,
-        workingHours: input.workingHours ? (input.workingHours as unknown as object) : undefined,
+        workingHours: input.workingHours
+          ? (input.workingHours as Prisma.InputJsonValue)
+          : undefined,
         webhookSecret,
       },
     });
@@ -145,7 +147,9 @@ export const agentRouter = router({
         }),
         ...(input.workingHours !== undefined && {
           workingHours:
-            input.workingHours === null ? Prisma.DbNull : (input.workingHours as object),
+            input.workingHours === null
+              ? Prisma.DbNull
+              : (input.workingHours as Prisma.InputJsonValue),
         }),
         ...(input.isActive !== undefined && { isActive: input.isActive }),
         ...(input.webhookSecret !== undefined && {
@@ -220,7 +224,7 @@ export const agentRouter = router({
         tenantId: string;
         type?: "ORDER_CREATE" | "ORDER_LIST" | "CONFIG_GET" | "CONFIG_UPDATE" | "UNKNOWN";
         status?: "SUCCESS" | "ERROR" | "PENDING";
-      } = { tenantId: ctx.tenantId };
+      } = { tenantId: ctx.tenantId! };
 
       if (input.type) {
         where.type = input.type;

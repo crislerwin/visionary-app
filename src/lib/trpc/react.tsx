@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
 import { useState } from "react";
+import superjson from "superjson";
 
 const trpc = createTRPCReact<AppRouter>();
 
@@ -15,6 +16,7 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
       links: [
         httpBatchLink({
           url: "/api/trpc",
+          transformer: superjson,
           headers() {
             const raw = localStorage.getItem("tenant-storage");
             const tenantId = raw

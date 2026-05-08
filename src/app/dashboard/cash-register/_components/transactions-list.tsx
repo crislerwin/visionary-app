@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { ArrowDownLeft, MinusCircle, PlusCircle } from "lucide-react";
 
-interface Transaction {
+export interface Transaction {
   id: string;
   type: "SALE" | "EXPENSE" | "WITHDRAWAL" | "INITIAL";
   amount: number | string;

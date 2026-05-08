@@ -777,12 +777,26 @@ export default function ProductsPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => openEdit(product)}>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        openEdit({
+                          ...product,
+                          price: Number(product.price),
+                          variants: product.variants.map((v) => ({ ...v, price: Number(v.price) })),
+                        })
+                      }
+                    >
                       <Icons.edit className="mr-2 h-4 w-4" />
                       Editar
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => openDelete(product)}
+                      onClick={() =>
+                        openDelete({
+                          ...product,
+                          price: Number(product.price),
+                          variants: product.variants.map((v) => ({ ...v, price: Number(v.price) })),
+                        })
+                      }
                       className="text-destructive focus:text-destructive"
                     >
                       <Icons.trash className="mr-2 h-4 w-4" />

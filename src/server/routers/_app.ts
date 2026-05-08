@@ -1,4 +1,9 @@
-import { createCallerFactory, createTRPCContext, router } from "@/lib/trpc/trpc";
+import {
+  createCallerFactory,
+  createTRPCContext,
+  createTRPCInnerContext,
+  router,
+} from "@/lib/trpc/trpc";
 import { agentRouter } from "./agent";
 import { authRouter } from "./auth";
 import { cashRegisterRouter } from "./cash-register";
@@ -34,4 +39,4 @@ export const appRouter = router({
 export type AppRouter = typeof appRouter;
 
 export const createCaller = createCallerFactory(appRouter);
-export { createTRPCContext };
+export { createTRPCContext, createTRPCInnerContext };

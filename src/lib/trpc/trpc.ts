@@ -1,16 +1,27 @@
 import { auth } from "@/auth";
 import { isOwner } from "@/middlewares/owner-only";
 import { TRPCError, initTRPC } from "@trpc/server";
+import type { Session } from "next-auth";
 import { cache } from "react";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-export const createTRPCContext = cache(async () => {
-  const session = await auth();
-  return { session, tenantId: null as string | null };
-});
+export const createTRPCContext = cache(
+  async (opts?: { session?: Session | null; tenantId?: string | null }) => {
+    const session = opts?.session ?? (await auth());
+    return { session, tenantId: (opts?.tenantId ?? undefined) as string | undefined };
+  },
+);
 
-const t = initTRPC.context<typeof createTRPCContext>().create({
+export function createTRPCInnerContext(opts?: {
+  session?: Session | null;
+  tenantId?: string | null;
+}) {
+  const session = opts?.session ?? null;
+  return { session, tenantId: (opts?.tenantId ?? undefined) as string | undefined };
+}
+
+const t = initTRPC.context<ReturnType<typeof createTRPCInnerContext>>().create({
   transformer: superjson,
   errorFormatter({ shape, error }) {
     return {
@@ -46,10 +57,11 @@ const enforceUserHasTenant = t.middleware(async ({ ctx, next }) => {
   }
 
   // Get tenantId from session or context
-  const tenantId =
-    (ctx.session?.user as Record<string, unknown> | null | undefined)
-      ?.defaultTenantId as string | undefined ||
-    ctx.tenantId;
+  const sessionUser = ctx.session?.user as unknown as
+    | { defaultTenantId?: string }
+    | null
+    | undefined;
+  const tenantId = sessionUser?.defaultTenantId || ctx.tenantId;
 
   if (!tenantId) {
     throw new TRPCError({

@@ -41,7 +41,7 @@ export const cashRegisterRouter = router({
   getCurrent: tenantProcedure.query(async ({ ctx }) => {
     const cashRegister = await prisma.cashRegister.findFirst({
       where: {
-        tenantId: ctx.tenantId,
+        tenantId: ctx.tenantId!,
         status: "OPEN",
       },
       include: {
@@ -82,7 +82,7 @@ export const cashRegisterRouter = router({
       OR?: Array<{ openedBy?: string } | { closedBy?: string }>;
       difference?: { not: number } | number;
     } = {
-      tenantId: ctx.tenantId,
+      tenantId: ctx.tenantId!,
       status: "CLOSED",
     };
 
@@ -150,7 +150,7 @@ export const cashRegisterRouter = router({
     const cashRegister = await prisma.cashRegister.findFirst({
       where: {
         id: input.id,
-        tenantId: ctx.tenantId,
+        tenantId: ctx.tenantId!,
       },
       include: {
         transactions: {
@@ -182,7 +182,7 @@ export const cashRegisterRouter = router({
     // Check if there's already an open cash register
     const existingOpen = await prisma.cashRegister.findFirst({
       where: {
-        tenantId: ctx.tenantId,
+        tenantId: ctx.tenantId!,
         status: "OPEN",
       },
     });
@@ -196,7 +196,7 @@ export const cashRegisterRouter = router({
 
     const cashRegister = await prisma.cashRegister.create({
       data: {
-        tenantId: ctx.tenantId,
+        tenantId: ctx.tenantId!,
         openedBy: userId,
         initialAmount: input.initialAmount,
         status: "OPEN",
@@ -228,7 +228,7 @@ export const cashRegisterRouter = router({
 
     const cashRegister = await prisma.cashRegister.findFirst({
       where: {
-        tenantId: ctx.tenantId,
+        tenantId: ctx.tenantId!,
         status: "OPEN",
       },
       include: {
@@ -286,7 +286,7 @@ export const cashRegisterRouter = router({
 
     const cashRegister = await prisma.cashRegister.findFirst({
       where: {
-        tenantId: ctx.tenantId,
+        tenantId: ctx.tenantId!,
         status: "OPEN",
       },
       include: {

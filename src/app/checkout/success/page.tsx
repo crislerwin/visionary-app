@@ -233,7 +233,7 @@ function SuccessContent() {
             </div>
             <div className="text-right">
               <p className="text-xs text-muted-foreground">Total pago</p>
-              <span className="text-2xl font-bold">{formatBRL(order.total)}</span>
+              <span className="text-2xl font-bold">{formatBRL(Number(order.total))}</span>
             </div>
           </div>
 
@@ -324,36 +324,29 @@ function SuccessContent() {
               Resumo
             </h3>
             <div className="space-y-1">
-              {order.items.map(
-                (item: {
-                  id: string;
-                  quantity: number;
-                  productName: string;
-                  totalPrice: number | string;
-                }) => (
-                  <div key={item.id} className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">
-                      {item.quantity}x {item.productName}
-                    </span>
-                    <span className="font-medium">{formatBRL(item.totalPrice)}</span>
-                  </div>
-                ),
-              )}
+              {order.items.map((item) => (
+                <div key={item.id} className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">
+                    {item.quantity}x {item.productName}
+                  </span>
+                  <span className="font-medium">{formatBRL(Number(item.totalPrice))}</span>
+                </div>
+              ))}
             </div>
             <Separator />
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>{formatBRL(order.subtotal)}</span>
+              <span>{formatBRL(Number(order.subtotal))}</span>
             </div>
             {order.deliveryFee ? (
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Entrega</span>
-                <span>{formatBRL(order.deliveryFee)}</span>
+                <span>{formatBRL(Number(order.deliveryFee))}</span>
               </div>
             ) : null}
             <div className="flex justify-between text-sm font-bold">
               <span>Total</span>
-              <span>{formatBRL(order.total)}</span>
+              <span>{formatBRL(Number(order.total))}</span>
             </div>
             {order.paymentMethod && (
               <div className="flex justify-between text-[10px] text-muted-foreground">

@@ -539,7 +539,6 @@ model AgentInteractionLog {
   @@map("agent_interaction_logs")
 }
 
-// Feature Flags
 enum FeatureFlagCategory {
   AI
   WHATSAPP
@@ -550,29 +549,23 @@ enum FeatureFlagCategory {
 }
 
 model FeatureFlag {
-  id          String   @id @default(cuid())
-  name        String   @unique
+  id          String              @id @default(cuid())
+  name        String
   description String?
   category    FeatureFlagCategory @default(EXPERIMENTAL)
-  
-  // Scope
-  isGlobal    Boolean  @default(false) @map("is_global")
-  tenantId    String?  @map("tenant_id")
-  
-  // Status
-  enabled     Boolean  @default(false)
-  
-  // Metadata
-  createdBy   String   @map("created_by")
-  updatedBy   String?  @map("updated_by")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  
-  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
+  isGlobal    Boolean             @default(false) @map("is_global")
+  tenantId    String?             @map("tenant_id")
+  enabled     Boolean             @default(false)
+  createdBy   String              @map("created_by")
+  updatedBy   String?             @map("updated_by")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([name, tenantId])
   @@index([tenantId])
   @@index([category])
-  @@index([isGlobal])
   @@index([enabled])
   @@map("feature_flags")
 }

@@ -18,6 +18,7 @@ export async function resetDatabase() {
     "ProductVariant",
     "Product",
     "Category",
+    "FeatureFlag",
     "Membership",
     "invites",
     "leads",

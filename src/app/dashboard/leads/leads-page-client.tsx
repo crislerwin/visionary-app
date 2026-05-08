@@ -179,7 +179,7 @@ export default function LeadsPageClient() {
     [handleAction],
   );
 
-  const leads = (data?.leads as Lead[]) ?? [];
+  const leads = (data?.leads as unknown as Lead[]) ?? [];
   const totalLeads = data?.total ?? 0;
   const pendingCount = leads.filter((l) => l.status === LeadStatus.PENDING).length;
   const approvedCount = leads.filter((l) => l.status === LeadStatus.APPROVED).length;

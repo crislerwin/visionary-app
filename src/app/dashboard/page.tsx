@@ -30,7 +30,7 @@ export default function DashboardPage() {
     { enabled: !!tenantId, refetchInterval: 15000 },
   );
 
-  const orders = (ordersRaw ?? []) as Array<{
+  const orders = (ordersRaw ?? []) as unknown as Array<{
     id: string;
     status: OrderStatus;
     total: number | string;

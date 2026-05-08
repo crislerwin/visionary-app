@@ -271,8 +271,8 @@ export default function TeamPage() {
     [data, tenantId, cancelInvite],
   );
 
-  const members = (data?.members ?? []) as Member[];
-  const invites = (data?.pendingInvites ?? []) as Invite[];
+  const members = (data?.members ?? []) as unknown as Member[];
+  const invites = (data?.pendingInvites ?? []) as unknown as Invite[];
 
   return (
     <PageContainer>
