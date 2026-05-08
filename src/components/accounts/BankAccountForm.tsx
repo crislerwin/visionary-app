@@ -80,7 +80,7 @@ export function BankAccountForm({ open, onOpenChange, account, onSuccess }: Bank
   const defaultValues = useMemo(
     () => ({
       name: account?.name ?? "",
-      type: account?.type ?? "CHECKING",
+      type: (account?.type as "CHECKING" | "SAVINGS" | "CREDIT" | undefined) ?? "CHECKING",
       currency: account?.currency ?? "BRL",
       initialBalance: account?.initialBalance ?? 0,
     }),
@@ -93,18 +93,13 @@ export function BankAccountForm({ open, onOpenChange, account, onSuccess }: Bank
   });
 
   const handleSubmit = form.handleSubmit(async (data) => {
-    const submitData = {
-      ...data,
-      type: data.type as BankAccountType,
-    };
-
     if (isEditing && account) {
       await updateMutation.mutateAsync({
         id: account.id,
-        ...submitData,
+        ...data,
       });
     } else {
-      await createMutation.mutateAsync(submitData);
+      await createMutation.mutateAsync(data);
     }
   });
 
