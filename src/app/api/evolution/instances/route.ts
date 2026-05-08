@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       qrcode: true,
       webhook: {
         url: webhookUrl,
-        byEvents: true,
+        byEvents: false,
         base64: false,
         events: [
           "QRCODE_UPDATED",

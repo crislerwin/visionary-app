@@ -144,7 +144,7 @@ class EvolutionAPIClient {
       body: JSON.stringify({
         webhook: {
           url: webhookUrl,
-          byEvents: true,
+          byEvents: false,
           base64: false,
         },
       }),
