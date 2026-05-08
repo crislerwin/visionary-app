@@ -10,7 +10,7 @@ export function useFeatureFlag(flagName: string) {
       staleTime: 5 * 60 * 1000,
       // Return false if error or no data
       select: (data) => data?.enabled ?? false,
-    }
+    },
   );
 
   return {

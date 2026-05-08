@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { api } from "@/lib/trpc/react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,21 +26,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { api } from "@/lib/trpc/react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Building2, Globe, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Globe,
-  Building2,
-  Search,
-} from "lucide-react";
 
 const categoryColors: Record<string, string> = {
   AI: "bg-purple-500",
@@ -84,7 +77,11 @@ export default function FeatureFlagsAdminPage() {
   const [editingFlag, setEditingFlag] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-  const { data: flags, isLoading, refetch } = api.featureFlag.list.useQuery({
+  const {
+    data: flags,
+    isLoading,
+    refetch,
+  } = api.featureFlag.list.useQuery({
     limit: 100,
   });
 
@@ -183,9 +180,7 @@ export default function FeatureFlagsAdminPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Feature Flags</h1>
-          <p className="text-muted-foreground">
-            Gerencie funcionalidades do sistema
-          </p>
+          <p className="text-muted-foreground">Gerencie funcionalidades do sistema</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
@@ -197,9 +192,7 @@ export default function FeatureFlagsAdminPage() {
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Criar Feature Flag</DialogTitle>
-              <DialogDescription>
-                Adicione uma nova funcionalidade controlável
-              </DialogDescription>
+              <DialogDescription>Adicione uma nova funcionalidade controlável</DialogDescription>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -234,10 +227,7 @@ export default function FeatureFlagsAdminPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Categoria</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue />
@@ -266,10 +256,7 @@ export default function FeatureFlagsAdminPage() {
                         </div>
                       </div>
                       <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
                       </FormControl>
                     </FormItem>
                   )}
@@ -281,10 +268,7 @@ export default function FeatureFlagsAdminPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Tenant</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecione um tenant" />
@@ -315,10 +299,7 @@ export default function FeatureFlagsAdminPage() {
                         </div>
                       </div>
                       <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
                       </FormControl>
                     </FormItem>
                   )}
@@ -407,20 +388,14 @@ export default function FeatureFlagsAdminPage() {
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-muted-foreground">
-                {flag.description || "Sem descrição"}
-              </p>
+              <p className="text-sm text-muted-foreground">{flag.description || "Sem descrição"}</p>
             </div>
             <div className="flex items-center gap-4">
               <Switch
                 checked={flag.enabled}
                 onCheckedChange={() => toggleMutation.mutate({ id: flag.id })}
               />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setEditingFlag(flag.id)}
-              >
+              <Button variant="ghost" size="icon" onClick={() => setEditingFlag(flag.id)}>
                 <Pencil className="h-4 w-4" />
               </Button>
               <Button

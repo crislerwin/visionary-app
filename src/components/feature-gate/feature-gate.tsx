@@ -1,8 +1,8 @@
 "use client";
 
-import { ReactNode } from "react";
-import { useFeatureFlag } from "@/hooks/use-feature-flag";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useFeatureFlag } from "@/hooks/use-feature-flag";
+import type { ReactNode } from "react";
 
 interface FeatureGateProps {
   flag: string;
@@ -45,9 +45,12 @@ export function useFeatureFlagsEnabled(flagNames: string[]) {
     allEnabled,
     anyEnabled,
     isLoading,
-    flags: results.reduce((acc, r, i) => {
-      acc[flagNames[i]] = r.enabled;
-      return acc;
-    }, {} as Record<string, boolean>),
+    flags: results.reduce(
+      (acc, r, i) => {
+        acc[flagNames[i]] = r.enabled;
+        return acc;
+      },
+      {} as Record<string, boolean>,
+    ),
   };
 }

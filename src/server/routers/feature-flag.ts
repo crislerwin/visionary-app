@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/db";
-import { isOwner } from "@/middlewares/owner-only";
-import { adminProcedure, ownerProcedure, router, tenantProcedure } from "@/lib/trpc/trpc";
+import { ownerProcedure, router, tenantProcedure } from "@/lib/trpc/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -45,53 +44,51 @@ const listFeatureFlagsSchema = z.object({
 
 export const featureFlagRouter = router({
   // List all feature flags (OWNER only)
-  list: ownerProcedure
-    .input(listFeatureFlagsSchema)
-    .query(async ({ ctx, input }) => {
-      const where: Record<string, unknown> = {};
+  list: ownerProcedure.input(listFeatureFlagsSchema).query(async ({ input }) => {
+    const where: Record<string, unknown> = {};
 
-      if (input.category) {
-        where.category = input.category;
-      }
-      if (input.enabled !== undefined) {
-        where.enabled = input.enabled;
-      }
-      if (input.isGlobal !== undefined) {
-        where.isGlobal = input.isGlobal;
-      }
-      if (input.tenantId) {
-        where.tenantId = input.tenantId;
-      }
+    if (input.category) {
+      where.category = input.category;
+    }
+    if (input.enabled !== undefined) {
+      where.enabled = input.enabled;
+    }
+    if (input.isGlobal !== undefined) {
+      where.isGlobal = input.isGlobal;
+    }
+    if (input.tenantId) {
+      where.tenantId = input.tenantId;
+    }
 
-      const [flags, total] = await Promise.all([
-        prisma.featureFlag.findMany({
-          where,
-          include: { tenant: { select: { id: true, name: true, slug: true } } },
-          orderBy: { createdAt: "desc" },
-          take: input.limit,
-          skip: input.offset,
-        }),
-        prisma.featureFlag.count({ where }),
-      ]);
+    const [flags, total] = await Promise.all([
+      prisma.featureFlag.findMany({
+        where,
+        include: { tenant: { select: { id: true, name: true, slug: true } } },
+        orderBy: { createdAt: "desc" },
+        take: input.limit,
+        skip: input.offset,
+      }),
+      prisma.featureFlag.count({ where }),
+    ]);
 
-      return {
-        flags: flags.map((flag) => ({
-          id: flag.id,
-          name: flag.name,
-          description: flag.description,
-          category: flag.category,
-          isGlobal: flag.isGlobal,
-          tenantId: flag.tenantId,
-          tenant: flag.tenant,
-          enabled: flag.enabled,
-          createdBy: flag.createdBy,
-          updatedBy: flag.updatedBy,
-          createdAt: flag.createdAt.toISOString(),
-          updatedAt: flag.updatedAt.toISOString(),
-        })),
-        total,
-      };
-    }),
+    return {
+      flags: flags.map((flag) => ({
+        id: flag.id,
+        name: flag.name,
+        description: flag.description,
+        category: flag.category,
+        isGlobal: flag.isGlobal,
+        tenantId: flag.tenantId,
+        tenant: flag.tenant,
+        enabled: flag.enabled,
+        createdBy: flag.createdBy,
+        updatedBy: flag.updatedBy,
+        createdAt: flag.createdAt.toISOString(),
+        updatedAt: flag.updatedAt.toISOString(),
+      })),
+      total,
+    };
+  }),
 
   // Get feature flags for current tenant
   listByTenant: tenantProcedure.query(async ({ ctx }) => {
@@ -116,92 +113,88 @@ export const featureFlagRouter = router({
   }),
 
   // Get single feature flag
-  get: ownerProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      const flag = await prisma.featureFlag.findUnique({
-        where: { id: input.id },
-        include: { tenant: { select: { id: true, name: true, slug: true } } },
-      });
+  get: ownerProcedure.input(z.object({ id: z.string() })).query(async ({ input }) => {
+    const flag = await prisma.featureFlag.findUnique({
+      where: { id: input.id },
+      include: { tenant: { select: { id: true, name: true, slug: true } } },
+    });
 
-      if (!flag) {
+    if (!flag) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Feature flag not found",
+      });
+    }
+
+    return {
+      id: flag.id,
+      name: flag.name,
+      description: flag.description,
+      category: flag.category,
+      isGlobal: flag.isGlobal,
+      tenantId: flag.tenantId,
+      tenant: flag.tenant,
+      enabled: flag.enabled,
+      createdBy: flag.createdBy,
+      updatedBy: flag.updatedBy,
+      createdAt: flag.createdAt.toISOString(),
+      updatedAt: flag.updatedAt.toISOString(),
+    };
+  }),
+
+  // Create feature flag (OWNER only)
+  create: ownerProcedure.input(createFeatureFlagSchema).mutation(async ({ ctx, input }) => {
+    // Check if name already exists
+    const existing = await prisma.featureFlag.findUnique({
+      where: { name: input.name },
+    });
+
+    if (existing) {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "Feature flag with this name already exists",
+      });
+    }
+
+    // If tenant-specific, verify tenant exists
+    if (input.tenantId) {
+      const tenant = await prisma.tenant.findUnique({
+        where: { id: input.tenantId },
+      });
+      if (!tenant) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Feature flag not found",
+          message: "Tenant not found",
         });
       }
+    }
 
-      return {
+    const flag = await prisma.featureFlag.create({
+      data: {
+        name: input.name,
+        description: input.description,
+        category: input.category,
+        isGlobal: input.isGlobal,
+        tenantId: input.tenantId,
+        enabled: input.enabled,
+        createdBy: ctx.user.id,
+      },
+    });
+
+    return {
+      success: true,
+      flag: {
         id: flag.id,
         name: flag.name,
         description: flag.description,
         category: flag.category,
         isGlobal: flag.isGlobal,
         tenantId: flag.tenantId,
-        tenant: flag.tenant,
         enabled: flag.enabled,
-        createdBy: flag.createdBy,
-        updatedBy: flag.updatedBy,
         createdAt: flag.createdAt.toISOString(),
-        updatedAt: flag.updatedAt.toISOString(),
-      };
-    }),
-
-  // Create feature flag (OWNER only)
-  create: ownerProcedure
-    .input(createFeatureFlagSchema)
-    .mutation(async ({ ctx, input }) => {
-      // Check if name already exists
-      const existing = await prisma.featureFlag.findUnique({
-        where: { name: input.name },
-      });
-
-      if (existing) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "Feature flag with this name already exists",
-        });
-      }
-
-      // If tenant-specific, verify tenant exists
-      if (input.tenantId) {
-        const tenant = await prisma.tenant.findUnique({
-          where: { id: input.tenantId },
-        });
-        if (!tenant) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Tenant not found",
-          });
-        }
-      }
-
-      const flag = await prisma.featureFlag.create({
-        data: {
-          name: input.name,
-          description: input.description,
-          category: input.category,
-          isGlobal: input.isGlobal,
-          tenantId: input.tenantId,
-          enabled: input.enabled,
-          createdBy: ctx.user.id,
-        },
-      });
-
-      return {
-        success: true,
-        flag: {
-          id: flag.id,
-          name: flag.name,
-          description: flag.description,
-          category: flag.category,
-          isGlobal: flag.isGlobal,
-          tenantId: flag.tenantId,
-          enabled: flag.enabled,
-          createdAt: flag.createdAt.toISOString(),
-        },
-      };
-    }),
+      },
+    };
+  }),
 
   // Update feature flag (OWNER only)
   update: ownerProcedure
@@ -209,7 +202,7 @@ export const featureFlagRouter = router({
       z.object({
         id: z.string(),
         data: updateFeatureFlagSchema,
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const existing = await prisma.featureFlag.findUnique({
@@ -278,82 +271,76 @@ export const featureFlagRouter = router({
     }),
 
   // Toggle feature flag (OWNER only)
-  toggle: ownerProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      const flag = await prisma.featureFlag.findUnique({
-        where: { id: input.id },
+  toggle: ownerProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+    const flag = await prisma.featureFlag.findUnique({
+      where: { id: input.id },
+    });
+
+    if (!flag) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Feature flag not found",
       });
+    }
 
-      if (!flag) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Feature flag not found",
-        });
-      }
+    const updated = await prisma.featureFlag.update({
+      where: { id: input.id },
+      data: {
+        enabled: !flag.enabled,
+        updatedBy: ctx.user.id,
+      },
+    });
 
-      const updated = await prisma.featureFlag.update({
-        where: { id: input.id },
-        data: {
-          enabled: !flag.enabled,
-          updatedBy: ctx.user.id,
-        },
-      });
-
-      return {
-        success: true,
-        enabled: updated.enabled,
-      };
-    }),
+    return {
+      success: true,
+      enabled: updated.enabled,
+    };
+  }),
 
   // Delete feature flag (OWNER only)
-  delete: ownerProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      const flag = await prisma.featureFlag.findUnique({
-        where: { id: input.id },
+  delete: ownerProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+    const flag = await prisma.featureFlag.findUnique({
+      where: { id: input.id },
+    });
+
+    if (!flag) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Feature flag not found",
       });
+    }
 
-      if (!flag) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Feature flag not found",
-        });
-      }
+    await prisma.featureFlag.delete({
+      where: { id: input.id },
+    });
 
-      await prisma.featureFlag.delete({
-        where: { id: input.id },
-      });
-
-      return { success: true };
-    }),
+    return { success: true };
+  }),
 
   // Check if feature is enabled (for any authenticated user)
-  isEnabled: tenantProcedure
-    .input(z.object({ name: z.string() }))
-    .query(async ({ ctx, input }) => {
-      // Check global flag first
-      const globalFlag = await prisma.featureFlag.findFirst({
-        where: {
-          name: input.name,
-          isGlobal: true,
-        },
-      });
+  isEnabled: tenantProcedure.input(z.object({ name: z.string() })).query(async ({ ctx, input }) => {
+    // Check global flag first
+    const globalFlag = await prisma.featureFlag.findFirst({
+      where: {
+        name: input.name,
+        isGlobal: true,
+      },
+    });
 
-      if (globalFlag) {
-        return { enabled: globalFlag.enabled };
-      }
+    if (globalFlag) {
+      return { enabled: globalFlag.enabled };
+    }
 
-      // Check tenant-specific flag
-      const tenantFlag = await prisma.featureFlag.findFirst({
-        where: {
-          name: input.name,
-          tenantId: ctx.tenantId,
-        },
-      });
+    // Check tenant-specific flag
+    const tenantFlag = await prisma.featureFlag.findFirst({
+      where: {
+        name: input.name,
+        tenantId: ctx.tenantId,
+      },
+    });
 
-      return { enabled: tenantFlag?.enabled ?? false };
-    }),
+    return { enabled: tenantFlag?.enabled ?? false };
+  }),
 });
 
 export type FeatureFlagRouter = typeof featureFlagRouter;

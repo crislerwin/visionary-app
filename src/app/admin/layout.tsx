@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
-import { redirect } from "next/navigation";
 import { isOwner } from "@/middlewares/owner-only";
+import { redirect } from "next/navigation";
 
 export default async function AdminLayout({
   children,
@@ -19,9 +19,7 @@ export default async function AdminLayout({
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold">Admin Panel</h1>
-            <p className="text-sm text-muted-foreground">
-              {session.user.email}
-            </p>
+            <p className="text-sm text-muted-foreground">{session.user.email}</p>
           </div>
         </div>
       </header>
