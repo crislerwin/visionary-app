@@ -1,20 +1,19 @@
 "use client";
 
-import { DataTable } from "@/components/ui/data-table";
-import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/trpc/react";
-import {
-  AlertTriangle,
-  Building2,
-  Loader2,
-  MoreVertical,
-  Pencil,
-  Plus,
-  Trash2,
-  Wallet,
-} from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Building2, Loader2, MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,35 +41,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-import type { BankAccountType } from "@prisma/client";
-import type { ColumnDef } from "@tanstack/react-table";
 
 // ── Helpers ──
 
 const currency = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const TYPE_LABELS: Record<string, string> = {
-  CHECKING: "Conta corrente",
-  SAVINGS: "Poupança",
-  CREDIT: "Cartão de crédito",
-  INVESTMENT: "Investimento",
-  DIGITAL_WALLET: "Carteira digital",
-  OTHER: "Outro",
-};
-
-const BANK_OPTIONS = [
-  "Itaú",
-  "Nubank",
-  "Bradesco",
-  "Banco do Brasil",
-  "Santander",
-  "BTG Pactual",
-  "Inter",
-  "C6 Bank",
-  "PicPay",
-  "Mercado Pago",
-  "Outro",
+const TYPE_OPTIONS = [
+  { value: "CHECKING", label: "Conta Corrente" },
+  { value: "SAVINGS", label: "Poupança" },
+  { value: "CREDIT", label: "Cartão de Crédito" },
+  { value: "INVESTMENT", label: "Investimentos" },
+  { value: "DIGITAL_WALLET", label: "Carteira Digital" },
+  { value: "OTHER", label: "Outro" },
 ];
 
 // ── Types ──
@@ -80,9 +62,7 @@ interface Account {
   name: string;
   bankName: string | null;
   type: string;
-  currency: string;
   currentBalance: string;
-  _count: { transactions: number };
 }
 
 interface Txn {
@@ -94,175 +74,14 @@ interface Txn {
   type: string;
 }
 
-// ── Account Form Modal ──
-
-interface AccountFormData {
-  name: string;
-  bankName: string;
-  type: BankAccountType;
-  currency: string;
-  initialBalance: string;
-}
-
-function AccountModal({
-  open,
-  onOpenChange,
-  account,
-  onSubmit,
-  isSubmitting,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  account: Account | null;
-  onSubmit: (data: AccountFormData) => void;
-  isSubmitting: boolean;
-}) {
-  const isEdit = !!account;
-  const [form, setForm] = useState<AccountFormData>({
-    name: "",
-    bankName: "",
-    type: "CHECKING",
-    currency: "BRL",
-    initialBalance: "0",
-  });
-
-  useEffect(() => {
-    setForm({
-      name: account?.name ?? "",
-      bankName: account?.bankName ?? "",
-      type: (account?.type as BankAccountType) ?? "CHECKING",
-      currency: account?.currency ?? "BRL",
-      initialBalance: account ? String(Number(account.currentBalance)) : "0",
-    });
-  }, [account]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.name.trim() || !form.bankName.trim()) return;
-    onSubmit(form);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? "Editar conta" : "Nova conta"}</DialogTitle>
-          <DialogDescription>
-            {isEdit
-              ? "Altere os dados da conta bancária."
-              : "Preencha os dados para criar uma nova conta."}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="space-y-0.5">
-            <Label className="text-[10px] font-medium">Nome da conta</Label>
-            <Input
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="Ex: Principal"
-              className="h-7 text-xs"
-              required
-            />
-          </div>
-          <div className="space-y-0.5">
-            <Label className="text-[10px] font-medium">Instituição</Label>
-            <Select
-              value={form.bankName}
-              onValueChange={(v) => setForm((f) => ({ ...f, bankName: v }))}
-            >
-              <SelectTrigger className="h-7 text-xs">
-                <SelectValue placeholder="Selecione..." />
-              </SelectTrigger>
-              <SelectContent>
-                {BANK_OPTIONS.map((b) => (
-                  <SelectItem key={b} value={b}>
-                    {b}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-0.5">
-              <Label className="text-[10px] font-medium">Tipo</Label>
-              <Select
-                value={form.type}
-                onValueChange={(v) => setForm((f) => ({ ...f, type: v as BankAccountType }))}
-              >
-                <SelectTrigger className="h-7 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(TYPE_LABELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-0.5">
-              <Label className="text-[10px] font-medium">Moeda</Label>
-              <Select
-                value={form.currency}
-                onValueChange={(v) => setForm((f) => ({ ...f, currency: v }))}
-              >
-                <SelectTrigger className="h-7 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="BRL">BRL</SelectItem>
-                  <SelectItem value="USD">USD</SelectItem>
-                  <SelectItem value="EUR">EUR</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          {!isEdit && (
-            <div className="space-y-0.5">
-              <Label className="text-[10px] font-medium">Saldo inicial</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={form.initialBalance}
-                onChange={(e) => setForm((f) => ({ ...f, initialBalance: e.target.value }))}
-                placeholder="0,00"
-                className="h-7 text-xs"
-              />
-            </div>
-          )}
-          <DialogFooter>
-            <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={isSubmitting || !form.name.trim() || !form.bankName.trim()}
-            >
-              {isSubmitting ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : isEdit ? (
-                "Salvar"
-              ) : (
-                "Criar"
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 // ── Main ──
 
 export function BankAccountsTab() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [form, setForm] = useState({ name: "", bank: "", type: "CHECKING" });
 
   const utils = api.useUtils();
 
@@ -273,9 +92,7 @@ export function BankAccountsTab() {
       name: a.name,
       bankName: a.bankName,
       type: a.type,
-      currency: a.currency,
-      currentBalance: a.currentBalance ?? a.initialBalance ?? "0",
-      _count: a._count,
+      currentBalance: a.currentBalance ?? "0",
     })) ?? [];
 
   // Auto-select first account
@@ -284,14 +101,16 @@ export function BankAccountsTab() {
   }
 
   const active = accounts.find((a) => a.id === activeId) ?? null;
+  const toDelete = accounts.find((a) => a.id === confirmDeleteId) ?? null;
+  const editOpen = isCreating || editingId !== null;
 
   // ── Mutations ──
 
   const createAccount = api.bankAccount.create.useMutation({
     onSuccess: (data) => {
       utils.bankAccount.list.invalidate();
-      setModalOpen(false);
       setActiveId(data.id);
+      closeEdit();
     },
   });
 
@@ -299,8 +118,7 @@ export function BankAccountsTab() {
     onSuccess: () => {
       utils.bankAccount.list.invalidate();
       utils.transaction.list.invalidate();
-      setModalOpen(false);
-      setEditingAccount(null);
+      closeEdit();
     },
   });
 
@@ -317,159 +135,206 @@ export function BankAccountsTab() {
     onError: () => setConfirmDeleteId(null),
   });
 
-  const handleCreate = (form: AccountFormData) => {
-    createAccount.mutate({
-      name: form.name.trim(),
-      bankName: form.bankName.trim(),
-      type: form.type,
-      currency: form.currency,
-      initialBalance: Number(form.initialBalance) || 0,
-    });
+  // ── Actions ──
+
+  const openEdit = (id: string) => {
+    const acc = accounts.find((a) => a.id === id);
+    if (!acc) return;
+    setForm({ name: acc.name, bank: acc.bankName ?? "", type: acc.type });
+    setEditingId(id);
+    setIsCreating(false);
   };
 
-  const handleUpdate = (form: AccountFormData) => {
-    if (!editingAccount) return;
-    updateAccount.mutate({
-      id: editingAccount.id,
-      name: form.name.trim(),
-      bankName: form.bankName.trim(),
-      type: form.type,
-      currency: form.currency,
-    });
+  const openCreate = () => {
+    setForm({ name: "", bank: "", type: "CHECKING" });
+    setEditingId(null);
+    setIsCreating(true);
   };
+
+  const closeEdit = () => {
+    setEditingId(null);
+    setIsCreating(false);
+  };
+
+  const saveAccount = () => {
+    if (!form.name.trim() || !form.bank.trim()) return;
+    if (isCreating) {
+      createAccount.mutate({
+        name: form.name.trim(),
+        bankName: form.bank.trim(),
+        type: form.type,
+        currency: "BRL",
+        initialBalance: 0,
+      });
+    } else if (editingId) {
+      updateAccount.mutate({
+        id: editingId,
+        name: form.name.trim(),
+        bankName: form.bank.trim(),
+        type: form.type,
+        currency: "BRL",
+      });
+    }
+  };
+
   // ── Render ──
 
   return (
     <Card className="overflow-hidden">
-      {/* Account tabs + scroll */}
-      <div className="flex items-end gap-1 border-b bg-muted/30 px-2 pt-2">
-        {/* Add button (fixed, outside scroll) */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mb-0 h-7 gap-1 rounded-t-lg px-2 text-xs"
-          onClick={() => {
-            setEditingAccount(null);
-            setModalOpen(true);
-          }}
+      {/* Tabs */}
+      <div className="flex items-end gap-1 overflow-x-auto border-b bg-muted/30 px-2 pt-2">
+        <button
+          type="button"
+          onClick={openCreate}
+          aria-label="Adicionar conta"
+          title="Adicionar conta"
+          className="mb-0 flex h-8 w-8 shrink-0 items-center justify-center rounded-t-lg border border-b-0 border-transparent bg-muted/40 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
         >
-          <Plus className="h-3.5 w-3.5" />
-          Nova
-        </Button>
+          <Plus className="h-4 w-4" />
+        </button>
 
-        {/* Scrollable tabs */}
-        <div className="flex flex-1 items-end gap-1 overflow-x-auto">
-          {accountsLoading ? (
-            <div className="flex items-center gap-2 px-3 py-3">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Carregando contas...</span>
-            </div>
-          ) : accounts.length === 0 ? (
-            <p className="px-3 py-3 text-sm text-muted-foreground">Nenhuma conta disponível.</p>
-          ) : (
-            accounts.map((acc) => {
-              const isActive = acc.id === activeId;
-              return (
-                // biome-ignore lint/a11y/useKeyWithClickEvents: tabs are mouse-first
-                <div
-                  key={acc.id}
-                  onClick={() => setActiveId(acc.id)}
-                  className={cn(
-                    "group flex min-w-[180px] max-w-[240px] cursor-pointer items-center gap-2 rounded-t-lg border border-b-0 px-3 py-2 text-sm transition-colors",
-                    isActive
-                      ? "border-border bg-background text-foreground shadow-sm"
-                      : "border-transparent bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground",
-                  )}
-                >
-                  <Building2 className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate font-medium">{acc.name}</span>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        aria-label={`Ações para ${acc.name}`}
-                        className="ml-auto rounded p-0.5 opacity-60 transition-opacity hover:bg-accent hover:opacity-100"
-                      >
-                        <MoreVertical className="h-3.5 w-3.5" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenuItem onSelect={() => setActiveId(acc.id)}>
-                        <Wallet className="mr-2 h-4 w-4" />
-                        Visualizar transações
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onSelect={() => {
-                          setEditingAccount(acc);
-                          setModalOpen(true);
-                        }}
-                      >
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Editar conta
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onSelect={() => setConfirmDeleteId(acc.id)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Excluir conta
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              );
-            })
-          )}
-        </div>
+        {accountsLoading ? (
+          <div className="flex items-center gap-2 px-3 py-3">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Carregando contas...</span>
+          </div>
+        ) : accounts.length === 0 ? (
+          <p className="px-3 py-3 text-sm text-muted-foreground">
+            Nenhuma conta. Clique em + para adicionar.
+          </p>
+        ) : (
+          accounts.map((acc) => {
+            const isActive = acc.id === activeId;
+            return (
+              // biome-ignore lint/a11y/useKeyWithClickEvents: tabs mouse-first
+              <div
+                key={acc.id}
+                onClick={() => setActiveId(acc.id)}
+                className={`group flex min-w-[180px] max-w-[240px] cursor-pointer items-center gap-2 rounded-t-lg border border-b-0 px-3 py-2 text-sm transition-colors ${
+                  isActive
+                    ? "border-border bg-background text-foreground shadow-sm"
+                    : "border-transparent bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                }`}
+              >
+                <Building2 className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate font-medium">{acc.name}</span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                    <button
+                      aria-label={`Ações para ${acc.name}`}
+                      className="ml-auto rounded p-0.5 opacity-60 transition-opacity hover:bg-accent hover:opacity-100"
+                    >
+                      <MoreVertical className="h-3.5 w-3.5" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenuItem onSelect={() => openEdit(acc.id)}>
+                      <Pencil className="h-4 w-4" />
+                      Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onSelect={() => setConfirmDeleteId(acc.id)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Deletar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            );
+          })
+        )}
       </div>
 
-      {/* Delete confirmation */}
-      {confirmDeleteId && (
-        <div className="border-b bg-destructive/5 p-3">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
-            <span className="text-sm">
-              Excluir conta{" "}
-              <span className="font-medium">
-                {accounts.find((a) => a.id === confirmDeleteId)?.name}
-              </span>
-              ? Todas as transações vinculadas serão removidas.
-            </span>
-            <div className="ml-auto flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => setConfirmDeleteId(null)}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => deleteAccount.mutate({ id: confirmDeleteId })}
-                disabled={deleteAccount.isPending}
-              >
-                {deleteAccount.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Excluir"}
-              </Button>
+      {/* Edit / Create Modal */}
+      <Dialog open={editOpen} onOpenChange={(o) => !o && closeEdit()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{isCreating ? "Adicionar conta" : "Editar conta"}</DialogTitle>
+            <DialogDescription>Configure os dados da conta bancária ou cartão.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <Label htmlFor="acc-name">Nome da conta</Label>
+              <Input
+                id="acc-name"
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="Ex: Itaú Principal"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="acc-bank">Banco / Instituição</Label>
+              <Input
+                id="acc-bank"
+                value={form.bank}
+                onChange={(e) => setForm((f) => ({ ...f, bank: e.target.value }))}
+                placeholder="Ex: Itaú"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="acc-type">Tipo de conta</Label>
+              <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v }))}>
+                <SelectTrigger id="acc-type">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TYPE_OPTIONS.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button variant="outline" onClick={closeEdit}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={saveAccount}
+              disabled={
+                !form.name.trim() ||
+                !form.bank.trim() ||
+                createAccount.isPending ||
+                updateAccount.isPending
+              }
+            >
+              {createAccount.isPending || updateAccount.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Salvar"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {/* Account Modal (create/edit) */}
-      <AccountModal
-        open={modalOpen}
-        onOpenChange={(v) => {
-          setModalOpen(v);
-          if (!v) setEditingAccount(null);
-        }}
-        account={editingAccount}
-        onSubmit={editingAccount ? handleUpdate : handleCreate}
-        isSubmitting={createAccount.isPending || updateAccount.isPending}
-      />
+      {/* Delete AlertDialog */}
+      <AlertDialog open={!!confirmDeleteId} onOpenChange={(o) => !o && setConfirmDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir conta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a conta{" "}
+              <span className="font-medium text-foreground">{toDelete?.name}</span>? Esta ação não
+              pode ser desfeita e todas as transações vinculadas serão removidas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => confirmDeleteId && deleteAccount.mutate({ id: confirmDeleteId })}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteAccount.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Active account content */}
       {active ? (
@@ -482,23 +347,21 @@ export function BankAccountsTab() {
               </CardTitle>
               <CardDescription>
                 {active.bankName ?? "Banco desconhecido"} ·{" "}
-                {TYPE_LABELS[active.type] ?? active.type}
+                {TYPE_OPTIONS.find((t) => t.value === active.type)?.label ?? active.type}
               </CardDescription>
             </div>
             <div className="text-left sm:text-right">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">Saldo atual</p>
               <p
-                className={cn(
-                  "text-2xl font-semibold",
-                  Number(active.currentBalance) < 0 ? "text-destructive" : "text-foreground",
-                )}
+                className={`text-2xl font-semibold ${
+                  Number(active.currentBalance) < 0 ? "text-destructive" : "text-foreground"
+                }`}
               >
                 {currency(Number(active.currentBalance))}
               </p>
             </div>
           </CardHeader>
-
-          <CardContent className="space-y-3">
+          <CardContent>
             <AccountTransactionsTable accountId={activeId} />
           </CardContent>
         </>
@@ -512,6 +375,10 @@ export function BankAccountsTab() {
 }
 
 // ── Isolated Transactions Table (prevents full card re-render on pagination) ──
+
+import { DataTable } from "@/components/ui/data-table";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { ColumnDef } from "@tanstack/react-table";
 
 const transactionColumns: ColumnDef<Txn>[] = [
   {
@@ -545,12 +412,11 @@ const transactionColumns: ColumnDef<Txn>[] = [
       const type = (row.original as Txn).type;
       return (
         <span
-          className={cn(
-            "font-medium",
+          className={`font-medium ${
             type === "INCOME"
               ? "text-emerald-600 dark:text-emerald-400"
-              : "text-rose-600 dark:text-rose-400",
-          )}
+              : "text-rose-600 dark:text-rose-400"
+          }`}
         >
           {type === "INCOME" ? "+" : "−"}
           {currency(Math.abs(amount))}
@@ -563,7 +429,11 @@ const transactionColumns: ColumnDef<Txn>[] = [
 function AccountTransactionsTable({ accountId }: { accountId: string | null }) {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 8 });
 
-  const { data: txPage, error: txError, isLoading: txLoading } = api.transaction.list.useQuery(
+  const {
+    data: txPage,
+    error: txError,
+    isLoading: txLoading,
+  } = api.transaction.list.useQuery(
     accountId
       ? { bankAccountId: accountId, page: pagination.pageIndex + 1, pageSize: pagination.pageSize }
       : {},
