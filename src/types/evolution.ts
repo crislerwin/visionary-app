@@ -1,6 +1,0 @@
-export enum WhatsAppStatus {
-  DISCONNECTED = "DISCONNECTED",
-  CONNECTING = "CONNECTING",
-  CONNECTED = "CONNECTED",
-  FAILED = "FAILED",
-}
