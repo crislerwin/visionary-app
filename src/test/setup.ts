@@ -46,3 +46,13 @@ vi.mock("next-auth/react", () => ({
 // Mock environment variables
 process.env.NEXTAUTH_URL = "http://localhost:3000";
 process.env.NEXTAUTH_SECRET = "test-secret";
+
+// Mock next-auth to avoid next/server module resolution issues in vitest
+vi.mock("next-auth", () => ({
+  default: () => ({
+    handlers: { GET: vi.fn(), POST: vi.fn() },
+    auth: vi.fn(),
+    signIn: vi.fn(),
+    signOut: vi.fn(),
+  }),
+}));

@@ -7,7 +7,7 @@ import { ZodError } from "zod";
 
 export const createTRPCContext = cache(async () => {
   const session = await auth();
-  return { session };
+  return { session, tenantId: null as string | null };
 });
 
 const t = initTRPC.context<typeof createTRPCContext>().create({
@@ -45,8 +45,11 @@ const enforceUserHasTenant = t.middleware(async ({ ctx, next }) => {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
 
-  // Get tenantId from session or headers
-  const tenantId = ctx.session.user.defaultTenantId;
+  // Get tenantId from session or context
+  const tenantId =
+    (ctx.session?.user as Record<string, unknown> | null | undefined)
+      ?.defaultTenantId as string | undefined ||
+    ctx.tenantId;
 
   if (!tenantId) {
     throw new TRPCError({
@@ -57,9 +60,9 @@ const enforceUserHasTenant = t.middleware(async ({ ctx, next }) => {
 
   return next({
     ctx: {
-      session: { ...ctx.session, user: ctx.session.user },
-      user: ctx.session.user,
+      ...ctx,
       tenantId,
+      user: ctx.session?.user,
     },
   });
 });
@@ -122,6 +125,7 @@ export const protectedProcedure = t.procedure.use(enforceUserIsAuthed);
 export const tenantProcedure = t.procedure.use(enforceUserHasTenant);
 export const ownerProcedure = t.procedure.use(enforceUserIsOwner);
 export const adminProcedure = t.procedure.use(enforceUserIsAdmin);
+export const backofficeProcedure = ownerProcedure;
 
 // Helper to create caller
 export const createCallerFactory = t.createCallerFactory;
