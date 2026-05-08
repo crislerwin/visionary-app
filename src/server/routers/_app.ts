@@ -9,6 +9,7 @@ import { teamRouter } from "./team";
 import { tenantRouter } from "./tenant";
 import { transactionRouter } from "./transaction";
 import { userRouter } from "./user";
+import { agentRouter } from "./agent";
 
 export const appRouter = router({
   auth: authRouter,
@@ -21,6 +22,7 @@ export const appRouter = router({
   category: categoryRouter,
   dataSource: dataSourceRouter,
   pluggy: pluggyRouter,
+  agent: agentRouter,
 });
 
 export type AppRouter = typeof appRouter;
