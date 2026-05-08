@@ -1,5 +1,6 @@
 import { createCallerFactory, createTRPCContext, router } from "@/lib/trpc/trpc";
 import { authRouter } from "./auth";
+import { agentRouter } from "./agent";
 import { bankAccountRouter } from "./bankAccount";
 import { categoryRouter } from "./category";
 import { dataSourceRouter } from "./dataSource";
@@ -13,6 +14,7 @@ import { userRouter } from "./user";
 export const appRouter = router({
   auth: authRouter,
   tenant: tenantRouter,
+  agent: agentRouter,
   team: teamRouter,
   post: postRouter,
   user: userRouter,
