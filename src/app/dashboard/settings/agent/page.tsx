@@ -10,7 +10,7 @@ import { api } from "@/lib/trpc/react";
 import { AgentTone } from "@/types/agent";
 import { WhatsAppStatus } from "@/types/evolution";
 import { Bot, CheckCircle2, Loader2, MessageCircle, Pencil, Power, QrCode, RefreshCw, Save, ShieldCheck, Smartphone, Sparkles, Wand2, Zap, } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
 
 const TONE_LABELS: Record<string, string> = {
   FRIENDLY: "Amigável 😊",
@@ -467,7 +467,7 @@ export default function AgentSettingsPage() {
             >
               <Textarea
                 value={welcomeMessage}
-                onChange={(e) => setWelcomeMessage(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setWelcomeMessage(e.target.value)}
                 rows={4}
                 className="resize-none text-sm"
               />
@@ -491,7 +491,7 @@ export default function AgentSettingsPage() {
             >
               <Textarea
                 value={promptSystem}
-                onChange={(e) => setPromptSystem(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setPromptSystem(e.target.value)}
                 rows={12}
                 className="resize-y font-mono text-xs leading-relaxed"
               />
