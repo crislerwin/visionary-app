@@ -4,7 +4,7 @@ import { createEvolutionClient } from "@/lib/evolution-api";
 import { type NextRequest, NextResponse } from "next/server";
 
 // GET /api/evolution/instances/:name/status - Verificar status da conexão
-export async function GET(request: NextRequest, { params }: { params: { name: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ name: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest, { params }: { params: { name: st
       return NextResponse.json({ error: "Tenant ID required" }, { status: 400 });
     }
 
-    const { name } = params;
+    const { name } = await params;
 
     // Verify instance belongs to tenant
     const config = await prisma.agentConfig.findUnique({

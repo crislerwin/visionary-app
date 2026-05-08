@@ -6,6 +6,18 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("Seeding database...");
 
+  // Create backoffice user (reactivesoftware domain)
+  const backofficePassword = await bcrypt.hash("backoffice123", 10);
+  await prisma.user.upsert({
+    where: { email: "admin@reactivesoftware.com.br" },
+    update: {},
+    create: {
+      email: "admin@reactivesoftware.com.br",
+      name: "Backoffice Admin",
+      password: backofficePassword,
+    },
+  });
+
   // Create admin user
   const adminPassword = await bcrypt.hash("admin123", 10);
   const admin = await prisma.user.upsert({
@@ -86,6 +98,7 @@ async function main() {
   });
 
   console.log("Seeding completed!");
+  console.log("- Backoffice user: admin@reactivesoftware.com.br / backoffice123");
   console.log("- Admin user: admin@pizzariacentral.com / admin123");
   console.log("- Demo user: gerente@bomsabor.com / user123");
   console.log("- Tenant 1:", tenant.slug);

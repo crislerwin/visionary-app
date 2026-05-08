@@ -103,11 +103,19 @@ export async function POST(request: NextRequest) {
     const client = createEvolutionClient(evolutionBaseUrl, evolutionApiKey);
     const result = await client.createInstance({
       instanceName: name,
+      integration: "WHATSAPP-BAILEYS",
       qrcode: true,
       webhook: {
         url: webhookUrl,
         byEvents: true,
         base64: false,
+        events: [
+          "QRCODE_UPDATED",
+          "MESSAGES_UPSERT",
+          "MESSAGES_SET",
+          "SEND_MESSAGE",
+          "CONNECTION_UPDATE",
+        ],
       },
     });
 
