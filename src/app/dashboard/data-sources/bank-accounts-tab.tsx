@@ -551,7 +551,7 @@ function AccountTransactionsTable({ accountId }: { accountId: string | null }) {
             {txLoading ? (
                 <div className="space-y-2 rounded-md border p-2">
                     {Array.from({ length: pagination.pageSize }).map((_, i) => (
-                        <Skeleton key={i} className="h-10 w-full" />
+                        <Skeleton key={String(i)} className="h-10 w-full" />
                     ))}
                 </div>
             ) : (
