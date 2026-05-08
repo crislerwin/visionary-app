@@ -177,7 +177,7 @@ export function BankAccountsTab() {
             createAccount.mutate({
                 name: form.name.trim(),
                 bankName: form.bank.trim(),
-                type: form.type,
+                type: form.type as string,
                 currency: "BRL",
                 initialBalance: 0,
             });
@@ -186,7 +186,7 @@ export function BankAccountsTab() {
                 id: editingId,
                 name: form.name.trim(),
                 bankName: form.bank.trim(),
-                type: form.type,
+                type: form.type as string,
                 currency: "BRL",
             });
         }
