@@ -3,6 +3,7 @@ import { agentRouter } from "./agent";
 import { authRouter } from "./auth";
 import { cashRegisterRouter } from "./cash-register";
 import { categoryRouter } from "./category";
+import { featureFlagRouter } from "./feature-flag";
 import { leadRouter } from "./lead";
 import { likeRouter } from "./like";
 import { orderRouter } from "./order";
@@ -27,6 +28,7 @@ export const appRouter = router({
   order: orderRouter,
   cashRegister: cashRegisterRouter,
   agent: agentRouter,
+  featureFlag: featureFlagRouter,
 });
 
 export type AppRouter = typeof appRouter;
