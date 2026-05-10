@@ -165,7 +165,7 @@ export default function PartnersPage() {
           setFormOpen(open);
           if (!open) setEditingPartner(null);
         }}
-        partnerId={editingPartner?.id}
+        partnerId={editingPartner?.id as string | undefined}
         defaultValues={editingPartner ?? undefined}
       />
 
