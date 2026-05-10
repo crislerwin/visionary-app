@@ -1,4 +1,4 @@
-import { Bot, Database, LayoutDashboard, type LucideIcon } from "lucide-react";
+import { Bot, Database, Handshake, LayoutDashboard, type LucideIcon } from "lucide-react";
 
 export interface NavItem {
   title: string;
@@ -29,6 +29,16 @@ export const sidebarNavigation: NavSection[] = [
         title: "Data Sources",
         href: "/dashboard/data-sources",
         icon: Database,
+      },
+    ],
+  },
+  {
+    title: "Relacionamento",
+    items: [
+      {
+        title: "Parceiros",
+        href: "/dashboard/partners",
+        icon: Handshake,
       },
     ],
   },
