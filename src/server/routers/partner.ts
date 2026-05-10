@@ -1,0 +1,166 @@
+import { prisma } from "@/lib/db";
+import { router, tenantProcedure } from "@/lib/trpc/trpc";
+import { CommissionType, PartnerStatus, PartnerType } from "@prisma/client";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
+
+const createPartnerSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório").max(200),
+  type: z.nativeEnum(PartnerType),
+  email: z.string().email("E-mail inválido").optional().nullable(),
+  phone: z.string().optional().nullable(),
+  document: z.string().optional().nullable(),
+  pixKey: z.string().optional().nullable(),
+  bankName: z.string().optional().nullable(),
+  bankAgency: z.string().optional().nullable(),
+  bankAccount: z.string().optional().nullable(),
+  bankAccountType: z.string().optional().nullable(),
+  commissionType: z.nativeEnum(CommissionType).default(CommissionType.PERCENTAGE),
+  commissionValue: z.number().min(0).default(0),
+  status: z.nativeEnum(PartnerStatus).default(PartnerStatus.ACTIVE),
+  notes: z.string().optional().nullable(),
+});
+
+const updatePartnerSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  type: z.nativeEnum(PartnerType).optional(),
+  email: z.string().email().optional().nullable(),
+  phone: z.string().optional().nullable(),
+  document: z.string().optional().nullable(),
+  pixKey: z.string().optional().nullable(),
+  bankName: z.string().optional().nullable(),
+  bankAgency: z.string().optional().nullable(),
+  bankAccount: z.string().optional().nullable(),
+  bankAccountType: z.string().optional().nullable(),
+  commissionType: z.nativeEnum(CommissionType).optional(),
+  commissionValue: z.number().min(0).optional(),
+  status: z.nativeEnum(PartnerStatus).optional(),
+  notes: z.string().optional().nullable(),
+});
+
+export const partnerRouter = router({
+  list: tenantProcedure.query(async ({ ctx }) => {
+    const partners = await prisma.partner.findMany({
+      where: { tenantId: ctx.tenantId },
+      include: {
+        _count: { select: { invoices: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return partners.map((p) => ({
+      ...p,
+      commissionValue: Number(p.commissionValue),
+    }));
+  }),
+
+  byId: tenantProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
+    const partner = await prisma.partner.findFirst({
+      where: { id: input.id, tenantId: ctx.tenantId },
+      include: {
+        invoices: { orderBy: { dueDate: "desc" }, take: 10 },
+        _count: { select: { invoices: true } },
+      },
+    });
+
+    if (!partner) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Parceiro não encontrado" });
+    }
+
+    return {
+      ...partner,
+      commissionValue: Number(partner.commissionValue),
+      invoices: partner.invoices.map((inv) => ({
+        ...inv,
+        amount: Number(inv.amount),
+      })),
+    };
+  }),
+
+  create: tenantProcedure.input(createPartnerSchema).mutation(async ({ ctx, input }) => {
+    const partner = await prisma.partner.create({
+      data: {
+        name: input.name,
+        type: input.type,
+        email: input.email ?? null,
+        phone: input.phone ?? null,
+        document: input.document ?? null,
+        pixKey: input.pixKey ?? null,
+        bankName: input.bankName ?? null,
+        bankAgency: input.bankAgency ?? null,
+        bankAccount: input.bankAccount ?? null,
+        bankAccountType: input.bankAccountType ?? null,
+        commissionType: input.commissionType,
+        commissionValue: input.commissionValue,
+        status: input.status,
+        notes: input.notes ?? null,
+        tenantId: ctx.tenantId,
+      },
+    });
+
+    return {
+      ...partner,
+      commissionValue: Number(partner.commissionValue),
+    };
+  }),
+
+  update: tenantProcedure
+    .input(z.object({ id: z.string(), data: updatePartnerSchema }))
+    .mutation(async ({ ctx, input }) => {
+      const existing = await prisma.partner.findFirst({
+        where: { id: input.id, tenantId: ctx.tenantId },
+      });
+
+      if (!existing) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Parceiro não encontrado" });
+      }
+
+      const partner = await prisma.partner.update({
+        where: { id: input.id },
+        data: {
+          ...(input.data.name !== undefined && { name: input.data.name }),
+          ...(input.data.type !== undefined && { type: input.data.type }),
+          ...(input.data.email !== undefined && { email: input.data.email }),
+          ...(input.data.phone !== undefined && { phone: input.data.phone }),
+          ...(input.data.document !== undefined && { document: input.data.document }),
+          ...(input.data.pixKey !== undefined && { pixKey: input.data.pixKey }),
+          ...(input.data.bankName !== undefined && { bankName: input.data.bankName }),
+          ...(input.data.bankAgency !== undefined && { bankAgency: input.data.bankAgency }),
+          ...(input.data.bankAccount !== undefined && { bankAccount: input.data.bankAccount }),
+          ...(input.data.bankAccountType !== undefined && {
+            bankAccountType: input.data.bankAccountType,
+          }),
+          ...(input.data.commissionType !== undefined && {
+            commissionType: input.data.commissionType,
+          }),
+          ...(input.data.commissionValue !== undefined && {
+            commissionValue: input.data.commissionValue,
+          }),
+          ...(input.data.status !== undefined && { status: input.data.status }),
+          ...(input.data.notes !== undefined && { notes: input.data.notes }),
+        },
+      });
+
+      return {
+        ...partner,
+        commissionValue: Number(partner.commissionValue),
+      };
+    }),
+
+  delete: tenantProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+    const existing = await prisma.partner.findFirst({
+      where: { id: input.id, tenantId: ctx.tenantId },
+      include: { _count: { select: { invoices: true } } },
+    });
+
+    if (!existing) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Parceiro não encontrado" });
+    }
+
+    await prisma.partner.delete({ where: { id: input.id } });
+
+    return { success: true };
+  }),
+});
+
+export type PartnerRouter = typeof partnerRouter;
