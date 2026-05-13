@@ -230,15 +230,18 @@ model Transaction {
   date          DateTime
   bankAccountId String           @map("bank_account_id")
   categoryId    String?          @map("category_id")
+  partnerId     String?          @map("partner_id")
   status        TransactionStatus @default(COMPLETED)
   createdAt     DateTime         @default(now()) @map("created_at")
   updatedAt     DateTime         @updatedAt @map("updated_at")
 
   bankAccount BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
   category    Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  partner     Partner?    @relation(fields: [partnerId], references: [id], onDelete: SetNull)
 
   @@index([bankAccountId])
   @@index([categoryId])
+  @@index([partnerId])
   @@index([date])
   @@index([status])
   @@map("transactions")
@@ -344,8 +347,9 @@ model Partner {
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
-  tenant   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  invoices PartnerInvoice[]
+  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoices      PartnerInvoice[]
+  transactions  Transaction[]
 
   @@index([tenantId])
   @@index([status])
