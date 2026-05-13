@@ -210,7 +210,7 @@ export const dataSourceRouter = router({
             const categoryType =
               type === TransactionType.INCOME ? ("INCOME" as const) : ("EXPENSE" as const);
             const existing = await prisma.category.findFirst({
-              where: { tenantId: ctx.tenantId, name: { equals: catName } },
+              where: { tenantId: ctx.tenantId, name: { equals: catName, mode: "insensitive" } },
             });
             if (existing) {
               categoryId = existing.id;

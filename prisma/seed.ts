@@ -109,6 +109,7 @@ async function main() {
 
   // Create sample posts
   await prisma.post.createMany({
+    skipDuplicates: true,
     data: [
       {
         title: "Welcome to the Boilerplate",

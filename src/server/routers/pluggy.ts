@@ -47,7 +47,7 @@ async function getOrCreateCategory(
   if (!normalized) return undefined;
 
   const existing = await prisma.category.findFirst({
-    where: { tenantId, name: { equals: normalized } },
+    where: { tenantId, name: { equals: normalized, mode: "insensitive" } },
   });
 
   if (existing) return existing.id;
