@@ -84,9 +84,7 @@ export function DataTable<TData, TValue>({
   const handlePaginationChange = React.useCallback(
     (updaterOrValue: React.SetStateAction<{ pageIndex: number; pageSize: number }>) => {
       const next =
-        typeof updaterOrValue === "function"
-          ? updaterOrValue(pagination)
-          : updaterOrValue;
+        typeof updaterOrValue === "function" ? updaterOrValue(pagination) : updaterOrValue;
 
       if (isControlled && onPaginationChange) {
         setTimeout(() => onPaginationChange(next), 0);
