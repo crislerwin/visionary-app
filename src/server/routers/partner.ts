@@ -161,6 +161,154 @@ export const partnerRouter = router({
 
     return { success: true };
   }),
+
+  performance: tenantProcedure
+    .input(
+      z.object({
+        sortBy: z.enum(["volume", "profit"]).default("profit"),
+        period: z.enum(["month", "quarter", "year", "all"]).default("all"),
+        limit: z.number().min(1).max(100).default(50),
+      }).optional()
+    )
+    .query(async ({ ctx, input }) => {
+      const { sortBy = "profit", period = "all", limit = 50 } = input ?? {};
+
+      // Build date filter based on period
+      const now = new Date();
+      let dateFilter: { gte?: Date } = {};
+      if (period === "month") {
+        dateFilter = { gte: new Date(now.getFullYear(), now.getMonth(), 1) };
+      } else if (period === "quarter") {
+        const quarterStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+        dateFilter = { gte: quarterStart };
+      } else if (period === "year") {
+        dateFilter = { gte: new Date(now.getFullYear(), 0, 1) };
+      }
+
+      // Fetch partners and extract IDs for filtering
+      const partners = await prisma.partner.findMany({
+        where: { tenantId: ctx.tenantId, status: PartnerStatus.ACTIVE },
+        orderBy: { name: "asc" },
+        take: limit,
+      });
+
+      const partnerIds = partners.map((p) => p.id);
+
+      // Early return if no partners
+      if (partnerIds.length === 0) {
+        return {
+          partners: [],
+          summary: {
+            totalPartners: 0,
+            totalReceived: 0,
+            totalPaid: 0,
+            totalProfit: 0,
+            totalTransactions: 0,
+          },
+        };
+      }
+
+      // Fetch partners with aggregated transaction data in parallel
+      const dateWhere = dateFilter.gte ? { gte: dateFilter.gte } : undefined;
+
+      const [
+        incomeAgg,
+        expenseAgg,
+        countAgg
+      ] = await Promise.all([
+        // Total income per partner
+        prisma.transaction.groupBy({
+          by: ["partnerId"],
+          where: {
+            partnerId: { in: partnerIds },
+            type: "INCOME",
+            status: "COMPLETED",
+            ...(dateWhere && { date: dateWhere }),
+          },
+          _sum: { amount: true },
+        }),
+        // Total expense per partner
+        prisma.transaction.groupBy({
+          by: ["partnerId"],
+          where: {
+            partnerId: { in: partnerIds },
+            type: "EXPENSE",
+            status: "COMPLETED",
+            ...(dateWhere && { date: dateWhere }),
+          },
+          _sum: { amount: true },
+        }),
+        // Transaction count per partner
+        prisma.transaction.groupBy({
+          by: ["partnerId"],
+          where: {
+            partnerId: { in: partnerIds },
+            status: "COMPLETED",
+            ...(dateWhere && { date: dateWhere }),
+          },
+          _count: { id: true },
+        }),
+      ]);
+
+      // Build lookup maps with null safety
+      const incomeMap = new Map(
+        incomeAgg
+          .filter((i): i is typeof i & { partnerId: string; _sum: { amount: unknown } } => 
+            i.partnerId != null && i._sum?.amount != null)
+          .map((i) => [i.partnerId, Number(i._sum.amount)])
+      );
+      const expenseMap = new Map(
+        expenseAgg
+          .filter((e): e is typeof e & { partnerId: string; _sum: { amount: unknown } } => 
+            e.partnerId != null && e._sum?.amount != null)
+          .map((e) => [e.partnerId, Number(e._sum.amount)])
+      );
+      const countMap = new Map(
+        countAgg
+          .filter((c): c is typeof c & { partnerId: string; _count: { id: number } } => 
+            c.partnerId != null && c._count?.id != null)
+          .map((c) => [c.partnerId, c._count.id])
+      );
+
+      // Build performance data
+      const performanceData = partners.map((partner) => {
+        const totalReceived = incomeMap.get(partner.id) ?? 0;
+        const totalPaid = expenseMap.get(partner.id) ?? 0;
+        const transactionCount = countMap.get(partner.id) ?? 0;
+        const netProfit = totalReceived - totalPaid;
+
+        return {
+          id: partner.id,
+          name: partner.name,
+          type: partner.type,
+          status: partner.status,
+          commissionType: partner.commissionType,
+          commissionValue: Number(partner.commissionValue),
+          totalReceived,
+          totalPaid,
+          netProfit,
+          transactionCount,
+        };
+      });
+
+      // Sort by selected criteria
+      const sorted = performanceData.sort((a, b) => {
+        if (sortBy === "profit") return b.netProfit - a.netProfit;
+        if (sortBy === "volume") return b.transactionCount - a.transactionCount;
+        return 0;
+      });
+
+      return {
+        partners: sorted,
+        summary: {
+          totalPartners: sorted.length,
+          totalReceived: sorted.reduce((s, p) => s + p.totalReceived, 0),
+          totalPaid: sorted.reduce((s, p) => s + p.totalPaid, 0),
+          totalProfit: sorted.reduce((s, p) => s + p.netProfit, 0),
+          totalTransactions: sorted.reduce((s, p) => s + p.transactionCount, 0),
+        },
+      };
+    }),
 });
 
 export type PartnerRouter = typeof partnerRouter;
