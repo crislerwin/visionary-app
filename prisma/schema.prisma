@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -13,12 +13,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String   @map("provider_account_id")
-  refresh_token     String?  @db.Text
-  access_token      String?  @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String?  @db.Text
+  id_token          String?
   session_state     String?
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
@@ -91,8 +91,6 @@ model Tenant {
   categories        Category[]
   pluggyConnections PluggyConnection[]
   dataSources       DataSource[]
-  agentConfig       AgentConfig?
-  agentLogs         AgentInteractionLog[]
   partners          Partner[]
   partnerInvoices   PartnerInvoice[]
 
@@ -126,7 +124,7 @@ model Membership {
 model Post {
   id        String   @id @default(cuid())
   title     String
-  content   String?  @db.Text
+  content   String?
   published Boolean  @default(false)
   authorId  String   @map("author_id")
   tenantId  String   @map("tenant_id")
@@ -152,30 +150,22 @@ enum BankAccountType {
   INVESTMENT
   DIGITAL_WALLET
   OTHER
-
-  @@map("bank_account_types")
 }
 
 enum CategoryType {
   INCOME
   EXPENSE
-
-  @@map("category_types")
 }
 
 enum TransactionType {
   INCOME
   EXPENSE
-
-  @@map("transaction_types")
 }
 
 enum TransactionStatus {
   COMPLETED
   PENDING
   CANCELLED
-
-  @@map("transaction_statuses")
 }
 
 enum DataSourceType {
@@ -183,16 +173,12 @@ enum DataSourceType {
   WEBHOOK
   CSV
   XLSX
-
-  @@map("data_source_types")
 }
 
 enum DataSourceStatus {
   ACTIVE
   ERROR
   DISCONNECTED
-
-  @@map("data_source_statuses")
 }
 
 model BankAccount {
@@ -201,8 +187,8 @@ model BankAccount {
   bankName        String?         @map("bank_name")
   type            BankAccountType
   currency        String          @default("BRL")
-  initialBalance  Decimal         @map("initial_balance") @db.Decimal(15, 2)
-  currentBalance  Decimal         @map("current_balance") @db.Decimal(15, 2)
+  initialBalance  Decimal         @map("initial_balance")
+  currentBalance  Decimal         @map("current_balance")
   tenantId        String          @map("tenant_id")
   createdAt       DateTime        @default(now()) @map("created_at")
   updatedAt       DateTime        @updatedAt @map("updated_at")
@@ -238,7 +224,7 @@ model Category {
 
 model Transaction {
   id            String           @id @default(cuid())
-  amount        Decimal          @db.Decimal(15, 2)
+  amount        Decimal
   type          TransactionType
   description   String?
   date          DateTime
@@ -259,14 +245,14 @@ model Transaction {
 }
 
 model PluggyConnection {
-  id           String   @id @default(cuid())
-  itemId       String   @map("item_id")
-  connectorId  Int      @map("connector_id")
-  connectorName String  @map("connector_name")
-  status       String   @default("UPDATING")
-  tenantId     String   @map("tenant_id")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(cuid())
+  itemId        String   @map("item_id")
+  connectorId   Int      @map("connector_id")
+  connectorName String   @map("connector_name")
+  status        String   @default("UPDATING")
+  tenantId      String   @map("tenant_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -308,82 +294,6 @@ model WebhookCall {
 }
 
 // ====================
-// AI AGENT MODELS
-// ====================
-
-enum AgentTone {
-  FRIENDLY
-  PROFESSIONAL
-  CASUAL
-  FORMAL
-
-  @@map("agent_tones")
-}
-
-enum AgentInteractionStatus {
-  SUCCESS
-  ERROR
-  PENDING
-
-  @@map("agent_interaction_statuses")
-}
-
-enum AgentInteractionType {
-  ORDER_CREATE
-  ORDER_LIST
-  CONFIG_GET
-  CONFIG_UPDATE
-  UNKNOWN
-
-  @@map("agent_interaction_types")
-}
-
-model AgentConfig {
-  id              String    @id @default(cuid())
-  tenantId        String    @unique @map("tenant_id")
-  promptSystem    String    @db.Text @map("prompt_system")
-  welcomeMessage  String?   @db.Text @map("welcome_message")
-  tone            AgentTone @default(CASUAL)
-  autoConfirm     Boolean   @default(false) @map("auto_confirm")
-  workingHours    Json?     @map("working_hours")
-  webhookSecret   String?   @map("webhook_secret")
-  isActive        Boolean   @default(true) @map("is_active")
-  agentName       String?   @default("Sofia") @map("agent_name")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  logs   AgentInteractionLog[]
-
-  @@index([tenantId])
-  @@index([isActive])
-  @@map("agent_configs")
-}
-
-model AgentInteractionLog {
-  id              String               @id @default(cuid())
-  tenantId        String               @map("tenant_id")
-  agentConfigId   String               @map("agent_config_id")
-  type            AgentInteractionType @default(UNKNOWN) @map("type")
-  status          AgentInteractionStatus @default(PENDING) @map("status")
-  customerPhone   String?              @map("customer_phone")
-  input           Json?                @map("input")
-  output          Json?                @map("output")
-  error           String?              @db.Text @map("error")
-  durationMs      Int?                 @map("duration_ms")
-  ipAddress       String?              @map("ip_address")
-  createdAt       DateTime             @default(now()) @map("created_at")
-
-  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  agentConfig AgentConfig @relation(fields: [agentConfigId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([agentConfigId])
-  @@index([createdAt])
-  @@map("agent_interaction_logs")
-}
-
-// ====================
 // PARTNER MODELS
 // ====================
 
@@ -393,24 +303,18 @@ enum PartnerType {
   DISTRIBUTOR
   SERVICE_PROVIDER
   OTHER
-
-  @@map("partner_types")
 }
 
 enum PartnerStatus {
   ACTIVE
   INACTIVE
   BLOCKED
-
-  @@map("partner_statuses")
 }
 
 enum CommissionType {
   PERCENTAGE
   FIXED
   HYBRID
-
-  @@map("commission_types")
 }
 
 enum PartnerInvoiceStatus {
@@ -418,8 +322,6 @@ enum PartnerInvoiceStatus {
   PAID
   OVERDUE
   CANCELLED
-
-  @@map("partner_invoice_statuses")
 }
 
 model Partner {
@@ -429,15 +331,15 @@ model Partner {
   email           String?
   phone           String?
   document        String?
-  pixKey          String?
+  pixKey          String?       @map("pix_key")
   bankName        String?       @map("bank_name")
   bankAgency      String?       @map("bank_agency")
   bankAccount     String?       @map("bank_account")
   bankAccountType String?       @map("bank_account_type")
   commissionType  CommissionType @default(PERCENTAGE) @map("commission_type")
-  commissionValue Decimal       @default(0) @db.Decimal(10, 2) @map("commission_value")
+  commissionValue Decimal       @default(0) @map("commission_value")
   status          PartnerStatus @default(ACTIVE)
-  notes           String?       @db.Text
+  notes           String?
   tenantId        String        @map("tenant_id")
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
@@ -456,12 +358,12 @@ model PartnerInvoice {
   id           String               @id @default(cuid())
   partnerId    String               @map("partner_id")
   description  String?
-  amount       Decimal              @db.Decimal(15, 2)
+  amount       Decimal
   dueDate      DateTime             @map("due_date")
   paidAt       DateTime?            @map("paid_at")
   status       PartnerInvoiceStatus @default(PENDING)
   reference    String?
-  notes        String?              @db.Text
+  notes        String?
   tenantId     String               @map("tenant_id")
   createdAt    DateTime             @default(now()) @map("created_at")
   updatedAt    DateTime             @updatedAt @map("updated_at")
