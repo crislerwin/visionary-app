@@ -5,6 +5,7 @@ import { bankAccountRouter } from "./bankAccount";
 import { categoryRouter } from "./category";
 import { dataSourceRouter } from "./dataSource";
 import { partnerRouter } from "./partner";
+import { partnerInvoiceRouter } from "./partnerInvoice";
 import { pluggyRouter } from "./pluggy";
 import { postRouter } from "./post";
 import { teamRouter } from "./team";
@@ -25,6 +26,7 @@ export const appRouter = router({
   pluggy: pluggyRouter,
   agent: agentRouter,
   partner: partnerRouter,
+  partnerInvoice: partnerInvoiceRouter,
 });
 
 export type AppRouter = typeof appRouter;

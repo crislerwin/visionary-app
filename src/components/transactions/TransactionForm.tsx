@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { type DefaultValues, useForm } from "react-hook-form";
+import { useMemo, useState } from "react";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -25,15 +26,15 @@ import {
 } from "@/components/ui/select";
 import { api } from "@/lib/trpc/react";
 import { TransactionStatus, TransactionType } from "@prisma/client";
-import { useMemo } from "react";
 
 const transactionSchema = z.object({
-  amount: z.coerce.number().positive("Amount must be positive"),
+  amount: z.coerce.number().positive("Valor deve ser positivo"),
   type: z.enum([TransactionType.INCOME, TransactionType.EXPENSE]),
-  description: z.string().min(1, "Description is required").max(500),
-  date: z.string().min(1, "Date is required"),
-  bankAccountId: z.string().min(1, "Bank account is required"),
+  description: z.string().min(1, "Descrição obrigatória").max(500),
+  date: z.string().min(1, "Data obrigatória"),
+  bankAccountId: z.string().min(1, "Conta bancária obrigatória"),
   categoryId: z.string().optional(),
+  partnerId: z.string().optional(),
   status: z.enum([
     TransactionStatus.COMPLETED,
     TransactionStatus.PENDING,
@@ -54,6 +55,7 @@ interface TransactionFormProps {
     date: Date;
     bankAccountId: string;
     categoryId: string | null;
+    partnerId: string | null;
     status: TransactionStatus;
   } | null;
   onSuccess?: () => void;
@@ -66,14 +68,19 @@ export function TransactionForm({
   onSuccess,
 }: TransactionFormProps) {
   const isEditing = !!transaction;
+  const [splitPreview, setSplitPreview] = useState<{ amount: number; type: string; value: number } | null>(null);
 
   const { data: bankAccounts } = api.bankAccount.list.useQuery(undefined);
   const { data: categoriesData } = api.category.list.useQuery({});
+  const { data: partners } = api.partner.list.useQuery(undefined, {
+    enabled: !isEditing, // Só busca parceiros na criação (não edição)
+  });
 
   const createMutation = api.transaction.create.useMutation({
     onSuccess: () => {
       onOpenChange(false);
       onSuccess?.();
+      setSplitPreview(null);
     },
   });
 
@@ -94,6 +101,7 @@ export function TransactionForm({
         : new Date().toISOString().split("T")[0],
       bankAccountId: transaction?.bankAccountId ?? "",
       categoryId: transaction?.categoryId ?? "",
+      partnerId: transaction?.partnerId ?? "",
       status: transaction?.status ?? TransactionStatus.COMPLETED,
     }),
     [transaction],
@@ -104,11 +112,46 @@ export function TransactionForm({
     defaultValues,
   });
 
+  const watchedType = form.watch("type");
+  const watchedPartnerId = form.watch("partnerId");
+  const watchedAmount = form.watch("amount");
+
+  // Calculate split preview
+  useMemo(() => {
+    if (watchedType !== TransactionType.INCOME || !watchedPartnerId || !partners) {
+      setSplitPreview(null);
+      return;
+    }
+    const partner = partners.find((p) => p.id === watchedPartnerId);
+    if (!partner || partner.commissionValue <= 0) {
+      setSplitPreview(null);
+      return;
+    }
+
+    let amount = 0;
+    if (partner.commissionType === "PERCENTAGE") {
+      amount = watchedAmount * (partner.commissionValue / 100);
+    } else if (partner.commissionType === "FIXED") {
+      amount = Math.min(partner.commissionValue, watchedAmount);
+    }
+
+    if (amount > 0) {
+      setSplitPreview({
+        amount,
+        type: partner.commissionType,
+        value: partner.commissionValue,
+      });
+    } else {
+      setSplitPreview(null);
+    }
+  }, [watchedType, watchedPartnerId, watchedAmount, partners]);
+
   const handleSubmit = form.handleSubmit(async (data) => {
     const submitData = {
       ...data,
       date: new Date(data.date),
       categoryId: data.categoryId || undefined,
+      partnerId: data.partnerId || undefined,
     };
 
     if (isEditing && transaction) {
@@ -127,78 +170,70 @@ export function TransactionForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit Transaction" : "New Transaction"}</DialogTitle>
+          <DialogTitle>{isEditing ? "Editar Transação" : "Nova Transação"}</DialogTitle>
           <DialogDescription>
             {isEditing
-              ? "Update the transaction details below."
-              : "Add a new transaction to track your finances."}
+              ? "Atualize os detalhes da transação."
+              : "Adicione uma nova transação para acompanhar suas finanças."}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="type">Type</Label>
+            <Label htmlFor="type">Tipo</Label>
             <Select
               value={form.watch("type")}
-              onValueChange={(value) => form.setValue("type", value as TransactionType)}
+              onValueChange={(value) => {
+                form.setValue("type", value as TransactionType);
+                if (value !== TransactionType.INCOME) {
+                  form.setValue("partnerId", "");
+                  setSplitPreview(null);
+                }
+              }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select type" />
+                <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={TransactionType.INCOME}>Income</SelectItem>
-                <SelectItem value={TransactionType.EXPENSE}>Expense</SelectItem>
+                <SelectItem value={TransactionType.INCOME}>Entrada</SelectItem>
+                <SelectItem value={TransactionType.EXPENSE}>Saída</SelectItem>
               </SelectContent>
             </Select>
-            {form.formState.errors.type && (
-              <p className="text-sm text-destructive">{form.formState.errors.type.message}</p>
-            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount</Label>
+            <Label htmlFor="amount">Valor</Label>
             <Input
               id="amount"
               type="number"
               step="0.01"
-              placeholder="0.00"
+              placeholder="0,00"
               {...form.register("amount", { valueAsNumber: true })}
             />
-            {form.formState.errors.amount && (
-              <p className="text-sm text-destructive">{form.formState.errors.amount.message}</p>
-            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Descrição</Label>
             <Input
               id="description"
-              placeholder="Enter description..."
+              placeholder="Descreva a transação..."
               {...form.register("description")}
             />
-            {form.formState.errors.description && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.description.message}
-              </p>
-            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
+            <Label htmlFor="date">Data</Label>
             <Input id="date" type="date" {...form.register("date")} />
-            {form.formState.errors.date && (
-              <p className="text-sm text-destructive">{form.formState.errors.date.message}</p>
-            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="bankAccountId">Bank Account</Label>
+            <Label htmlFor="bankAccountId">Conta Bancária</Label>
             <Select
               value={form.watch("bankAccountId")}
               onValueChange={(value) => form.setValue("bankAccountId", value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select account" />
+                <SelectValue placeholder="Selecione a conta" />
               </SelectTrigger>
               <SelectContent>
                 {bankAccounts?.map((account) => (
@@ -208,24 +243,21 @@ export function TransactionForm({
                 ))}
               </SelectContent>
             </Select>
-            {form.formState.errors.bankAccountId && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.bankAccountId.message}
-              </p>
-            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="categoryId">Category</Label>
+            <Label htmlFor="categoryId">Categoria</Label>
             <Select
               value={form.watch("categoryId") || "none"}
-              onValueChange={(value) => form.setValue("categoryId", value === "none" ? "" : value)}
+              onValueChange={(value) =>
+                form.setValue("categoryId", value === "none" ? "" : value)
+              }
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select category (optional)" />
+                <SelectValue placeholder="Selecione a categoria (opcional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">No category</SelectItem>
+                <SelectItem value="none">Sem categoria</SelectItem>
                 {categoriesData?.categories?.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.name}
@@ -235,6 +267,59 @@ export function TransactionForm({
             </Select>
           </div>
 
+          {/* US06: Partner split section — only on new INCOME transactions */}
+          {!isEditing && watchedType === TransactionType.INCOME && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="partnerId">Parceiro (Divisão de Receita)</Label>
+                <Select
+                  value={form.watch("partnerId") || "none"}
+                  onValueChange={(value) =>
+                    form.setValue("partnerId", value === "none" ? "" : value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um parceiro (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem parceiro</SelectItem>
+                    {partners?.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}{" "}
+                        {p.commissionValue > 0 && (
+                          <span className="text-muted-foreground text-xs">
+                            — {p.commissionType === "PERCENTAGE"
+                              ? `${p.commissionValue}%`
+                              : `R$ ${p.commissionValue.toFixed(2)}`}
+                          </span>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Split Preview */}
+              {splitPreview && (
+                <div className="rounded-md border bg-amber-50 p-3 dark:bg-amber-950/20">
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                    💰 Divisão automática configurada
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                    Será gerada uma "Conta a Pagar" de{" "}
+                    <strong>
+                      R$ {splitPreview.amount.toFixed(2)}
+                    </strong>
+                    {splitPreview.type === "PERCENTAGE"
+                      ? ` (${splitPreview.value}% do valor)`
+                      : ` (valor fixo de R$ ${splitPreview.value.toFixed(2)})`}
+                    . Vencimento em 30 dias.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
             <Select
@@ -242,17 +327,14 @@ export function TransactionForm({
               onValueChange={(value) => form.setValue("status", value as TransactionStatus)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select status" />
+                <SelectValue placeholder="Selecione o status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={TransactionStatus.COMPLETED}>Completed</SelectItem>
-                <SelectItem value={TransactionStatus.PENDING}>Pending</SelectItem>
-                <SelectItem value={TransactionStatus.CANCELLED}>Cancelled</SelectItem>
+                <SelectItem value={TransactionStatus.COMPLETED}>Concluída</SelectItem>
+                <SelectItem value={TransactionStatus.PENDING}>Pendente</SelectItem>
+                <SelectItem value={TransactionStatus.CANCELLED}>Cancelada</SelectItem>
               </SelectContent>
             </Select>
-            {form.formState.errors.status && (
-              <p className="text-sm text-destructive">{form.formState.errors.status.message}</p>
-            )}
           </div>
 
           <DialogFooter>
@@ -262,11 +344,11 @@ export function TransactionForm({
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
             >
-              Cancel
+              Cancelar
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditing ? "Update" : "Create"}
+              {isEditing ? "Atualizar" : "Criar"}
             </Button>
           </DialogFooter>
         </form>

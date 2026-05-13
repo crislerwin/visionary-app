@@ -20,6 +20,7 @@ const createTransactionSchema = z.object({
   date: z.coerce.date(),
   bankAccountId: z.string(),
   categoryId: z.string().optional(),
+  partnerId: z.string().optional(),
   status: z
     .enum([TransactionStatus.COMPLETED, TransactionStatus.PENDING, TransactionStatus.CANCELLED])
     .default(TransactionStatus.COMPLETED),
@@ -202,6 +203,42 @@ export const transactionRouter = router({
           },
         },
       });
+
+      // US06: Auto-generate PartnerInvoice on INCOME transactions with partner
+      if (input.partnerId && input.type === TransactionType.INCOME) {
+        const partner = await tx.partner.findFirst({
+          where: { id: input.partnerId, tenantId: ctx.tenantId },
+        });
+
+        if (partner) {
+          const commissionValue = Number(partner.commissionValue);
+          let splitAmount = 0;
+
+          if (partner.commissionType === "PERCENTAGE") {
+            splitAmount = Number(input.amount) * (commissionValue / 100);
+          } else if (partner.commissionType === "FIXED") {
+            splitAmount = Math.min(commissionValue, Number(input.amount));
+          }
+
+          if (splitAmount > 0) {
+            const dueDate = new Date(input.date);
+            dueDate.setDate(dueDate.getDate() + 30); // Vencimento em 30 dias
+
+            await tx.partnerInvoice.create({
+              data: {
+                partnerId: input.partnerId,
+                tenantId: ctx.tenantId,
+                description: `Repasse referente a: ${input.description}`,
+                amount: splitAmount,
+                dueDate,
+                reference: newTransaction.id,
+                status: "PENDING",
+                notes: `Comissão ${partner.commissionType}: ${commissionValue}${partner.commissionType === "PERCENTAGE" ? "%" : ""}`,
+              },
+            });
+          }
+        }
+      }
 
       return newTransaction;
     });
