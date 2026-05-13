@@ -75,9 +75,7 @@ export const transactionRouter = router({
 
     // Suporte para page/pageSize (frontend) ou limit/offset (legacy)
     const pageSize = input.pageSize ?? input.limit ?? 50;
-    const skip = input.page
-      ? (input.page - 1) * pageSize
-      : input.offset ?? 0;
+    const skip = input.page ? (input.page - 1) * pageSize : (input.offset ?? 0);
 
     const [transactions, total] = await Promise.all([
       prisma.transaction.findMany({

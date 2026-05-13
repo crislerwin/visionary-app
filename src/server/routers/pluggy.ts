@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/db";
 import { protectedProcedure, router, tenantProcedure } from "@/lib/trpc/trpc";
-import { PluggyClient } from "pluggy-sdk";
 import { BankAccountType, CategoryType, TransactionStatus, TransactionType } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
+import { PluggyClient } from "pluggy-sdk";
 import { z } from "zod";
 
 function getPluggyClient() {

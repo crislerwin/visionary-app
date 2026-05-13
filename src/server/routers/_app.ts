@@ -1,5 +1,4 @@
 import { createCallerFactory, createTRPCContext, router } from "@/lib/trpc/trpc";
-import { agentRouter } from "./agent";
 import { authRouter } from "./auth";
 import { bankAccountRouter } from "./bankAccount";
 import { categoryRouter } from "./category";
@@ -24,7 +23,6 @@ export const appRouter = router({
   category: categoryRouter,
   dataSource: dataSourceRouter,
   pluggy: pluggyRouter,
-  agent: agentRouter,
   partner: partnerRouter,
   partnerInvoice: partnerInvoiceRouter,
 });

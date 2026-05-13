@@ -1,10 +1,25 @@
 "use client";
 
+import {
+  Banknote,
+  Building2,
+  Check,
+  CreditCard,
+  Landmark,
+  Link2,
+  Loader2,
+  Wallet,
+} from "lucide-react";
 import { useState } from "react";
-import { Banknote, Building2, Check, CreditCard, Landmark, Link2, Loader2, Wallet } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Props {
   accountName: string;
@@ -12,14 +27,14 @@ interface Props {
 }
 
 const BANKS = [
-  { id: "nubank",    name: "Nubank",           icon: CreditCard, color: "#8A05BE" },
-  { id: "itau",      name: "Itaú",             icon: Building2,  color: "#EC7000" },
-  { id: "bradesco",  name: "Bradesco",         icon: Landmark,   color: "#CC092F" },
-  { id: "santander", name: "Santander",         icon: Building2,  color: "#EC0000" },
-  { id: "bb",        name: "Banco do Brasil",  icon: Banknote,   color: "#F8E71C" },
-  { id: "inter",     name: "Banco Inter",      icon: Wallet,     color: "#FF7A00" },
-  { id: "c6",        name: "C6 Bank",          icon: CreditCard, color: "#242424" },
-  { id: "picpay",    name: "PicPay",           icon: Wallet,     color: "#11C76F" },
+  { id: "nubank", name: "Nubank", icon: CreditCard, color: "#8A05BE" },
+  { id: "itau", name: "Itaú", icon: Building2, color: "#EC7000" },
+  { id: "bradesco", name: "Bradesco", icon: Landmark, color: "#CC092F" },
+  { id: "santander", name: "Santander", icon: Building2, color: "#EC0000" },
+  { id: "bb", name: "Banco do Brasil", icon: Banknote, color: "#F8E71C" },
+  { id: "inter", name: "Banco Inter", icon: Wallet, color: "#FF7A00" },
+  { id: "c6", name: "C6 Bank", icon: CreditCard, color: "#242424" },
+  { id: "picpay", name: "PicPay", icon: Wallet, color: "#11C76F" },
 ] as const;
 
 type Step = "list" | "connecting" | "done";
@@ -60,7 +75,12 @@ export function ConnectBankModal({ accountName, onConnected }: Props) {
         <Link2 className="h-4 w-4" /> Conectar Banco
       </Button>
 
-      <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
+      <Dialog
+        open={open}
+        onOpenChange={(v) => {
+          if (!v) handleClose();
+        }}
+      >
         <DialogContent className="sm:max-w-[460px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -69,7 +89,8 @@ export function ConnectBankModal({ accountName, onConnected }: Props) {
             <DialogDescription>
               {step === "list" && "Selecione seu banco para conectar via Open Finance."}
               {step === "connecting" && "Conectando à instituição financeira..."}
-              {step === "done" && "Conexão simulada com sucesso! O backend será integrado em breve."}
+              {step === "done" &&
+                "Conexão simulada com sucesso! O backend será integrado em breve."}
             </DialogDescription>
           </DialogHeader>
 
@@ -117,7 +138,9 @@ export function ConnectBankModal({ accountName, onConnected }: Props) {
                   Conexão com {BANKS.find((b) => b.id === selectedBank)?.name ?? "banco"} simulada.
                 </p>
               </div>
-              <Button onClick={handleDone} className="min-w-[200px]">Continuar</Button>
+              <Button onClick={handleDone} className="min-w-[200px]">
+                Continuar
+              </Button>
             </div>
           )}
         </DialogContent>
