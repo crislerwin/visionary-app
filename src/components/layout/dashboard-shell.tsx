@@ -1,6 +1,7 @@
 "use client";
 
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { cn } from "@/lib/utils";
 import type * as React from "react";
 import { useState } from "react";
@@ -22,6 +23,7 @@ export function DashboardShell({ children, className }: DashboardShellProps) {
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar with UserNav */}
         <div className="flex h-12 shrink-0 items-center justify-end gap-2 border-b px-4">
+          <LanguageSwitcher />
           <ThemeToggle />
           <UserNav />
         </div>
