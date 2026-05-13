@@ -167,10 +167,11 @@ export const partnerRouter = router({
       z.object({
         sortBy: z.enum(["volume", "profit"]).default("profit"),
         period: z.enum(["month", "quarter", "year", "all"]).default("all"),
+        limit: z.number().min(1).max(100).default(50),
       }).optional()
     )
     .query(async ({ ctx, input }) => {
-      const { sortBy = "profit", period = "all" } = input ?? {};
+      const { sortBy = "profit", period = "all", limit = 50 } = input ?? {};
 
       // Build date filter based on period
       const now = new Date();
@@ -184,48 +185,111 @@ export const partnerRouter = router({
         dateFilter = { gte: new Date(now.getFullYear(), 0, 1) };
       }
 
-      // Fetch all partners for this tenant
+      // Fetch partners and extract IDs for filtering
       const partners = await prisma.partner.findMany({
         where: { tenantId: ctx.tenantId, status: PartnerStatus.ACTIVE },
         orderBy: { name: "asc" },
+        take: limit,
       });
 
-      // Aggregate transactions per partner
-      const performanceData = await Promise.all(
-        partners.map(async (partner) => {
-          const transactions = await prisma.transaction.findMany({
-            where: {
-              partnerId: partner.id,
-              status: "COMPLETED",
-              ...(dateFilter.gte && { date: dateFilter }),
-            },
-          });
+      const partnerIds = partners.map((p) => p.id);
 
-          const totalReceived = transactions
-            .filter((t) => t.type === "INCOME")
-            .reduce((sum, t) => sum + Number(t.amount), 0);
+      // Early return if no partners
+      if (partnerIds.length === 0) {
+        return {
+          partners: [],
+          summary: {
+            totalPartners: 0,
+            totalReceived: 0,
+            totalPaid: 0,
+            totalProfit: 0,
+            totalTransactions: 0,
+          },
+        };
+      }
 
-          const totalPaid = transactions
-            .filter((t) => t.type === "EXPENSE")
-            .reduce((sum, t) => sum + Number(t.amount), 0);
+      // Fetch partners with aggregated transaction data in parallel
+      const dateWhere = dateFilter.gte ? { gte: dateFilter.gte } : undefined;
 
-          const transactionCount = transactions.length;
-          const netProfit = totalReceived - totalPaid;
+      const [
+        incomeAgg,
+        expenseAgg,
+        countAgg
+      ] = await Promise.all([
+        // Total income per partner
+        prisma.transaction.groupBy({
+          by: ["partnerId"],
+          where: {
+            partnerId: { in: partnerIds },
+            type: "INCOME",
+            status: "COMPLETED",
+            ...(dateWhere && { date: dateWhere }),
+          },
+          _sum: { amount: true },
+        }),
+        // Total expense per partner
+        prisma.transaction.groupBy({
+          by: ["partnerId"],
+          where: {
+            partnerId: { in: partnerIds },
+            type: "EXPENSE",
+            status: "COMPLETED",
+            ...(dateWhere && { date: dateWhere }),
+          },
+          _sum: { amount: true },
+        }),
+        // Transaction count per partner
+        prisma.transaction.groupBy({
+          by: ["partnerId"],
+          where: {
+            partnerId: { in: partnerIds },
+            status: "COMPLETED",
+            ...(dateWhere && { date: dateWhere }),
+          },
+          _count: { id: true },
+        }),
+      ]);
 
-          return {
-            id: partner.id,
-            name: partner.name,
-            type: partner.type,
-            status: partner.status,
-            commissionType: partner.commissionType,
-            commissionValue: Number(partner.commissionValue),
-            totalReceived,
-            totalPaid,
-            netProfit,
-            transactionCount,
-          };
-        })
+      // Build lookup maps with null safety
+      const incomeMap = new Map(
+        incomeAgg
+          .filter((i): i is typeof i & { partnerId: string; _sum: { amount: unknown } } => 
+            i.partnerId != null && i._sum?.amount != null)
+          .map((i) => [i.partnerId, Number(i._sum.amount)])
       );
+      const expenseMap = new Map(
+        expenseAgg
+          .filter((e): e is typeof e & { partnerId: string; _sum: { amount: unknown } } => 
+            e.partnerId != null && e._sum?.amount != null)
+          .map((e) => [e.partnerId, Number(e._sum.amount)])
+      );
+      const countMap = new Map(
+        countAgg
+          .filter((c): c is typeof c & { partnerId: string; _count: { id: number } } => 
+            c.partnerId != null && c._count?.id != null)
+          .map((c) => [c.partnerId, c._count.id])
+      );
+
+      // Build performance data
+      const performanceData = partners.map((partner) => {
+        const totalReceived = incomeMap.get(partner.id) ?? 0;
+        const totalPaid = expenseMap.get(partner.id) ?? 0;
+        const transactionCount = countMap.get(partner.id) ?? 0;
+        const netProfit = totalReceived - totalPaid;
+
+        return {
+          id: partner.id,
+          name: partner.name,
+          type: partner.type,
+          status: partner.status,
+          commissionType: partner.commissionType,
+          commissionValue: Number(partner.commissionValue),
+          totalReceived,
+          totalPaid,
+          netProfit,
+          transactionCount,
+        };
+      });
 
       // Sort by selected criteria
       const sorted = performanceData.sort((a, b) => {
