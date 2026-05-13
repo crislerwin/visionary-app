@@ -139,7 +139,7 @@ export default function TransactionsPage() {
     { enabled: !!tenantId },
   );
 
-  const { data: categories } = api.category.list.useQuery(undefined, { enabled: !!tenantId });
+  const { data: categories } = api.category.list.useQuery({}, { enabled: !!tenantId });
   const deleteMutation = api.transaction.delete.useMutation({
     onSuccess: () => {
       utils.transaction.list.invalidate();
@@ -150,7 +150,11 @@ export default function TransactionsPage() {
   });
 
   const rows: TransactionRow[] = useMemo(
-    () => (txData?.transactions as TransactionRow[]) ?? [],
+    () => (txData?.transactions?.map((t) => ({
+      ...t,
+      date: new Date(t.date),
+      amount: Number(t.amount),
+    })) as TransactionRow[]) ?? [],
     [txData],
   );
   const total = txData?.total ?? 0;
@@ -213,7 +217,7 @@ export default function TransactionsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="">Todas</SelectItem>
-              {categories?.map((c) => (
+              {categories?.categories?.map((c: { id: string; name: string }) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.name}
                 </SelectItem>
