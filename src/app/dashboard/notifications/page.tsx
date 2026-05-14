@@ -7,11 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/trpc/react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR, enUS } from "date-fns/locale";
 import { AlertTriangle, Bell, Check, Clock, Info, Trash2, TrendingUp } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function NotificationsPage() {
+  const { t, i18n } = useTranslation("common");
   const [activeTab, setActiveTab] = useState("unread");
   const utils = api.useUtils();
 
@@ -41,6 +43,8 @@ export default function NotificationsPage() {
     },
   });
 
+  const dateLocale = i18n.language === "en" ? enUS : ptBR;
+
   const getIcon = (condition: string) => {
     switch (condition) {
       case "balance_below":
@@ -57,13 +61,37 @@ export default function NotificationsPage() {
   const getBadge = (condition: string) => {
     switch (condition) {
       case "balance_below":
-        return <Badge variant="destructive">Saldo Baixo</Badge>;
+        return <Badge variant="destructive">{t("notifications.lowBalance")}</Badge>;
       case "invoice_overdue":
-        return <Badge variant="secondary">Vencido</Badge>;
+        return <Badge variant="secondary">{t("notifications.overdue")}</Badge>;
       case "revenue_target":
-        return <Badge variant="outline">Meta</Badge>;
+        return <Badge variant="outline">{t("notifications.target")}</Badge>;
       default:
-        return <Badge>Alerta</Badge>;
+        return <Badge>{t("notifications.alert")}</Badge>;
+    }
+  };
+
+  const getTabTitle = (tab: string) => {
+    switch (tab) {
+      case "unread":
+        return t("notifications.unread");
+      case "read":
+        return t("notifications.read");
+      case "all":
+        return t("notifications.all");
+      default:
+        return tab;
+    }
+  };
+
+  const getEmptyMessage = (tab: string) => {
+    switch (tab) {
+      case "unread":
+        return t("notifications.noUnread");
+      case "read":
+        return t("notifications.noRead");
+      default:
+        return t("notifications.noNotifications");
     }
   };
 
@@ -73,24 +101,22 @@ export default function NotificationsPage() {
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">Notificações</h1>
-          <p className="text-sm text-muted-foreground">
-            Acompanhe alertas importantes sobre suas finanças
-          </p>
+          <h1 className="text-xl font-bold tracking-tight">{t("notifications.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("notifications.description")}</p>
         </div>
         {items.some((n) => n.status === "UNREAD") && (
           <Button onClick={() => markAllAsRead.mutate()} disabled={markAllAsRead.isPending}>
             <Check className="mr-2 h-4 w-4" />
-            Marcar todas como lidas
+            {t("notifications.markAllRead")}
           </Button>
         )}
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="unread">Não lidas</TabsTrigger>
-          <TabsTrigger value="read">Lidas</TabsTrigger>
-          <TabsTrigger value="all">Todas</TabsTrigger>
+          <TabsTrigger value="unread">{t("notifications.unread")}</TabsTrigger>
+          <TabsTrigger value="read">{t("notifications.read")}</TabsTrigger>
+          <TabsTrigger value="all">{t("notifications.all")}</TabsTrigger>
         </TabsList>
 
         {["unread", "read", "all"].map((tab) => (
@@ -99,21 +125,16 @@ export default function NotificationsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Bell className="h-5 w-5 text-primary" />
-                  {tab === "unread" && "Não lidas"}
-                  {tab === "read" && "Lidas"}
-                  {tab === "all" && "Todas as notificações"}
+                  {getTabTitle(tab)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
-                  <p className="text-muted-foreground">Carregando...</p>
+                  <p className="text-muted-foreground">{t("loading")}</p>
                 ) : items.length === 0 ? (
                   <div className="flex flex-col items-center py-12 text-muted-foreground">
                     <Bell className="mb-4 h-12 w-12 opacity-20" />
-                    <p>
-                      Nenhuma notificação{" "}
-                      {tab === "unread" ? "não lida" : tab === "read" ? "lida" : ""}
-                    </p>
+                    <p>{getEmptyMessage(tab)}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -151,7 +172,7 @@ export default function NotificationsPage() {
                             <p className="mt-2 text-xs text-muted-foreground">
                               {formatDistanceToNow(new Date(n.createdAt), {
                                 addSuffix: true,
-                                locale: ptBR,
+                                locale: dateLocale,
                               })}
                             </p>
                           </div>
@@ -161,7 +182,7 @@ export default function NotificationsPage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                title="Marcar como lida"
+                                title={t("notifications.markAsRead")}
                                 onClick={() => markAsRead.mutate({ id: n.id })}
                                 disabled={markAsRead.isPending}
                               >
@@ -171,7 +192,7 @@ export default function NotificationsPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              title="Descartar"
+                              title={t("notifications.dismiss")}
                               onClick={() => dismiss.mutate({ id: n.id })}
                               disabled={dismiss.isPending}
                             >

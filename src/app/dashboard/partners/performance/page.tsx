@@ -13,18 +13,13 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentTenant } from "@/hooks/use-current-tenant";
 import { api } from "@/lib/trpc/react";
-import { ArrowLeftRight, Receipt, TrendingDown, TrendingUp, Users } from "lucide-react";
+import { ArrowLeft, Receipt, TrendingDown, TrendingUp, Users } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
-}
+import { useTranslation } from "react-i18next";
 
 export default function PartnerPerformancePage() {
+  const { t, i18n } = useTranslation("common");
   const { currentTenant, isLoading: tenantLoading } = useCurrentTenant();
   const tenantReady = !tenantLoading && !!currentTenant;
 
@@ -35,6 +30,39 @@ export default function PartnerPerformancePage() {
     { sortBy, period },
     { enabled: tenantReady },
   );
+
+  const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat(i18n.language === "en" ? "en-US" : "pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  };
+
+  const getPeriodLabel = (p: string) => {
+    switch (p) {
+      case "all":
+        return t("partnerPerformance.allTime");
+      case "month":
+        return t("partnerPerformance.thisMonth");
+      case "quarter":
+        return t("partnerPerformance.thisQuarter");
+      case "year":
+        return t("partnerPerformance.thisYear");
+      default:
+        return p;
+    }
+  };
+
+  const getSortByLabel = (s: string) => {
+    switch (s) {
+      case "profit":
+        return t("partnerPerformance.highestProfit");
+      case "volume":
+        return t("partnerPerformance.highestVolume");
+      default:
+        return s;
+    }
+  };
 
   if (tenantLoading || isLoading) {
     return (
@@ -59,15 +87,13 @@ export default function PartnerPerformancePage() {
           <div className="flex items-center gap-2 mb-1">
             <Link href="/dashboard/partners">
               <Button variant="ghost" size="sm">
-                <ArrowLeftRight className="mr-1 h-4 w-4" />
-                Voltar
+                <ArrowLeft className="mr-1 h-4 w-4" />
+                {t("back")}
               </Button>
             </Link>
           </div>
-          <h1 className="text-xl font-bold tracking-tight">Rentabilidade por Parceiro</h1>
-          <p className="text-sm text-muted-foreground">
-            Análise de desempenho financeiro dos parceiros
-          </p>
+          <h1 className="text-xl font-bold tracking-tight">{t("partnerPerformance.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("partnerPerformance.description")}</p>
         </div>
       </div>
 
@@ -75,23 +101,23 @@ export default function PartnerPerformancePage() {
       <div className="flex flex-wrap gap-3">
         <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
           <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Período" />
+            <SelectValue placeholder={t("partnerPerformance.period")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todo o período</SelectItem>
-            <SelectItem value="month">Este mês</SelectItem>
-            <SelectItem value="quarter">Este trimestre</SelectItem>
-            <SelectItem value="year">Este ano</SelectItem>
+            <SelectItem value="all">{t("partnerPerformance.allTime")}</SelectItem>
+            <SelectItem value="month">{t("partnerPerformance.thisMonth")}</SelectItem>
+            <SelectItem value="quarter">{t("partnerPerformance.thisQuarter")}</SelectItem>
+            <SelectItem value="year">{t("partnerPerformance.thisYear")}</SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Ordenar por" />
+            <SelectValue placeholder={t("partnerPerformance.sortBy")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="profit">Maior lucro</SelectItem>
-            <SelectItem value="volume">Maior volume</SelectItem>
+            <SelectItem value="profit">{t("partnerPerformance.highestProfit")}</SelectItem>
+            <SelectItem value="volume">{t("partnerPerformance.highestVolume")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -102,7 +128,7 @@ export default function PartnerPerformancePage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Parceiros Ativos
+                {t("partnerPerformance.activePartners")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -116,7 +142,7 @@ export default function PartnerPerformancePage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Recebido
+                {t("partnerPerformance.totalReceived")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -132,7 +158,7 @@ export default function PartnerPerformancePage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Pago
+                {t("partnerPerformance.totalPaid")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -148,7 +174,7 @@ export default function PartnerPerformancePage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Resultado Líquido
+                {t("partnerPerformance.netResult")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -173,7 +199,7 @@ export default function PartnerPerformancePage() {
       {/* Footer summary */}
       {summary && summary.totalTransactions > 0 && (
         <div className="mt-4 text-sm text-muted-foreground text-right">
-          Total de {summary.totalTransactions} transações no período
+          {t("partnerPerformance.totalTransactions")}: {summary.totalTransactions}
         </div>
       )}
     </div>
