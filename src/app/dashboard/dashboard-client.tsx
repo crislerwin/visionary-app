@@ -307,7 +307,7 @@ export function DashboardClient() {
             return (
               <Badge key={id} variant="secondary" className="gap-1 px-2 py-0.5 text-[11px]">
                 {name}
-                <button
+                <button type="button"
                   onClick={() => toggle("bankAccountIds", id)}
                   className="hover:text-destructive"
                 >
@@ -321,7 +321,7 @@ export function DashboardClient() {
             return (
               <Badge key={id} variant="secondary" className="gap-1 px-2 py-0.5 text-[11px]">
                 {name}
-                <button onClick={() => toggle("partnerIds", id)} className="hover:text-destructive">
+                <button type="button" onClick={() => toggle("partnerIds", id)} className="hover:text-destructive">
                   <X className="h-3 w-3" />
                 </button>
               </Badge>
@@ -332,7 +332,7 @@ export function DashboardClient() {
             return (
               <Badge key={id} variant="secondary" className="gap-1 px-2 py-0.5 text-[11px]">
                 {name}
-                <button
+                <button type="button"
                   onClick={() => toggle("categoryIds", id)}
                   className="hover:text-destructive"
                 >
@@ -541,7 +541,7 @@ function FilterPopover({
             <div className="px-2 py-1.5 text-[11px] text-muted-foreground">{allLabel}</div>
           ) : (
             items.map((item) => (
-              <label
+              <div
                 key={item.id}
                 className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-[12px] hover:bg-accent"
               >
@@ -551,7 +551,7 @@ function FilterPopover({
                   className="size-3.5"
                 />
                 <span className="truncate">{item.label}</span>
-              </label>
+              </div>
             ))
           )}
         </div>

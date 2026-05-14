@@ -38,7 +38,7 @@ export default function PartnerPerformancePage() {
     }).format(value);
   };
 
-  const getPeriodLabel = (p: string) => {
+  const _getPeriodLabel = (p: string) => {
     switch (p) {
       case "all":
         return t("partnerPerformance.allTime");
@@ -53,7 +53,7 @@ export default function PartnerPerformancePage() {
     }
   };
 
-  const getSortByLabel = (s: string) => {
+  const _getSortByLabel = (s: string) => {
     switch (s) {
       case "profit":
         return t("partnerPerformance.highestProfit");

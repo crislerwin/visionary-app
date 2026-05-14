@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/trpc/react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-import { ptBR, enUS } from "date-fns/locale";
+import { enUS, ptBR } from "date-fns/locale";
 import { AlertTriangle, Bell, Check, Clock, Info, Trash2, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";

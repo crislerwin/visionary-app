@@ -16,7 +16,7 @@ import { useCurrentTenant } from "@/hooks/use-current-tenant";
 import { api } from "@/lib/trpc/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { ptBR, enUS } from "date-fns/locale";
+import { enUS, ptBR } from "date-fns/locale";
 import { AlertTriangle, ArrowLeft, CheckCircle2, Clock, DollarSign, Minus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -159,7 +159,8 @@ function PartnerInvoicesPageContent() {
         if (invoice.status === "PAID" && invoice.paidAt) {
           return (
             <span className="text-xs text-muted-foreground">
-              {t("partnerInvoices.paidAt")} {format(new Date(invoice.paidAt), "dd/MM/yyyy", { locale: dateLocale })}
+              {t("partnerInvoices.paidAt")}{" "}
+              {format(new Date(invoice.paidAt), "dd/MM/yyyy", { locale: dateLocale })}
             </span>
           );
         }

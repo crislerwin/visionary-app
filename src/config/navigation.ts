@@ -1,4 +1,13 @@
-import { Database, Handshake, LayoutDashboard, type LucideIcon, Receipt, Bell, CreditCard, TrendingUp } from "lucide-react";
+import {
+  Bell,
+  CreditCard,
+  Database,
+  Handshake,
+  LayoutDashboard,
+  type LucideIcon,
+  Receipt,
+  TrendingUp,
+} from "lucide-react";
 
 export interface NavItem {
   titleKey: string;

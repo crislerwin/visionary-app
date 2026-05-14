@@ -28,7 +28,10 @@ function SidebarNavSection({
   return (
     <div className="px-3 py-2">
       {section.titleKey && !collapsed && (
-        <h3 suppressHydrationWarning className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <h3
+          suppressHydrationWarning
+          className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+        >
           {t(section.titleKey)}
         </h3>
       )}

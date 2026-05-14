@@ -340,7 +340,9 @@ export default function AlertsPage() {
           <CardTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5 text-primary" /> {t("alerts.alertRules")}
           </CardTitle>
-          <CardDescription>{rules?.length ?? 0} {t("alerts.rulesConfigured")}</CardDescription>
+          <CardDescription>
+            {rules?.length ?? 0} {t("alerts.rulesConfigured")}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -356,7 +358,7 @@ export default function AlertsPage() {
               {rules?.map((rule) => {
                 const ConditionIcon = getConditionIcon(rule.condition);
                 const priorityColor = getPriorityColor(rule.priority);
-                const priorityLabel = getPriorityLabel(rule.priority);
+                const _priorityLabel = getPriorityLabel(rule.priority);
                 const conditionLabel = getConditionLabel(rule.condition);
                 return (
                   <div
@@ -403,7 +405,8 @@ export default function AlertsPage() {
                         size="icon"
                         className="text-red-500"
                         onClick={() => {
-                          if (confirm(t("alerts.deleteConfirm"))) deleteRule.mutate({ id: rule.id });
+                          if (confirm(t("alerts.deleteConfirm")))
+                            deleteRule.mutate({ id: rule.id });
                         }}
                         disabled={deleteRule.isPending}
                       >
