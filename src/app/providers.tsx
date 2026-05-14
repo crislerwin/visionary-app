@@ -10,7 +10,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
       <TRPCProvider>
-        <NextThemesProvider attribute="class" defaultTheme="system" enableSystem>
+        <NextThemesProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+          storageKey="theme"
+        >
           {children}
         </NextThemesProvider>
       </TRPCProvider>
