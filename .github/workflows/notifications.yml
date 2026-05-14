@@ -4,36 +4,88 @@ on:
   workflow_run:
     workflows: [CI]
     types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'CI run ID (optional)'
+        required: false
+        type: string
 
 jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Send notification to n8n
+      - name: Build and send notification to n8n
+        env:
+          WEBHOOK_URL: "https://n8n.reactivesoftware.com.br/webhook/github-ci-webhook-001"
         run: |
-          curl -X POST "https://n8n.reactivesoftware.com.br/webhook/github-ci-webhook-001" \
+          set -euo pipefail
+
+          # Gather workflow run info
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.run_id }}" ]; then
+            echo "Manual run with run_id: ${{ inputs.run_id }}"
+            CONCLUSION="${{ github.event.workflow_run.conclusion || 'unknown' }}"
+            HEAD_BRANCH="${{ github.event.workflow_run.head_branch || 'main' }}"
+            COMMIT_MSG="${{ github.event.workflow_run.head_commit.message || 'Manual trigger' }}"
+            ACTOR="${{ github.event.workflow_run.head_repository.owner.login || github.actor }}"
+            RUN_URL="${{ github.event.workflow_run.html_url || github.server_url }}"
+            RUN_ID="${{ inputs.run_id }}"
+            RUN_NAME="${{ github.event.workflow_run.name || 'CI' }}"
+          else
+            CONCLUSION="${{ github.event.workflow_run.conclusion }}"
+            HEAD_BRANCH="${{ github.event.workflow_run.head_branch }}"
+            COMMIT_MSG="${{ github.event.workflow_run.head_commit.message }}"
+            ACTOR="${{ github.event.workflow_run.head_repository.owner.login }}"
+            RUN_URL="${{ github.event.workflow_run.html_url }}"
+            RUN_ID="${{ github.event.workflow_run.id }}"
+            RUN_NAME="${{ github.event.workflow_run.name }}"
+          fi
+
+          # Build clean Mattermost payload
+          PAYLOAD=$(jq -n \
+            --arg action "$CONCLUSION" \
+            --arg repo "${{ github.repository }}" \
+            --arg repo_url "${{ github.event.repository.html_url }}" \
+            --arg run_id "$RUN_ID" \
+            --arg run_name "$RUN_NAME" \
+            --arg branch "$HEAD_BRANCH" \
+            --arg commit "$COMMIT_MSG" \
+            --arg actor "$ACTOR" \
+            --arg conclusion "$CONCLUSION" \
+            --arg run_url "$RUN_URL" \
+            '{
+              text: "CI Build **\($conclusion)** for [\($repo)](\($repo_url))",
+              attachments: [
+                {
+                  color: (if $conclusion == "success" then "#36a64f" elif $conclusion == "failure" then "#ff0000" else "#808080" end),
+                  fields: [
+                    { title: "Branch", value: $branch, short: true },
+                    { title: "Actor", value: $actor, short: true },
+                    { title: "Run", value: "[\($run_name) #\($run_id)](\($run_url))", short: false },
+                    { title: "Commit", value: $commit, short: false }
+                  ]
+                }
+              ]
+            }')
+
+          echo "--- Payload ---"
+          echo "$PAYLOAD"
+          echo "---------------"
+
+          # Send with curl, capture HTTP code
+          HTTP_CODE=$(curl -s -o /tmp/response.txt -w "%{http_code}" \
+            -X POST "$WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -H "x-github-event: workflow_run" \
-            -d '{
-              "action": "${{ github.event.workflow_run.conclusion }}",
-              "repository": {
-                "full_name": "${{ github.repository }}",
-                "html_url": "${{ github.event.repository.html_url }}"
-              },
-              "workflow_run": {
-                "id": ${{ github.event.workflow_run.id }},
-                "name": "${{ github.event.workflow_run.name }}",
-                "head_branch": "${{ github.event.workflow_run.head_branch }}",
-                "head_commit": {
-                  "message": "${{ github.event.workflow_run.head_commit.message }}"
-                },
-                "actor": {
-                  "login": "${{ github.event.workflow_run.head_repository.owner.login }}",
-                  "html_url": "${{ github.event.workflow_run.head_repository.owner.html_url }}"
-                },
-                "conclusion": "${{ github.event.workflow_run.conclusion }}",
-                "html_url": "${{ github.event.workflow_run.html_url }}",
-                "run_started_at": "${{ github.event.workflow_run.run_started_at }}",
-                "updated_at": "${{ github.event.workflow_run.updated_at }}"
-              }
-            }'
+            -d "$PAYLOAD" || true)
+
+          echo "HTTP response code: $HTTP_CODE"
+          echo "Response body:"
+          cat /tmp/response.txt || true
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "ERROR: Webhook returned HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+          echo "Notification sent successfully!"
