@@ -1,0 +1,10 @@
+{
+  "dashboard": "Dashboard",
+  "finance": "Finance",
+  "relationship": "Relationship",
+  "extract": "Extract",
+  "dataSources": "Data Sources",
+  "partners": "Partners",
+  "partnerPerformance": "Partner Performance",
+  "settings": "Settings"
+}
