@@ -33,24 +33,13 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
-const CONDITIONS = [
-  { value: "balance_below" as const, label: "Saldo abaixo de", icon: AlertTriangle },
-  { value: "invoice_overdue" as const, label: "Conta a pagar vencida", icon: Clock },
-  { value: "revenue_target" as const, label: "Meta de receita", icon: TrendingUp },
-];
-
-const PRIORITIES = [
-  { value: "LOW", label: "Baixa", color: "bg-blue-100 text-blue-600" },
-  { value: "MEDIUM", label: "Média", color: "bg-yellow-100 text-yellow-600" },
-  { value: "HIGH", label: "Alta", color: "bg-orange-100 text-orange-600" },
-  { value: "CRITICAL", label: "Crítica", color: "bg-red-100 text-red-600" },
-] as const;
-
-type Condition = (typeof CONDITIONS)[number]["value"];
-type Priority = (typeof PRIORITIES)[number]["value"];
+type Condition = "balance_below" | "invoice_overdue" | "revenue_target";
+type Priority = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
 export default function AlertsPage() {
+  const { t } = useTranslation("common");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -73,7 +62,7 @@ export default function AlertsPage() {
       utils.alert.listRules.invalidate();
       setOpen(false);
       resetForm();
-      console.info("Regra criada com sucesso!");
+      console.info(t("alerts.ruleCreated"));
     },
     onError: (err) => console.error(err.message),
   });
@@ -84,7 +73,7 @@ export default function AlertsPage() {
       setOpen(false);
       setEditing(null);
       resetForm();
-      console.info("Regra atualizada!");
+      console.info(t("alerts.ruleUpdated"));
     },
     onError: (err) => console.error(err.message),
   });
@@ -92,18 +81,18 @@ export default function AlertsPage() {
   const deleteRule = api.alert.deleteRule.useMutation({
     onSuccess: () => {
       utils.alert.listRules.invalidate();
-      console.info("Regra removida!");
+      console.info(t("alerts.ruleDeleted"));
     },
   });
 
   const checkAlerts = api.alert.check.useMutation({
     onSuccess: (res) => {
       if (res.created.length > 0) {
-        console.info(`${res.created.length} alerta(s) gerado(s)!`);
+        console.info(`${res.created.length} ${t("alerts.alertsGenerated")}`);
         utils.alert.listNotifications.invalidate();
         utils.alert.unreadCount.invalidate();
       } else {
-        console.info("Nenhum alerta no momento.");
+        console.info(t("alerts.noAlerts"));
       }
     },
   });
@@ -153,14 +142,68 @@ export default function AlertsPage() {
 
   const showThreshold = form.condition === "balance_below" || form.condition === "revenue_target";
 
+  const getConditionIcon = (condition: string) => {
+    switch (condition) {
+      case "balance_below":
+        return AlertTriangle;
+      case "invoice_overdue":
+        return Clock;
+      case "revenue_target":
+        return TrendingUp;
+      default:
+        return Bell;
+    }
+  };
+
+  const getConditionLabel = (condition: string) => {
+    switch (condition) {
+      case "balance_below":
+        return t("alerts.balanceBelow");
+      case "invoice_overdue":
+        return t("alerts.invoiceOverdue");
+      case "revenue_target":
+        return t("alerts.revenueTarget");
+      default:
+        return condition;
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "LOW":
+        return "bg-blue-100 text-blue-600";
+      case "MEDIUM":
+        return "bg-yellow-100 text-yellow-600";
+      case "HIGH":
+        return "bg-orange-100 text-orange-600";
+      case "CRITICAL":
+        return "bg-red-100 text-red-600";
+      default:
+        return "bg-gray-100 text-gray-600";
+    }
+  };
+
+  const getPriorityLabel = (priority: string) => {
+    switch (priority) {
+      case "LOW":
+        return t("alerts.low");
+      case "MEDIUM":
+        return t("alerts.medium");
+      case "HIGH":
+        return t("alerts.high");
+      case "CRITICAL":
+        return t("alerts.critical");
+      default:
+        return priority;
+    }
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">Configurar Alertas</h1>
-          <p className="text-sm text-muted-foreground">
-            Defina regras para receber notificações importantes
-          </p>
+          <h1 className="text-xl font-bold tracking-tight" suppressHydrationWarning>{t("alerts.title")}</h1>
+          <p className="text-sm text-muted-foreground" suppressHydrationWarning>{t("alerts.description")}</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -168,9 +211,10 @@ export default function AlertsPage() {
             size="sm"
             onClick={() => checkAlerts.mutate()}
             disabled={checkAlerts.isPending}
+            suppressHydrationWarning
           >
             <RefreshCw className={cn("mr-2 h-4 w-4", checkAlerts.isPending && "animate-spin")} />
-            Verificar Agora
+            {t("alerts.checkNow")}
           </Button>
           <Dialog
             open={open}
@@ -184,32 +228,32 @@ export default function AlertsPage() {
           >
             <DialogTrigger asChild>
               <Button size="sm">
-                <Plus className="mr-2 h-4 w-4" /> Nova Regra
+                <Plus className="mr-2 h-4 w-4" /> {t("alerts.newRule")}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
-                <DialogTitle>{editing ? "Editar Regra" : "Nova Regra de Alerta"}</DialogTitle>
+                <DialogTitle>{editing ? t("alerts.editRule") : t("alerts.createRule")}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 pt-4">
                 <div className="space-y-2">
-                  <Label>Nome</Label>
+                  <Label>{t("alerts.ruleName")}</Label>
                   <Input
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="Ex: Saldo Caixa Negativo"
+                    placeholder={t("alerts.ruleNamePlaceholder")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Descrição</Label>
+                  <Label>{t("common:description")}</Label>
                   <Input
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    placeholder="Opcional"
+                    placeholder={t("alerts.descriptionOptional")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Condição</Label>
+                  <Label>{t("alerts.condition")}</Label>
                   <Select
                     value={form.condition}
                     onValueChange={(v) => setForm({ ...form, condition: v as Condition })}
@@ -218,17 +262,15 @@ export default function AlertsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {CONDITIONS.map((c) => (
-                        <SelectItem key={c.value} value={c.value}>
-                          {c.label}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="balance_below">{t("alerts.balanceBelow")}</SelectItem>
+                      <SelectItem value="invoice_overdue">{t("alerts.invoiceOverdue")}</SelectItem>
+                      <SelectItem value="revenue_target">{t("alerts.revenueTarget")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 {showThreshold && (
                   <div className="space-y-2">
-                    <Label>Limite (R$)</Label>
+                    <Label>{t("alerts.threshold")}</Label>
                     <Input
                       type="number"
                       value={form.threshold}
@@ -239,7 +281,7 @@ export default function AlertsPage() {
                 )}
                 {form.condition === "balance_below" && (
                   <div className="space-y-2">
-                    <Label>Conta Bancária (opcional)</Label>
+                    <Label>{t("alerts.bankAccount")}</Label>
                     <Select
                       value={form.targetId || "all"}
                       onValueChange={(v) =>
@@ -254,7 +296,7 @@ export default function AlertsPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Todas as contas</SelectItem>
+                        <SelectItem value="all">{t("alerts.allAccounts")}</SelectItem>
                         {bankAccounts?.map((a) => (
                           <SelectItem key={a.id} value={a.id}>
                             {a.name}
@@ -265,7 +307,7 @@ export default function AlertsPage() {
                   </div>
                 )}
                 <div className="space-y-2">
-                  <Label>Prioridade</Label>
+                  <Label>{t("alerts.priority")}</Label>
                   <Select
                     value={form.priority}
                     onValueChange={(v) => setForm({ ...form, priority: v as Priority })}
@@ -274,11 +316,10 @@ export default function AlertsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {PRIORITIES.map((p) => (
-                        <SelectItem key={p.value} value={p.value}>
-                          {p.label}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="LOW">{t("alerts.low")}</SelectItem>
+                      <SelectItem value="MEDIUM">{t("alerts.medium")}</SelectItem>
+                      <SelectItem value="HIGH">{t("alerts.high")}</SelectItem>
+                      <SelectItem value="CRITICAL">{t("alerts.critical")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -287,7 +328,7 @@ export default function AlertsPage() {
                   onClick={onSubmit}
                   disabled={createRule.isPending || updateRule.isPending || !form.name}
                 >
-                  {editing ? "Salvar Alterações" : "Criar Regra"}
+                  {editing ? t("alerts.saveChanges") : t("alerts.createRule")}
                 </Button>
               </div>
             </DialogContent>
@@ -298,24 +339,28 @@ export default function AlertsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-primary" /> Regras de Alerta
+            <Bell className="h-5 w-5 text-primary" /> {t("alerts.alertRules")}
           </CardTitle>
-          <CardDescription>{rules?.length ?? 0} regra(s) configurada(s)</CardDescription>
+          <CardDescription>
+            {rules?.length ?? 0} {t("alerts.rulesConfigured")}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p className="text-muted-foreground">Carregando...</p>
+            <p className="text-muted-foreground">{t("loading")}</p>
           ) : rules?.length === 0 ? (
             <div className="flex flex-col items-center py-12 text-muted-foreground">
               <Bell className="mb-4 h-12 w-12 opacity-20" />
-              <p>Nenhuma regra configurada</p>
-              <p className="text-sm mt-1">Clique em "Nova Regra" para criar</p>
+              <p>{t("alerts.noRules")}</p>
+              <p className="text-sm mt-1">{t("alerts.createRuleHint")}</p>
             </div>
           ) : (
             <div className="space-y-2">
               {rules?.map((rule) => {
-                const condition = CONDITIONS.find((c) => c.value === rule.condition);
-                const priority = PRIORITIES.find((p) => p.value === rule.priority);
+                const ConditionIcon = getConditionIcon(rule.condition);
+                const priorityColor = getPriorityColor(rule.priority);
+                const _priorityLabel = getPriorityLabel(rule.priority);
+                const conditionLabel = getConditionLabel(rule.condition);
                 return (
                   <div
                     key={rule.id}
@@ -325,20 +370,20 @@ export default function AlertsPage() {
                       <div
                         className={cn(
                           "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
-                          priority?.color,
+                          priorityColor,
                         )}
                       >
-                        {condition && <condition.icon className="h-5 w-5" />}
+                        <ConditionIcon className="h-5 w-5" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <h4 className="font-semibold">{rule.name}</h4>
                           <Badge variant={rule.isActive ? "default" : "secondary"}>
-                            {rule.isActive ? "Ativo" : "Inativo"}
+                            {rule.isActive ? t("active") : t("inactive")}
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          {condition?.label}
+                          {conditionLabel}
                           {(rule.condition === "balance_below" ||
                             rule.condition === "revenue_target") &&
                             ` — R$ ${Number(rule.threshold).toFixed(2)}`}
@@ -361,7 +406,8 @@ export default function AlertsPage() {
                         size="icon"
                         className="text-red-500"
                         onClick={() => {
-                          if (confirm("Excluir esta regra?")) deleteRule.mutate({ id: rule.id });
+                          if (confirm(t("alerts.deleteConfirm")))
+                            deleteRule.mutate({ id: rule.id });
                         }}
                         disabled={deleteRule.isPending}
                       >

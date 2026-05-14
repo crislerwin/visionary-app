@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentTenant } from "@/hooks/use-current-tenant";
@@ -18,13 +20,20 @@ import { api } from "@/lib/trpc/react";
 import { cn } from "@/lib/utils";
 import { format, startOfMonth, subMonths } from "date-fns";
 import {
+  ArrowUpRight,
   Calendar as CalendarIcon,
   DollarSign,
+  Filter,
+  HandCoins,
   TrendingDown,
   TrendingUp,
+  UserCheck,
   Wallet,
+  X,
 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 function currency(value: number) {
@@ -48,7 +57,43 @@ function pct(a: number, b: number) {
   return b === 0 ? 0 : ((a - b) / Math.abs(b)) * 100;
 }
 
+// ── Filters state ──
+
+interface DashboardFilters {
+  bankAccountIds: string[];
+  partnerIds: string[];
+  categoryIds: string[];
+}
+
+function useDashboardFilters() {
+  const [filters, setFilters] = useState<DashboardFilters>({
+    bankAccountIds: [],
+    partnerIds: [],
+    categoryIds: [],
+  });
+
+  const toggle = (key: keyof DashboardFilters, id: string) => {
+    setFilters((prev) => {
+      const arr = prev[key];
+      const has = arr.includes(id);
+      return { ...prev, [key]: has ? arr.filter((x) => x !== id) : [...arr, id] };
+    });
+  };
+
+  const clear = () => setFilters({ bankAccountIds: [], partnerIds: [], categoryIds: [] });
+
+  const hasAny =
+    filters.bankAccountIds.length > 0 ||
+    filters.partnerIds.length > 0 ||
+    filters.categoryIds.length > 0;
+
+  return { filters, toggle, clear, hasAny };
+}
+
+// ── Main component ──
+
 export function DashboardClient() {
+  const { t } = useTranslation("dashboard");
   const { currentTenant, isLoading: tenantLoading } = useCurrentTenant();
   const tenantReady = !tenantLoading && !!currentTenant;
 
@@ -58,30 +103,78 @@ export function DashboardClient() {
     to: now,
   });
 
+  const { filters, toggle, clear, hasAny } = useDashboardFilters();
+
+  // Reference data for filter selects
+  const { data: bankAccounts } = api.bankAccount.list.useQuery(undefined, { enabled: tenantReady });
+  const { data: partners } = api.partner.list.useQuery(undefined, { enabled: tenantReady });
+  const { data: categories } = api.category.list.useQuery({ limit: 100 }, { enabled: tenantReady });
+
+  // Main queries with filters
   const { data: monthlyStats, isLoading: statsLoading } = api.transaction.getMonthlyStats.useQuery(
-    { startDate: dateRange.from, endDate: dateRange.to },
+    {
+      startDate: dateRange.from,
+      endDate: dateRange.to,
+      bankAccountIds: filters.bankAccountIds,
+      partnerIds: filters.partnerIds,
+      categoryIds: filters.categoryIds,
+    },
     { enabled: tenantReady },
   );
-  const { data: totalBalanceData, isLoading: balanceLoading } =
+
+  // Balance: filtered by bank accounts if selected, otherwise global
+  const { data: filteredBalance, isLoading: balanceLoading } =
     api.bankAccount.getTotalBalance.useQuery(undefined, {
-      enabled: tenantReady,
+      enabled: tenantReady && filters.bankAccountIds.length === 0,
     });
 
-  const isLoading = statsLoading || balanceLoading || tenantLoading;
+  const { data: accountBalances, isLoading: accountBalanceLoading } = api.bankAccount.list.useQuery(
+    undefined,
+    { enabled: tenantReady && filters.bankAccountIds.length > 0 },
+  );
+
+  // Partner invoice summary
+  const { data: payablesSummary } = api.partnerInvoice.summary.useQuery(undefined, {
+    enabled: tenantReady,
+  });
+
+  // Top partner (use performance with period filter)
+  const { data: partnerPerf } = api.partner.performance.useQuery(
+    { period: "year", sortBy: "profit" },
+    { enabled: tenantReady },
+  );
+
+  const isLoading = statsLoading || balanceLoading || accountBalanceLoading || tenantLoading;
+
+  // Calculate saldo based on filter
+  const saldo = useMemo(() => {
+    if (filters.bankAccountIds.length === 0) {
+      return filteredBalance?.totalBalance ?? 0;
+    }
+    const selected = accountBalances?.filter((a) => filters.bankAccountIds.includes(a.id)) ?? [];
+    return selected.reduce((sum, a) => sum + Number(a.currentBalance ?? 0), 0);
+  }, [filteredBalance, accountBalances, filters.bankAccountIds]);
+
+  // Balance label
+  const balanceLabel = useMemo(() => {
+    if (filters.bankAccountIds.length === 0) return t("currentBalance");
+    if (filters.bankAccountIds.length === 1) {
+      const name = bankAccounts?.find((a) => a.id === filters.bankAccountIds[0])?.name ?? "";
+      return name ? t("balanceOf", { name }) : t("selectedBalance");
+    }
+    return t("selectedBalance");
+  }, [filters.bankAccountIds, bankAccounts, t]);
 
   // Chart data
   const balanceSeries = monthlyStats?.balanceSeries ?? [];
   const compareSeries = monthlyStats?.compareSeries ?? [];
 
-  // KPI values — totals for the selected period
-  const saldo = totalBalanceData?.totalBalance ?? 0;
-
+  // KPI values
   const cards = useMemo(() => {
     const totalReceitas = compareSeries.reduce((sum, m) => sum + (m.receitas ?? 0), 0);
     const totalDespesas = compareSeries.reduce((sum, m) => sum + (m.despesas ?? 0), 0);
     const totalLucro = totalReceitas - totalDespesas;
 
-    // Delta: compare first half vs second half of the period
     const mid = Math.floor(compareSeries.length / 2);
     const firstHalfReceitas = compareSeries
       .slice(0, mid)
@@ -111,6 +204,9 @@ export function DashboardClient() {
     };
   }, [balanceSeries, compareSeries, saldo]);
 
+  // Top partner
+  const topPartner = partnerPerf?.partners?.[0];
+
   if (isLoading) {
     return (
       <>
@@ -126,8 +222,8 @@ export function DashboardClient() {
         </div>
 
         <section className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {["kpi-a", "kpi-b", "kpi-c", "kpi-d"].map((key) => (
-            <Card key={key} className="py-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={String(i)} className="py-3">
               <CardHeader className="px-4 pb-1 pt-0">
                 <Skeleton className="h-4 w-24" />
               </CardHeader>
@@ -161,48 +257,184 @@ export function DashboardClient() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-            Visão geral
+            {t("overview")}
           </h1>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Acompanhe seus principais indicadores financeiros
-          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t("overviewDescription")}</p>
         </div>
 
-        <DateRangePicker range={dateRange} onChange={setDateRange} />
+        <div className="flex flex-wrap items-center gap-2">
+          <DateRangePicker range={dateRange} onChange={setDateRange} />
+
+          {/* Filters */}
+          <FilterPopover
+            label={t("filters.bankAccount")}
+            allLabel={t("filters.allAccounts")}
+            items={bankAccounts?.map((a) => ({ id: a.id, label: a.name })) ?? []}
+            selected={filters.bankAccountIds}
+            onToggle={(id) => toggle("bankAccountIds", id)}
+          />
+
+          <FilterPopover
+            label={t("filters.partner")}
+            allLabel={t("filters.allPartners")}
+            items={partners?.map((p) => ({ id: p.id, label: p.name })) ?? []}
+            selected={filters.partnerIds}
+            onToggle={(id) => toggle("partnerIds", id)}
+          />
+
+          <FilterPopover
+            label={t("filters.category")}
+            allLabel={t("filters.allCategories")}
+            items={categories?.categories?.map((c) => ({ id: c.id, label: c.name })) ?? []}
+            selected={filters.categoryIds}
+            onToggle={(id) => toggle("categoryIds", id)}
+          />
+
+          {hasAny && (
+            <Button variant="ghost" size="sm" onClick={clear} className="h-8 px-2 text-[11px]">
+              <X className="mr-1 h-3 w-3" />
+              {t("filters.clear")}
+            </Button>
+          )}
+        </div>
       </div>
 
-      <section className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Active filter chips */}
+      {hasAny && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {filters.bankAccountIds.map((id) => {
+            const name = bankAccounts?.find((a) => a.id === id)?.name ?? id;
+            return (
+              <Badge key={id} variant="secondary" className="gap-1 px-2 py-0.5 text-[11px]">
+                {name}
+                <button type="button"
+                  onClick={() => toggle("bankAccountIds", id)}
+                  className="hover:text-destructive"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            );
+          })}
+          {filters.partnerIds.map((id) => {
+            const name = partners?.find((p) => p.id === id)?.name ?? id;
+            return (
+              <Badge key={id} variant="secondary" className="gap-1 px-2 py-0.5 text-[11px]">
+                {name}
+                <button type="button" onClick={() => toggle("partnerIds", id)} className="hover:text-destructive">
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            );
+          })}
+          {filters.categoryIds.map((id) => {
+            const name = categories?.categories?.find((c) => c.id === id)?.name ?? id;
+            return (
+              <Badge key={id} variant="secondary" className="gap-1 px-2 py-0.5 text-[11px]">
+                {name}
+                <button type="button"
+                  onClick={() => toggle("categoryIds", id)}
+                  className="hover:text-destructive"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            );
+          })}
+        </div>
+      )}
+
+      <section className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <KpiCard
-          title="Saldo Atual"
+          title={balanceLabel}
           value={currency(cards.saldo)}
           delta={cards.saldoDelta}
           icon={<Wallet className="h-4 w-4" />}
         />
         <KpiCard
-          title="Receitas do Período"
+          title={t("periodIncome")}
           value={currency(cards.receitas)}
           delta={cards.receitasDelta}
           icon={<TrendingUp className="h-4 w-4" />}
         />
         <KpiCard
-          title="Despesas do Período"
+          title={t("periodExpense")}
           value={currency(cards.despesas)}
           delta={cards.despesasDelta}
           invertDelta
           icon={<TrendingDown className="h-4 w-4" />}
         />
         <KpiCard
-          title={cards.lucro >= 0 ? "Lucro do Período" : "Prejuízo do Período"}
+          title={cards.lucro >= 0 ? t("periodProfit") : t("periodLoss")}
           value={currency(cards.lucro)}
           delta={cards.lucroDelta}
           icon={<DollarSign className="h-4 w-4" />}
         />
+
+        {/* Pending payables card */}
+        <Card className="cursor-pointer py-2 transition-colors hover:bg-accent/50">
+          <Link href="/dashboard/partner-invoices?status=PENDING" className="block">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 pb-0.5 pt-0">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {t("pendingPayables")}
+              </CardTitle>
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300">
+                <HandCoins className="h-4 w-4" />
+              </div>
+            </CardHeader>
+            <CardContent className="px-4 pb-2 pt-0">
+              <div className="text-2xl font-semibold tracking-tight text-foreground">
+                {currency(payablesSummary?.totalAmountPending ?? 0)}
+              </div>
+              <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                <span>{payablesSummary?.totalPending ?? 0} pendentes</span>
+                <ArrowUpRight className="h-3 w-3" />
+              </div>
+            </CardContent>
+          </Link>
+        </Card>
+
+        {/* Top partner card */}
+        <Card className="cursor-pointer py-2 transition-colors hover:bg-accent/50">
+          {topPartner ? (
+            <Link href={`/dashboard/partners/performance?id=${topPartner.id}`} className="block">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 pb-0.5 pt-0">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {t("topPartner")}
+                </CardTitle>
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
+                  <UserCheck className="h-4 w-4" />
+                </div>
+              </CardHeader>
+              <CardContent className="px-4 pb-2 pt-0">
+                <div className="text-xl font-semibold tracking-tight text-foreground truncate">
+                  {topPartner.name}
+                </div>
+                <div className="mt-0.5 flex items-center gap-1 text-xs">
+                  <span
+                    className={cn(
+                      "font-medium",
+                      topPartner.netProfit >= 0 ? "text-emerald-600" : "text-rose-600",
+                    )}
+                  >
+                    {currency(topPartner.netProfit)}
+                  </span>
+                  <span className="text-muted-foreground">lucro</span>
+                </div>
+              </CardContent>
+            </Link>
+          ) : (
+            <CardContent className="px-4 py-4">
+              <div className="text-sm text-muted-foreground">{t("noResults")}</div>
+            </CardContent>
+          )}
+        </Card>
       </section>
 
       <section className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
         <Card className="min-h-0 py-2">
           <CardHeader className="px-3 pb-1 pt-0">
-            <CardTitle className="text-sm">Evolução do Saldo</CardTitle>
+            <CardTitle className="text-sm">{t("charts.balanceEvolution")}</CardTitle>
             <CardDescription className="text-xs">Período selecionado</CardDescription>
           </CardHeader>
           <CardContent className="px-3 pb-2 pt-0">
@@ -239,7 +471,7 @@ export function DashboardClient() {
 
         <Card className="min-h-0 py-2">
           <CardHeader className="px-3 pb-1 pt-0">
-            <CardTitle className="text-sm">Receitas vs Despesas</CardTitle>
+            <CardTitle className="text-sm">{t("charts.incomeVsExpense")}</CardTitle>
             <CardDescription className="text-xs">Período selecionado</CardDescription>
           </CardHeader>
           <CardContent className="px-3 pb-2 pt-0">
@@ -269,12 +501,66 @@ export function DashboardClient() {
         </Card>
       </section>
 
-      <TransactionsTable dateRange={dateRange} />
+      <TransactionsTable dateRange={dateRange} filters={filters} />
     </>
   );
 }
 
-// ── Isolated Transactions Table (prevents full dashboard re-render on pagination) ──
+// ── Filter Popover ──
+
+function FilterPopover({
+  label,
+  allLabel,
+  items,
+  selected,
+  onToggle,
+}: {
+  label: string;
+  allLabel: string;
+  items: { id: string; label: string }[];
+  selected: string[];
+  onToggle: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn("h-8 gap-1 text-[11px]", selected.length > 0 && "border-primary")}
+        >
+          <Filter className="h-3 w-3" />
+          {selected.length > 0 ? `${label} (${selected.length})` : label}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-56 p-2" align="start">
+        <div className="space-y-1">
+          {items.length === 0 ? (
+            <div className="px-2 py-1.5 text-[11px] text-muted-foreground">{allLabel}</div>
+          ) : (
+            items.map((item) => (
+              <div
+                key={item.id}
+                className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-[12px] hover:bg-accent"
+              >
+                <Checkbox
+                  checked={selected.includes(item.id)}
+                  onCheckedChange={() => onToggle(item.id)}
+                  className="size-3.5"
+                />
+                <span className="truncate">{item.label}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ── Isolated Transactions Table ──
 
 import { DataTable } from "@/components/ui/data-table";
 import { formatDate } from "@/lib/utils";
@@ -361,13 +647,24 @@ const transactionColumns: ColumnDef<TransactionRow>[] = [
 
 function TransactionsTable({
   dateRange,
+  filters,
 }: {
   dateRange: { from: Date; to: Date };
+  filters: DashboardFilters;
 }) {
+  const { t } = useTranslation("dashboard");
   const { currentTenant, isLoading: tenantLoading } = useCurrentTenant();
   const tenantReady = !tenantLoading && !!currentTenant;
 
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 8 });
+  const [typeFilter, setTypeFilter] = useState<TransactionType | undefined>();
+  const [statusFilter, setStatusFilter] = useState<TransactionStatus | undefined>();
+
+  // Local table filters (single-select for simplicity, matching server-side)
+  // Using the first selected from global filters or undefined
+  const bankAccountId = filters.bankAccountIds[0];
+  const categoryId = filters.categoryIds[0];
+  const partnerId = filters.partnerIds[0];
 
   const { data: transactionsData, isLoading: txLoading } = api.transaction.list.useQuery(
     {
@@ -375,6 +672,11 @@ function TransactionsTable({
       pageSize: pagination.pageSize,
       startDate: dateRange.from,
       endDate: dateRange.to,
+      type: typeFilter,
+      status: statusFilter,
+      bankAccountId,
+      categoryId,
+      partnerId,
     },
     { enabled: tenantReady },
   );
@@ -402,10 +704,39 @@ function TransactionsTable({
     <section className="mt-3 min-w-0">
       <Card className="min-h-0 min-w-0 overflow-hidden py-3">
         <CardContent className="min-w-0 px-4 pb-3 pt-0">
-          <div className="mb-2 flex items-start justify-between gap-4">
+          <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <h3 className="text-base font-semibold tracking-tight">Últimas Transações</h3>
-              <p className="text-sm text-muted-foreground">Transações recentes do período</p>
+              <h3 className="text-base font-semibold tracking-tight">
+                {t("table.latestTransactions")}
+              </h3>
+              <p className="text-sm text-muted-foreground">{t("table.recentPeriod")}</p>
+            </div>
+            {/* Inline table filters */}
+            <div className="flex flex-wrap gap-1.5">
+              <select
+                value={typeFilter ?? ""}
+                onChange={(e) =>
+                  setTypeFilter(e.target.value ? (e.target.value as TransactionType) : undefined)
+                }
+                className="h-7 rounded border bg-background px-2 text-[11px]"
+              >
+                <option value="">{t("table.allTypes")}</option>
+                <option value={TransactionType.INCOME}>{t("table.income")}</option>
+                <option value={TransactionType.EXPENSE}>{t("table.expense")}</option>
+              </select>
+              <select
+                value={statusFilter ?? ""}
+                onChange={(e) =>
+                  setStatusFilter(
+                    e.target.value ? (e.target.value as TransactionStatus) : undefined,
+                  )
+                }
+                className="h-7 rounded border bg-background px-2 text-[11px]"
+              >
+                <option value="">{t("table.status")}</option>
+                <option value={TransactionStatus.COMPLETED}>Concluído</option>
+                <option value={TransactionStatus.PENDING}>Pendente</option>
+              </select>
             </div>
           </div>
 
@@ -413,9 +744,7 @@ function TransactionsTable({
           <div className="hidden md:block">
             {txLoading ? (
               <div className="space-y-2 rounded-md border p-2">
-                {Array.from({
-                  length: pagination.pageSize,
-                }).map((_, i) => (
+                {Array.from({ length: pagination.pageSize }).map((_, i) => (
                   <Skeleton key={String(i)} className="h-10 w-full" />
                 ))}
               </div>
@@ -424,7 +753,7 @@ function TransactionsTable({
                 columns={transactionColumns}
                 data={transactions}
                 searchKey="description"
-                searchPlaceholder="Buscar transação..."
+                searchPlaceholder={t("table.searchPlaceholder")}
                 manualPagination
                 pageCount={txPageCount}
                 pagination={pagination}
@@ -524,7 +853,7 @@ function DateRangePicker({
   };
 
   return (
-    <div className="flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto sm:justify-start">
+    <div className="flex flex-wrap items-center gap-2">
       <Popover
         open={open}
         onOpenChange={(isOpen) => {
@@ -535,7 +864,8 @@ function DateRangePicker({
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            className={cn("justify-start text-left font-normal", !range && "text-muted-foreground")}
+            size="sm"
+            className={cn("h-8 gap-1 text-[11px]", !range && "text-muted-foreground")}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {range?.from ? (

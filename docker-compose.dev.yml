@@ -1,0 +1,70 @@
+# Docker Compose para DESENVOLVIMENTO local com hot-reload
+# Uso: docker compose -f docker-compose.dev.yml up -d
+# Ou: task dev:up
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-visionary}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - visionary-net
+
+  app:
+    image: node:22-alpine
+    container_name: visionary-app-dev
+    working_dir: /app
+    # Volume do código fonte + volume anônimo para node_modules
+    volumes:
+      - .:/app
+      - /app/.next
+      - node_modules:/app/node_modules
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      DATABASE_URL: postgresql://${POSTGRES_USER:***@db:5432/${POSTGRES_DB:-visionary}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-visionary}
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    # Instala dependências, gera prisma, roda dev server
+    command: >
+      sh -c "
+        npm install &&
+        npx prisma generate &&
+        npm run dev
+      "
+    stdin_open: true
+    tty: true
+    networks:
+      - visionary-net
+
+volumes:
+  postgres_data:
+  node_modules:
+
+networks:
+  visionary-net:
+    driver: bridge

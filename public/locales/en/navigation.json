@@ -3,8 +3,12 @@
   "finance": "Finance",
   "relationship": "Relationship",
   "extract": "Extract",
+  "cashflowForecast": "Cash Flow Forecast",
   "dataSources": "Data Sources",
   "partners": "Partners",
   "partnerPerformance": "Partner Performance",
+  "partnerInvoices": "Accounts Payable",
+  "alerts": "Alerts",
+  "notifications": "Notifications",
   "settings": "Settings"
 }

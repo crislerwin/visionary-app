@@ -224,6 +224,72 @@ describe("transactionRouter", () => {
       expect(result.balanceSeries[1].saldo).toBe(9000); // Feb = 10000 - (1500 - 500)
       expect(result.balanceSeries[0].saldo).toBe(7000); // Jan = 9000 - (3000 - 1000)
     });
+
+    it("filters by bankAccountIds when provided", async () => {
+      const startDate = parseISO("2025-01-01");
+      const endDate = parseISO("2025-01-31");
+
+      mockPrisma.transaction.findMany.mockResolvedValue([
+        { amount: 3000, type: TransactionType.INCOME, date: parseISO("2025-01-10") },
+      ]);
+      mockPrisma.bankAccount.aggregate.mockResolvedValue({
+        _sum: { currentBalance: 5000 },
+      });
+
+      const caller = createCaller();
+      const result = await caller.getMonthlyStats({
+        startDate,
+        endDate,
+        bankAccountIds: ["acc-1"],
+      });
+
+      expect(mockPrisma.transaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            bankAccountId: { in: ["acc-1"] },
+          }),
+        }),
+      );
+      expect(mockPrisma.bankAccount.aggregate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            id: { in: ["acc-1"] },
+          }),
+        }),
+      );
+      expect(result.compareSeries).toHaveLength(1);
+      expect(result.compareSeries[0].receitas).toBe(3000);
+    });
+
+    it("ignores empty bankAccountIds array (no filter)", async () => {
+      const startDate = parseISO("2025-01-01");
+      const endDate = parseISO("2025-01-31");
+
+      mockPrisma.transaction.findMany.mockResolvedValue([
+        { amount: 3000, type: TransactionType.INCOME, date: parseISO("2025-01-10") },
+        { amount: 2000, type: TransactionType.INCOME, date: parseISO("2025-01-15") },
+      ]);
+      mockPrisma.bankAccount.aggregate.mockResolvedValue({
+        _sum: { currentBalance: 5000 },
+      });
+
+      const caller = createCaller();
+      const result = await caller.getMonthlyStats({
+        startDate,
+        endDate,
+        bankAccountIds: [],
+      });
+
+      expect(mockPrisma.transaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.not.objectContaining({
+            bankAccountId: expect.anything(),
+          }),
+        }),
+      );
+      expect(result.compareSeries).toHaveLength(1);
+      expect(result.compareSeries[0].receitas).toBe(5000);
+    });
   });
 
   // ── list ──────────────────────────────────────────────────────

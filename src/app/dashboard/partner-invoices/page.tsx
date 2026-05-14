@@ -16,10 +16,11 @@ import { useCurrentTenant } from "@/hooks/use-current-tenant";
 import { api } from "@/lib/trpc/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { AlertTriangle, CheckCircle2, Clock, DollarSign, Minus } from "lucide-react";
+import { enUS, ptBR } from "date-fns/locale";
+import { AlertTriangle, ArrowLeft, CheckCircle2, Clock, DollarSign, Minus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface PartnerInvoiceRow {
   id: string;
@@ -33,112 +34,8 @@ interface PartnerInvoiceRow {
   notes: string | null;
 }
 
-const statusLabels: Record<string, string> = {
-  PENDING: "Pendente",
-  PAID: "Pago",
-  OVERDUE: "Vencido",
-  CANCELLED: "Cancelado",
-};
-
-const statusColors: Record<string, string> = {
-  PENDING: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
-  PAID: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
-  OVERDUE: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  CANCELLED: "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200",
-};
-
-const statusIcons: Record<string, React.ReactNode> = {
-  PENDING: <Clock className="h-4 w-4" />,
-  PAID: <CheckCircle2 className="h-4 w-4" />,
-  OVERDUE: <AlertTriangle className="h-4 w-4" />,
-  CANCELLED: <Minus className="h-4 w-4" />,
-};
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
-}
-
-const columns: ColumnDef<PartnerInvoiceRow>[] = [
-  {
-    accessorKey: "partner.name",
-    header: "Parceiro",
-    cell: ({ row }) => (
-      <div>
-        <div className="font-medium">{row.original.partner.name}</div>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "description",
-    header: "Descrição",
-  },
-  {
-    accessorKey: "amount",
-    header: "Valor",
-    cell: ({ row }) => (
-      <span className="font-mono font-medium">{formatCurrency(row.original.amount)}</span>
-    ),
-  },
-  {
-    accessorKey: "dueDate",
-    header: "Vencimento",
-    cell: ({ row }) => (
-      <span>{format(new Date(row.original.dueDate), "dd/MM/yyyy", { locale: ptBR })}</span>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const s = row.original.status;
-      return (
-        <Badge className={`${statusColors[s]} flex items-center gap-1 w-fit`}>
-          {statusIcons[s]}
-          {statusLabels[s] ?? s}
-        </Badge>
-      );
-    },
-  },
-  {
-    id: "actions",
-    header: "Ações",
-    cell: ({ row }) => {
-      const invoice = row.original;
-      const utils = api.useUtils();
-      const payMutation = api.partnerInvoice.pay.useMutation({
-        onSuccess: () => {
-          utils.partnerInvoice.invalidate();
-        },
-      });
-
-      if (invoice.status === "PENDING" || invoice.status === "OVERDUE") {
-        return (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => payMutation.mutate({ id: invoice.id })}
-            disabled={payMutation.isPending}
-          >
-            {payMutation.isPending ? "..." : "Pagar"}
-          </Button>
-        );
-      }
-      if (invoice.status === "PAID" && invoice.paidAt) {
-        return (
-          <span className="text-xs text-muted-foreground">
-            Pago em {format(new Date(invoice.paidAt), "dd/MM/yyyy", { locale: ptBR })}
-          </span>
-        );
-      }
-      return null;
-    },
-  },
-];
-
-export default function PartnerInvoicesPage() {
+function PartnerInvoicesPageContent() {
+  const { t, i18n } = useTranslation("common");
   const { currentTenant, isLoading: tenantLoading } = useCurrentTenant();
   const tenantReady = !tenantLoading && !!currentTenant;
 
@@ -154,6 +51,123 @@ export default function PartnerInvoicesPage() {
   const { data: summary } = api.partnerInvoice.summary.useQuery(undefined, {
     enabled: tenantReady,
   });
+
+  const dateLocale = i18n.language === "en" ? enUS : ptBR;
+
+  const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat(i18n.language === "en" ? "en-US" : "pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return t("partnerInvoices.pendingStatus");
+      case "PAID":
+        return t("partnerInvoices.paidStatus");
+      case "OVERDUE":
+        return t("partnerInvoices.overdueStatus");
+      case "CANCELLED":
+        return t("partnerInvoices.cancelledStatus");
+      default:
+        return status;
+    }
+  };
+
+  const statusColors: Record<string, string> = {
+    PENDING: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+    PAID: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
+    OVERDUE: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    CANCELLED: "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200",
+  };
+
+  const statusIcons: Record<string, React.ReactNode> = {
+    PENDING: <Clock className="h-4 w-4" />,
+    PAID: <CheckCircle2 className="h-4 w-4" />,
+    OVERDUE: <AlertTriangle className="h-4 w-4" />,
+    CANCELLED: <Minus className="h-4 w-4" />,
+  };
+
+  const columns: ColumnDef<PartnerInvoiceRow>[] = [
+    {
+      id: "partner",
+      accessorKey: "partner.name",
+      header: t("name"),
+      cell: ({ row }) => (
+        <div>
+          <div className="font-medium">{row.original.partner.name}</div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "description",
+      header: t("description"),
+    },
+    {
+      accessorKey: "amount",
+      header: t("amount"),
+      cell: ({ row }) => (
+        <span className="font-mono font-medium">{formatCurrency(row.original.amount)}</span>
+      ),
+    },
+    {
+      accessorKey: "dueDate",
+      header: t("date"),
+      cell: ({ row }) => (
+        <span>{format(new Date(row.original.dueDate), "dd/MM/yyyy", { locale: dateLocale })}</span>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: t("status"),
+      cell: ({ row }) => {
+        const s = row.original.status;
+        return (
+          <Badge className={`${statusColors[s]} flex items-center gap-1 w-fit`}>
+            {statusIcons[s]}
+            {getStatusLabel(s)}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: t("actions"),
+      cell: ({ row }) => {
+        const invoice = row.original;
+        const utils = api.useUtils();
+        const payMutation = api.partnerInvoice.pay.useMutation({
+          onSuccess: () => {
+            utils.partnerInvoice.invalidate();
+          },
+        });
+
+        if (invoice.status === "PENDING" || invoice.status === "OVERDUE") {
+          return (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => payMutation.mutate({ id: invoice.id })}
+              disabled={payMutation.isPending}
+            >
+              {payMutation.isPending ? t("loading") : t("partnerInvoices.pay")}
+            </Button>
+          );
+        }
+        if (invoice.status === "PAID" && invoice.paidAt) {
+          return (
+            <span className="text-xs text-muted-foreground">
+              {t("partnerInvoices.paidAt")}{" "}
+              {format(new Date(invoice.paidAt), "dd/MM/yyyy", { locale: dateLocale })}
+            </span>
+          );
+        }
+        return null;
+      },
+    },
+  ];
 
   const invoices = data?.invoices ?? [];
   const total = data?.total ?? 0;
@@ -176,13 +190,13 @@ export default function PartnerInvoicesPage() {
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">Contas a Pagar</h1>
-          <p className="text-sm text-muted-foreground">
-            Gerencie repasses e comissões de parceiros
-          </p>
+          <h1 className="text-xl font-bold tracking-tight">{t("partnerInvoices.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("partnerInvoices.description")}</p>
         </div>
         <Link href="/dashboard/partners">
-          <Button variant="outline">← Parceiros</Button>
+          <Button variant="outline">
+            <ArrowLeft className="mr-2 h-4 w-4" /> {t("navigation:partners")}
+          </Button>
         </Link>
       </div>
 
@@ -191,7 +205,7 @@ export default function PartnerInvoicesPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Pago
+                {t("partnerInvoices.totalPaid")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -204,7 +218,9 @@ export default function PartnerInvoicesPage() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Pendentes</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {t("partnerInvoices.pending")}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
@@ -216,7 +232,9 @@ export default function PartnerInvoicesPage() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Vencidos</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {t("partnerInvoices.overdue")}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
@@ -229,7 +247,7 @@ export default function PartnerInvoicesPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Valor Pendente
+                {t("partnerInvoices.pendingAmount")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -253,14 +271,14 @@ export default function PartnerInvoicesPage() {
           }
         >
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filtrar por status" />
+            <SelectValue placeholder={t("partnerInvoices.filterByStatus")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            <SelectItem value="PENDING">Pendentes</SelectItem>
-            <SelectItem value="PAID">Pagas</SelectItem>
-            <SelectItem value="OVERDUE">Vencidas</SelectItem>
-            <SelectItem value="CANCELLED">Canceladas</SelectItem>
+            <SelectItem value="all">{t("partnerInvoices.allStatuses")}</SelectItem>
+            <SelectItem value="PENDING">{t("partnerInvoices.pendingStatus")}</SelectItem>
+            <SelectItem value="PAID">{t("partnerInvoices.paidStatus")}</SelectItem>
+            <SelectItem value="OVERDUE">{t("partnerInvoices.overdueStatus")}</SelectItem>
+            <SelectItem value="CANCELLED">{t("partnerInvoices.cancelledStatus")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -268,11 +286,15 @@ export default function PartnerInvoicesPage() {
       <DataTable
         columns={columns}
         data={invoices}
-        searchKey="partner.name"
-        searchPlaceholder="Buscar por parceiro..."
-        title="Lista de Contas a Pagar"
-        description={`${total} ${total === 1 ? "registro encontrado" : "registros encontrados"}`}
+        searchKey="partner"
+        searchPlaceholder={`${t("search")}...`}
+        title={t("partnerInvoices.title")}
+        description={`${total} ${t("partnerInvoices.recordsFound")}`}
       />
     </div>
   );
+}
+
+export default function PartnerInvoicesPage() {
+  return <PartnerInvoicesPageContent />;
 }

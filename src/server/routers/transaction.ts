@@ -44,7 +44,11 @@ const updateTransactionSchema = z.object({
 const listTransactionsSchema = z.object({
   type: z.enum([TransactionType.INCOME, TransactionType.EXPENSE]).optional(),
   bankAccountId: z.string().optional(),
+  bankAccountIds: z.array(z.string()).optional(),
   categoryId: z.string().optional(),
+  categoryIds: z.array(z.string()).optional(),
+  partnerId: z.string().optional(),
+  partnerIds: z.array(z.string()).optional(),
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),
   status: z
@@ -64,7 +68,11 @@ export const transactionRouter = router({
       },
       ...(input.type && { type: input.type }),
       ...(input.bankAccountId && { bankAccountId: input.bankAccountId }),
+      ...(input.bankAccountIds?.length && { bankAccountId: { in: input.bankAccountIds } }),
       ...(input.categoryId && { categoryId: input.categoryId }),
+      ...(input.categoryIds?.length && { categoryId: { in: input.categoryIds } }),
+      ...(input.partnerId && { partnerId: input.partnerId }),
+      ...(input.partnerIds?.length && { partnerId: { in: input.partnerIds } }),
       ...(input.status && { status: input.status }),
       ...(input.startDate &&
         input.endDate && {
@@ -448,6 +456,9 @@ export const transactionRouter = router({
       z.object({
         startDate: z.coerce.date(),
         endDate: z.coerce.date(),
+        bankAccountIds: z.array(z.string()).optional().default([]),
+        partnerIds: z.array(z.string()).optional().default([]),
+        categoryIds: z.array(z.string()).optional().default([]),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -462,6 +473,9 @@ export const transactionRouter = router({
             gte: startDate,
             lte: endDate,
           },
+          ...(input.bankAccountIds?.length && { bankAccountId: { in: input.bankAccountIds } }),
+          ...(input.partnerIds?.length && { partnerId: { in: input.partnerIds } }),
+          ...(input.categoryIds?.length && { categoryId: { in: input.categoryIds } }),
         },
         select: {
           amount: true,
@@ -512,7 +526,10 @@ export const transactionRouter = router({
 
       // Calculate running balance
       const totalBalance = await prisma.bankAccount.aggregate({
-        where: { tenantId: ctx.tenantId },
+        where: {
+          tenantId: ctx.tenantId,
+          ...(input.bankAccountIds?.length && { id: { in: input.bankAccountIds } }),
+        },
         _sum: { currentBalance: true },
       });
       const currentBalance = Number(totalBalance._sum.currentBalance ?? 0);

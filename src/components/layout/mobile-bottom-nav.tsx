@@ -10,7 +10,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
+import { useTranslation } from "react-i18next";
+
 export function MobileBottomNav() {
+  const { t } = useTranslation("navigation");
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
@@ -30,7 +33,7 @@ export function MobileBottomNav() {
             )}
           >
             <LayoutDashboard className="h-5 w-5" />
-            <span>Início</span>
+            <span>{t("dashboard")}</span>
           </Link>
 
           {/* Center: Menu Button — opens the Drawer */}
@@ -53,14 +56,14 @@ export function MobileBottomNav() {
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerContent className="max-h-[85vh]">
           <DrawerHeader>
-            <DrawerTitle className="text-center">Menu</DrawerTitle>
+            <DrawerTitle className="text-center">{t("settings")}</DrawerTitle>
           </DrawerHeader>
           <div className="overflow-y-auto px-2 pb-6">
             {sidebarNavigation.map((section) => (
-              <div key={section.title || section.items[0]?.href} className="mb-3">
-                {section.title && (
+              <div key={section.titleKey || section.items[0]?.href} className="mb-3">
+                {section.titleKey && (
                   <h3 className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    {section.title}
+                    {t(section.titleKey)}
                   </h3>
                 )}
                 <div className="space-y-1">
@@ -82,7 +85,7 @@ export function MobileBottomNav() {
                         )}
                       >
                         <Icon className="h-5 w-5 shrink-0" />
-                        <span>{item.title}</span>
+                        <span>{t(item.titleKey)}</span>
                       </Link>
                     );
                   })}
