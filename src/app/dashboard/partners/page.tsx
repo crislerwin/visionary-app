@@ -1,6 +1,5 @@
 "use client";
 
-import { PartnerCard } from "@/components/partners/PartnerCard";
 import { PartnerForm } from "@/components/partners/PartnerForm";
 import {
   AlertDialog,
@@ -12,8 +11,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { DataTable } from "@/components/ui/data-table";
 import {
   Select,
   SelectContent,
@@ -21,12 +21,51 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentTenant } from "@/hooks/use-current-tenant";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/trpc/react";
-import { Handshake, Plus, Search } from "lucide-react";
+import type { ColumnDef } from "@tanstack/react-table";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+
+interface PartnerRow {
+  id: string;
+  name: string;
+  type: string;
+  email: string | null;
+  phone: string | null;
+  commissionType: string;
+  commissionValue: number;
+  status: string;
+  _count: { invoices: number };
+}
+
+const partnerTypeLabels: Record<string, string> = {
+  SUPPLIER: "Fornecedor",
+  AFFILIATE: "Afiliado",
+  DISTRIBUTOR: "Distribuidor",
+  SERVICE_PROVIDER: "Prestador",
+  OTHER: "Outro",
+};
+
+const statusColors: Record<string, string> = {
+  ACTIVE: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+  INACTIVE: "bg-muted text-muted-foreground",
+  BLOCKED: "bg-destructive/10 text-destructive",
+};
+
+const statusLabels: Record<string, string> = {
+  ACTIVE: "Ativo",
+  INACTIVE: "Inativo",
+  BLOCKED: "Bloqueado",
+};
+
+function formatCommission(row: PartnerRow) {
+  if (row.commissionValue <= 0) return "Sem comissão";
+  if (row.commissionType === "PERCENTAGE") return `${row.commissionValue}%`;
+  if (row.commissionType === "FIXED") return `R$ ${row.commissionValue.toFixed(2)}`;
+  return `R$ ${row.commissionValue.toFixed(2)} + %`;
+}
 
 export default function PartnersPage() {
   const { toast } = useToast();
@@ -37,7 +76,6 @@ export default function PartnersPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<Record<string, unknown> | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
 
   const { data: partners, isLoading } = api.partner.list.useQuery(undefined, {
@@ -59,27 +97,87 @@ export default function PartnersPage() {
     },
   });
 
-  const filteredPartners = useMemo(() => {
-    if (!partners) return [];
-    return partners.filter((p) => {
-      if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
-      if (typeFilter !== "all" && p.type !== typeFilter) return false;
-      return true;
-    });
-  }, [partners, search, typeFilter]);
+  const rows: PartnerRow[] = useMemo(() => (partners as PartnerRow[]) ?? [], [partners]);
 
-  if (tenantLoading || isLoading) {
-    return (
-      <div className="space-y-3">
-        <Skeleton className="h-8 w-48" />
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-24 w-full" />
-          ))}
+  const filteredRows = useMemo(() => {
+    if (typeFilter === "all") return rows;
+    return rows.filter((p) => p.type === typeFilter);
+  }, [rows, typeFilter]);
+
+  const columns: ColumnDef<PartnerRow>[] = [
+    {
+      accessorKey: "name",
+      header: "Nome",
+      cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+    },
+    {
+      accessorKey: "type",
+      header: "Tipo",
+      cell: ({ row }) => (
+        <Badge variant="secondary" className="text-[10px]">
+          {partnerTypeLabels[row.original.type] ?? row.original.type}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "email",
+      header: "E-mail",
+      cell: ({ row }) => (
+        <span className="text-xs text-muted-foreground">{row.original.email ?? "—"}</span>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge className={`text-[10px] ${statusColors[row.original.status] ?? ""}`}>
+          {statusLabels[row.original.status] ?? row.original.status}
+        </Badge>
+      ),
+    },
+    {
+      id: "commission",
+      header: "Comissão",
+      cell: ({ row }) => (
+        <span className="text-xs text-muted-foreground">{formatCommission(row.original)}</span>
+      ),
+    },
+    {
+      id: "invoices",
+      header: "Faturas",
+      cell: ({ row }) => (
+        <span className="text-xs text-muted-foreground">{row.original._count.invoices}</span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setEditingPartner(row.original as unknown as Record<string, unknown>);
+              setFormOpen(true);
+            }}
+            title="Editar"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setDeleteTarget(row.original.id)}
+            className="text-destructive hover:text-destructive"
+            title="Remover"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
         </div>
-      </div>
-    );
-  }
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-3">
@@ -101,19 +199,9 @@ export default function PartnersPage() {
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar parceiro..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+      <div className="flex items-center gap-3">
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[170px]">
+          <SelectTrigger className="h-8 w-[170px] text-xs">
             <SelectValue placeholder="Tipo" />
           </SelectTrigger>
           <SelectContent>
@@ -127,38 +215,14 @@ export default function PartnersPage() {
         </Select>
       </div>
 
-      {/* Partner List */}
-      {filteredPartners.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <Handshake className="w-16 h-16 mx-auto mb-4 opacity-50" />
-          <p className="text-lg font-medium">
-            {search || typeFilter !== "all"
-              ? "Nenhum parceiro encontrado"
-              : "Nenhum parceiro cadastrado"}
-          </p>
-          <p className="text-sm mt-1">
-            {search || typeFilter !== "all"
-              ? "Tente ajustar os filtros de busca."
-              : "Cadastre seu primeiro parceiro para começar."}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filteredPartners.map((partner) => (
-            <PartnerCard
-              key={partner.id}
-              partner={partner}
-              onEdit={(p) => {
-                setEditingPartner(p);
-                setFormOpen(true);
-              }}
-              onDelete={(id) => setDeleteTarget(id)}
-            />
-          ))}
-        </div>
-      )}
+      <DataTable
+        columns={columns}
+        data={filteredRows}
+        loading={tenantLoading || isLoading}
+        searchKey="name"
+        searchPlaceholder="Buscar parceiro..."
+      />
 
-      {/* Create / Edit Dialog */}
       <PartnerForm
         open={formOpen}
         onOpenChange={(open) => {
@@ -169,7 +233,6 @@ export default function PartnersPage() {
         defaultValues={editingPartner ?? undefined}
       />
 
-      {/* Delete Confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
