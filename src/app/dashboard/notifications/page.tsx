@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { api } from "@/lib/trpc/react";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Bell, Check, Clock, Trash2, AlertTriangle, Info, TrendingUp } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { api } from "@/lib/trpc/react";
 import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { AlertTriangle, Bell, Check, Clock, Info, Trash2, TrendingUp } from "lucide-react";
+import { useState } from "react";
 
 export default function NotificationsPage() {
   const [activeTab, setActiveTab] = useState("unread");
@@ -43,10 +43,14 @@ export default function NotificationsPage() {
 
   const getIcon = (condition: string) => {
     switch (condition) {
-      case "balance_below": return AlertTriangle;
-      case "invoice_overdue": return Clock;
-      case "revenue_target": return TrendingUp;
-      default: return Info;
+      case "balance_below":
+        return AlertTriangle;
+      case "invoice_overdue":
+        return Clock;
+      case "revenue_target":
+        return TrendingUp;
+      default:
+        return Info;
     }
   };
 
@@ -70,9 +74,7 @@ export default function NotificationsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Notificações</h1>
-          <p className="text-muted-foreground">
-            Acompanhe alertas importantes sobre suas finanças
-          </p>
+          <p className="text-muted-foreground">Acompanhe alertas importantes sobre suas finanças</p>
         </div>
         {items.some((n) => n.status === "UNREAD") && (
           <Button onClick={() => markAllAsRead.mutate()} disabled={markAllAsRead.isPending}>
@@ -106,7 +108,10 @@ export default function NotificationsPage() {
                 ) : items.length === 0 ? (
                   <div className="flex flex-col items-center py-12 text-muted-foreground">
                     <Bell className="mb-4 h-12 w-12 opacity-20" />
-                    <p>Nenhuma notificação {tab === "unread" ? "não lida" : tab === "read" ? "lida" : ""}</p>
+                    <p>
+                      Nenhuma notificação{" "}
+                      {tab === "unread" ? "não lida" : tab === "read" ? "lida" : ""}
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -117,13 +122,18 @@ export default function NotificationsPage() {
                           key={n.id}
                           className={cn(
                             "group flex items-start gap-4 rounded-lg border p-4 transition-colors hover:bg-muted/50",
-                            n.status === "UNREAD" && "border-yellow-200 bg-yellow-50/30 dark:border-yellow-900/30",
+                            n.status === "UNREAD" &&
+                              "border-yellow-200 bg-yellow-50/30 dark:border-yellow-900/30",
                           )}
                         >
-                          <div className={cn(
-                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
-                            n.status === "UNREAD" ? "bg-yellow-100 text-yellow-600" : "bg-muted text-muted-foreground",
-                          )}>
+                          <div
+                            className={cn(
+                              "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
+                              n.status === "UNREAD"
+                                ? "bg-yellow-100 text-yellow-600"
+                                : "bg-muted text-muted-foreground",
+                            )}
+                          >
                             <Icon className="h-5 w-5" />
                           </div>
 

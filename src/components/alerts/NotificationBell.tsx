@@ -1,19 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Bell, Check, X, AlertTriangle, Info, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { api } from "@/lib/trpc/react";
 import { cn } from "@/lib/utils";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { AlertTriangle, Bell, Check, Clock, Info, X } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
@@ -109,9 +105,7 @@ export function NotificationBell() {
                   <Icon className="mt-0.5 h-4 w-4 text-yellow-500 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{n.title}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-2">
-                      {n.message}
-                    </p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{n.message}</p>
                     <p className="text-[10px] text-muted-foreground mt-1">
                       {formatDistanceToNow(new Date(n.createdAt), {
                         addSuffix: true,

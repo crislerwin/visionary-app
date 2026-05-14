@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { DataTable } from "@/components/ui/data-table";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataTable } from "@/components/ui/data-table";
 import {
   Select,
   SelectContent,
@@ -11,21 +11,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentTenant } from "@/hooks/use-current-tenant";
 import { api } from "@/lib/trpc/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  DollarSign,
-  Minus,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, DollarSign, Minus } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 interface PartnerInvoiceRow {
   id: string;
@@ -85,18 +79,14 @@ const columns: ColumnDef<PartnerInvoiceRow>[] = [
     accessorKey: "amount",
     header: "Valor",
     cell: ({ row }) => (
-      <span className="font-mono font-medium">
-        {formatCurrency(row.original.amount)}
-      </span>
+      <span className="font-mono font-medium">{formatCurrency(row.original.amount)}</span>
     ),
   },
   {
     accessorKey: "dueDate",
     header: "Vencimento",
     cell: ({ row }) => (
-      <span>
-        {format(new Date(row.original.dueDate), "dd/MM/yyyy", { locale: ptBR })}
-      </span>
+      <span>{format(new Date(row.original.dueDate), "dd/MM/yyyy", { locale: ptBR })}</span>
     ),
   },
   {
@@ -139,8 +129,7 @@ const columns: ColumnDef<PartnerInvoiceRow>[] = [
       if (invoice.status === "PAID" && invoice.paidAt) {
         return (
           <span className="text-xs text-muted-foreground">
-            Pago em{" "}
-            {format(new Date(invoice.paidAt), "dd/MM/yyyy", { locale: ptBR })}
+            Pago em {format(new Date(invoice.paidAt), "dd/MM/yyyy", { locale: ptBR })}
           </span>
         );
       }
@@ -153,11 +142,13 @@ export default function PartnerInvoicesPage() {
   const { currentTenant, isLoading: tenantLoading } = useCurrentTenant();
   const tenantReady = !tenantLoading && !!currentTenant;
 
-  const [statusFilter, setStatusFilter] = useState<"PENDING" | "PAID" | "OVERDUE" | undefined>(undefined);
+  const [statusFilter, setStatusFilter] = useState<"PENDING" | "PAID" | "OVERDUE" | undefined>(
+    undefined,
+  );
 
   const { data, isLoading } = api.partnerInvoice.list.useQuery(
     { status: statusFilter, limit: 50 },
-    { enabled: tenantReady }
+    { enabled: tenantReady },
   );
 
   const { data: summary } = api.partnerInvoice.summary.useQuery(undefined, {
@@ -214,9 +205,7 @@ export default function PartnerInvoicesPage() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Pendentes
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Pendentes</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
@@ -228,9 +217,7 @@ export default function PartnerInvoicesPage() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Vencidos
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Vencidos</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
@@ -262,7 +249,9 @@ export default function PartnerInvoicesPage() {
       <div className="flex items-center gap-3 mb-4">
         <Select
           value={statusFilter || "all"}
-          onValueChange={(value) => setStatusFilter(value === "all" ? undefined : value as "PENDING" | "PAID" | "OVERDUE")}
+          onValueChange={(value) =>
+            setStatusFilter(value === "all" ? undefined : (value as "PENDING" | "PAID" | "OVERDUE"))
+          }
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filtrar por status" />

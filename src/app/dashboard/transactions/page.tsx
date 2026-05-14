@@ -150,11 +150,12 @@ export default function TransactionsPage() {
   });
 
   const rows: TransactionRow[] = useMemo(
-    () => (txData?.transactions?.map((t) => ({
-      ...t,
-      date: new Date(t.date),
-      amount: Number(t.amount),
-    })) as TransactionRow[]) ?? [],
+    () =>
+      (txData?.transactions?.map((t) => ({
+        ...t,
+        date: new Date(t.date),
+        amount: Number(t.amount),
+      })) as TransactionRow[]) ?? [],
     [txData],
   );
   const total = txData?.total ?? 0;

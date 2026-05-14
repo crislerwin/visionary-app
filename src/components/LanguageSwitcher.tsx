@@ -1,6 +1,5 @@
 "use client";
 
-import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -8,8 +7,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { type Locale, localeNames, locales } from "@/i18n/types";
 import { Globe } from "lucide-react";
-import { locales, localeNames, type Locale } from "@/i18n/types";
+import { useTranslation } from "react-i18next";
 
 export function LanguageSwitcher() {
   const { i18n, t } = useTranslation("common");

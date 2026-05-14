@@ -1,7 +1,7 @@
-import { z } from "zod";
-import { tenantProcedure, router } from "@/lib/trpc/trpc";
 import { prisma } from "@/lib/db";
-import { startOfMonth, endOfMonth } from "date-fns";
+import { router, tenantProcedure } from "@/lib/trpc/trpc";
+import { endOfMonth, startOfMonth } from "date-fns";
+import { z } from "zod";
 
 export const alertRouter = router({
   listRules: tenantProcedure.query(async ({ ctx }) => {
@@ -24,18 +24,18 @@ export const alertRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-        return prisma.alertRule.create({
-          data: {
-            name: input.name,
-            description: input.description,
-            condition: input.condition,
-            threshold: input.threshold,
-            ...(input.targetType && { targetType: input.targetType }),
-            ...(input.targetId && { targetId: input.targetId }),
-            priority: input.priority,
-            tenantId: ctx.tenantId,
-          },
-        });
+      return prisma.alertRule.create({
+        data: {
+          name: input.name,
+          description: input.description,
+          condition: input.condition,
+          threshold: input.threshold,
+          ...(input.targetType && { targetType: input.targetType }),
+          ...(input.targetId && { targetId: input.targetId }),
+          priority: input.priority,
+          tenantId: ctx.tenantId,
+        },
+      });
     }),
 
   updateRule: tenantProcedure
@@ -124,7 +124,9 @@ export const alertRouter = router({
             if (low.length > 0) {
               shouldAlert = true;
               title = `${low.length} contas com saldo baixo`;
-              message = low.map((a) => `${a.name}: R$ ${Number(a.currentBalance).toFixed(2)}`).join(", ");
+              message = low
+                .map((a) => `${a.name}: R$ ${Number(a.currentBalance).toFixed(2)}`)
+                .join(", ");
               data.accounts = low.map((a) => ({
                 name: a.name,
                 balance: Number(a.currentBalance),
@@ -246,14 +248,12 @@ export const alertRouter = router({
     });
   }),
 
-  dismiss: tenantProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      return prisma.notification.updateMany({
-        where: { id: input.id, tenantId: ctx.tenantId },
-        data: { status: "DISMISSED", dismissedAt: new Date() },
-      });
-    }),
+  dismiss: tenantProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+    return prisma.notification.updateMany({
+      where: { id: input.id, tenantId: ctx.tenantId },
+      data: { status: "DISMISSED", dismissedAt: new Date() },
+    });
+  }),
 });
 
 export type AlertRouter = typeof alertRouter;

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { PartnerPerformanceTable } from "@/components/partners/PartnerPerformanceTable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,8 +13,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentTenant } from "@/hooks/use-current-tenant";
 import { api } from "@/lib/trpc/react";
-import { TrendingUp, TrendingDown, ArrowLeftRight, Users, Receipt } from "lucide-react";
+import { ArrowLeftRight, Receipt, TrendingDown, TrendingUp, Users } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
@@ -33,7 +33,7 @@ export default function PartnerPerformancePage() {
 
   const { data, isLoading } = api.partner.performance.useQuery(
     { sortBy, period },
-    { enabled: tenantReady }
+    { enabled: tenantReady },
   );
 
   if (tenantLoading || isLoading) {

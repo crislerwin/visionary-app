@@ -164,11 +164,13 @@ export const partnerRouter = router({
 
   performance: tenantProcedure
     .input(
-      z.object({
-        sortBy: z.enum(["volume", "profit"]).default("profit"),
-        period: z.enum(["month", "quarter", "year", "all"]).default("all"),
-        limit: z.number().min(1).max(100).default(50),
-      }).optional()
+      z
+        .object({
+          sortBy: z.enum(["volume", "profit"]).default("profit"),
+          period: z.enum(["month", "quarter", "year", "all"]).default("all"),
+          limit: z.number().min(1).max(100).default(50),
+        })
+        .optional(),
     )
     .query(async ({ ctx, input }) => {
       const { sortBy = "profit", period = "all", limit = 50 } = input ?? {};
@@ -211,11 +213,7 @@ export const partnerRouter = router({
       // Fetch partners with aggregated transaction data in parallel
       const dateWhere = dateFilter.gte ? { gte: dateFilter.gte } : undefined;
 
-      const [
-        incomeAgg,
-        expenseAgg,
-        countAgg
-      ] = await Promise.all([
+      const [incomeAgg, expenseAgg, countAgg] = await Promise.all([
         // Total income per partner
         prisma.transaction.groupBy({
           by: ["partnerId"],
@@ -253,21 +251,27 @@ export const partnerRouter = router({
       // Build lookup maps with null safety
       const incomeMap = new Map(
         incomeAgg
-          .filter((i): i is typeof i & { partnerId: string; _sum: { amount: unknown } } => 
-            i.partnerId != null && i._sum?.amount != null)
-          .map((i) => [i.partnerId, Number(i._sum.amount)])
+          .filter(
+            (i): i is typeof i & { partnerId: string; _sum: { amount: unknown } } =>
+              i.partnerId != null && i._sum?.amount != null,
+          )
+          .map((i) => [i.partnerId, Number(i._sum.amount)]),
       );
       const expenseMap = new Map(
         expenseAgg
-          .filter((e): e is typeof e & { partnerId: string; _sum: { amount: unknown } } => 
-            e.partnerId != null && e._sum?.amount != null)
-          .map((e) => [e.partnerId, Number(e._sum.amount)])
+          .filter(
+            (e): e is typeof e & { partnerId: string; _sum: { amount: unknown } } =>
+              e.partnerId != null && e._sum?.amount != null,
+          )
+          .map((e) => [e.partnerId, Number(e._sum.amount)]),
       );
       const countMap = new Map(
         countAgg
-          .filter((c): c is typeof c & { partnerId: string; _count: { id: number } } => 
-            c.partnerId != null && c._count?.id != null)
-          .map((c) => [c.partnerId, c._count.id])
+          .filter(
+            (c): c is typeof c & { partnerId: string; _count: { id: number } } =>
+              c.partnerId != null && c._count?.id != null,
+          )
+          .map((c) => [c.partnerId, c._count.id]),
       );
 
       // Build performance data
