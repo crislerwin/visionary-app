@@ -1,0 +1,36 @@
+{
+  "overview": "Overview",
+  "overviewDescription": "Track your key financial indicators",
+  "currentBalance": "Current Balance",
+  "selectedBalance": "Selected Balance",
+  "balanceOf": "Balance: {{name}}",
+  "periodIncome": "Period Income",
+  "periodExpense": "Period Expenses",
+  "periodProfit": "Period Profit",
+  "periodLoss": "Period Loss",
+  "pendingPayables": "Pending Payables",
+  "topPartner": "Top Partner",
+  "filters": {
+    "allAccounts": "All accounts",
+    "allPartners": "All partners",
+    "allCategories": "All categories",
+    "bankAccount": "Account",
+    "partner": "Partner",
+    "category": "Category",
+    "clear": "Clear filters"
+  },
+  "charts": {
+    "balanceEvolution": "Balance Evolution",
+    "incomeVsExpense": "Income vs Expenses"
+  },
+  "table": {
+    "latestTransactions": "Latest Transactions",
+    "recentPeriod": "Recent period transactions",
+    "type": "Type",
+    "status": "Status",
+    "allTypes": "All",
+    "income": "Income",
+    "expense": "Expense",
+    "searchPlaceholder": "Search transaction..."
+  }
+}

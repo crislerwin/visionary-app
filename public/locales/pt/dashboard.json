@@ -1,0 +1,36 @@
+{
+  "overview": "Visão geral",
+  "overviewDescription": "Acompanhe seus principais indicadores financeiros",
+  "currentBalance": "Saldo Atual",
+  "selectedBalance": "Saldo Selecionado",
+  "balanceOf": "Saldo: {{name}}",
+  "periodIncome": "Receitas do Período",
+  "periodExpense": "Despesas do Período",
+  "periodProfit": "Lucro do Período",
+  "periodLoss": "Prejuízo do Período",
+  "pendingPayables": "Contas a Pagar",
+  "topPartner": "Top Parceiro",
+  "filters": {
+    "allAccounts": "Todas as contas",
+    "allPartners": "Todos os parceiros",
+    "allCategories": "Todas as categorias",
+    "bankAccount": "Conta",
+    "partner": "Parceiro",
+    "category": "Categoria",
+    "clear": "Limpar filtros"
+  },
+  "charts": {
+    "balanceEvolution": "Evolução do Saldo",
+    "incomeVsExpense": "Receitas vs Despesas"
+  },
+  "table": {
+    "latestTransactions": "Últimas Transações",
+    "recentPeriod": "Transações recentes do período",
+    "type": "Tipo",
+    "status": "Status",
+    "allTypes": "Todos",
+    "income": "Entrada",
+    "expense": "Saída",
+    "searchPlaceholder": "Buscar transação..."
+  }
+}
