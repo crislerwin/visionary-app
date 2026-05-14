@@ -3,18 +3,115 @@ services:
     image: postgres:16-alpine
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: visionary
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-visionary}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - visionary-net
+
+  # ─── LGTM Observability Stack (all-in-one) ───
+  otel-lgtm:
+    image: grafana/otel-lgtm:latest
+    container_name: visionary-otel-lgtm
+    ports:
+      - "3001:3000" # Grafana UI
+      - "4318:4318" # OTLP HTTP (traces e métricas)
+      - "9090:9090" # Prometheus (Mimir)
+      - "3100:3100" # Loki push API (para Promtail)
+    volumes:
+      - otel-lgtm-data:/data
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+        labels: "loki,service_name,logging"
+    networks:
+      - visionary-net
+
+  # ─── Promtail (coleta logs dos containers Docker) ───
+  promtail:
+    image: grafana/promtail:3.2.0
+    container_name: visionary-promtail
+    labels:
+      loki: "true"
+      service_name: "promtail"
+      logging: "promtail"
+    volumes:
+      - ./docker/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/log:/var/log:ro
+      - promtail-positions:/tmp
+    depends_on:
+      - otel-lgtm
+    networks:
+      - visionary-net
+
+  # ─── Visionary Application ───
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: visionary-app
+    # Carrega todas as variáveis do arquivo .env automaticamente
+    env_file:
+      - .env
+    labels:
+      loki: "true"
+      service_name: "visionary"
+      logging: "visionary"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${PORT:-3000}
+      HOSTNAME: ${HOSTNAME:-0.0.0.0}
+      # URL do banco apontando para o serviço "db" dentro da rede Docker
+      DATABASE_URL: postgresql://${POSTGRES_USER:***@db:5432/${POSTGRES_DB:-visionary}
+      # OpenTelemetry endpoint (LGTM container dentro da mesma rede)
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-lgtm:4318/v1/traces}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-visionary}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Auth (sobrescreve AUTH_URL do .env para o container)
+      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      # Pluggy
+      PLUGGY_CLIENT_ID: ${PLUGGY_CLIENT_ID}
+      PLUGGY_CLIENT_SECRET: ${PLUGGY_CLIENT_SECRET}
+      NEXT_PUBLIC_PLUGGY_CONFIGURED: ${NEXT_PUBLIC_PLUGGY_CONFIGURED}
+    ports:
+      - "${PORT:-3000}:3000"
+    depends_on:
+      - db
+      - otel-lgtm
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+        labels: "loki,service_name,logging"
+    networks:
+      - visionary-net
 
 volumes:
   postgres_data:
+  otel-lgtm-data:
+  promtail-positions:
+
+networks:
+  visionary-net:
+    driver: bridge
