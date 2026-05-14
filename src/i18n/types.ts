@@ -14,6 +14,7 @@ declare module "i18next" {
     defaultNS: "common";
     resources: {
       common: Record<string, string>;
+      dashboard: Record<string, string>;
       navigation: Record<string, string>;
     };
   }
