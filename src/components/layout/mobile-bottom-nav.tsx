@@ -60,7 +60,7 @@ export function MobileBottomNav() {
           </DrawerHeader>
           <div className="overflow-y-auto px-2 pb-6">
             {sidebarNavigation.map((section) => (
-              <div key={section.title || section.items[0]?.href} className="mb-3">
+              <div key={section.titleKey || section.items[0]?.href} className="mb-3">
                 {section.titleKey && (
                   <h3 className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     {t(section.titleKey)}

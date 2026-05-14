@@ -853,7 +853,7 @@ function DateRangePicker({
   };
 
   return (
-    <div className="flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto sm:justify-start">
+    <div className="flex flex-wrap items-center gap-2">
       <Popover
         open={open}
         onOpenChange={(isOpen) => {
@@ -864,7 +864,8 @@ function DateRangePicker({
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            className={cn("justify-start text-left font-normal", !range && "text-muted-foreground")}
+            size="sm"
+            className={cn("h-8 gap-1 text-[11px]", !range && "text-muted-foreground")}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {range?.from ? (
