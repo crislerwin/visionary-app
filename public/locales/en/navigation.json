@@ -6,5 +6,8 @@
   "dataSources": "Data Sources",
   "partners": "Partners",
   "partnerPerformance": "Partner Performance",
+  "partnerInvoices": "Accounts Payable",
+  "alerts": "Alerts",
+  "notifications": "Notifications",
   "settings": "Settings"
 }
