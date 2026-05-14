@@ -15,17 +15,14 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentTenant } from "@/hooks/use-current-tenant";
 import { api } from "@/lib/trpc/react";
-import { type ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  Receipt,
   AlertTriangle,
   CheckCircle2,
   Clock,
   DollarSign,
-  TrendingUp,
-  TrendingDown,
   Minus,
 } from "lucide-react";
 import Link from "next/link";
@@ -156,10 +153,10 @@ export default function PartnerInvoicesPage() {
   const { currentTenant, isLoading: tenantLoading } = useCurrentTenant();
   const tenantReady = !tenantLoading && !!currentTenant;
 
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+  const [statusFilter, setStatusFilter] = useState<"PENDING" | "PAID" | "OVERDUE" | undefined>(undefined);
 
   const { data, isLoading } = api.partnerInvoice.list.useQuery(
-    { status: statusFilter as any, limit: 50 },
+    { status: statusFilter, limit: 50 },
     { enabled: tenantReady }
   );
 

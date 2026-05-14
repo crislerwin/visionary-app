@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { tenantProcedure, router } from "@/lib/trpc/trpc";
 import { prisma } from "@/lib/db";
-import { startOfMonth, endOfMonth, subDays, isPast } from "date-fns";
+import { startOfMonth, endOfMonth } from "date-fns";
 
 export const alertRouter = router({
   // ====================
@@ -173,7 +173,7 @@ export const alertRouter = router({
             title,
             message,
             status: "UNREAD",
-            data: data as any,
+            data: data as Record<string, unknown>,
             userId: ctx.session.user.id,
             tenantId: ctx.tenantId,
           },
