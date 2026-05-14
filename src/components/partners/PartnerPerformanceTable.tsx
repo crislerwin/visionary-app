@@ -1,9 +1,9 @@
 "use client";
 
-import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { DataTable } from "@/components/ui/data-table";
 import type { ColumnDef } from "@tanstack/react-table";
+import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 
 export interface PartnerPerformanceItem {
   id: string;
@@ -120,9 +120,7 @@ export const partnerPerformanceColumns: ColumnDef<PartnerPerformanceItem>[] = [
       const profit = Number(row.getValue("netProfit"));
       return (
         <div>
-          <div className="font-mono text-sm font-medium">
-            {formatCurrency(profit)}
-          </div>
+          <div className="font-mono text-sm font-medium">{formatCurrency(profit)}</div>
           <ProfitIndicator profit={profit} />
         </div>
       );

@@ -2,8 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { type DefaultValues, useForm } from "react-hook-form";
 import { useMemo, useState } from "react";
+import { type DefaultValues, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -68,7 +68,11 @@ export function TransactionForm({
   onSuccess,
 }: TransactionFormProps) {
   const isEditing = !!transaction;
-  const [splitPreview, setSplitPreview] = useState<{ amount: number; type: string; value: number } | null>(null);
+  const [splitPreview, setSplitPreview] = useState<{
+    amount: number;
+    type: string;
+    value: number;
+  } | null>(null);
 
   const { data: bankAccounts } = api.bankAccount.list.useQuery(undefined);
   const { data: categoriesData } = api.category.list.useQuery({});
@@ -249,9 +253,7 @@ export function TransactionForm({
             <Label htmlFor="categoryId">Categoria</Label>
             <Select
               value={form.watch("categoryId") || "none"}
-              onValueChange={(value) =>
-                form.setValue("categoryId", value === "none" ? "" : value)
-              }
+              onValueChange={(value) => form.setValue("categoryId", value === "none" ? "" : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione a categoria (opcional)" />
@@ -288,7 +290,8 @@ export function TransactionForm({
                         {p.name}{" "}
                         {p.commissionValue > 0 && (
                           <span className="text-muted-foreground text-xs">
-                            — {p.commissionType === "PERCENTAGE"
+                            —{" "}
+                            {p.commissionType === "PERCENTAGE"
                               ? `${p.commissionValue}%`
                               : `R$ ${p.commissionValue.toFixed(2)}`}
                           </span>
@@ -307,9 +310,7 @@ export function TransactionForm({
                   </p>
                   <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
                     Será gerada uma "Conta a Pagar" de{" "}
-                    <strong>
-                      R$ {splitPreview.amount.toFixed(2)}
-                    </strong>
+                    <strong>R$ {splitPreview.amount.toFixed(2)}</strong>
                     {splitPreview.type === "PERCENTAGE"
                       ? ` (${splitPreview.value}% do valor)`
                       : ` (valor fixo de R$ ${splitPreview.value.toFixed(2)})`}

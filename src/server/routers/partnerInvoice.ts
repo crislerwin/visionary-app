@@ -14,7 +14,7 @@ export const partnerInvoiceRouter = router({
           limit: z.number().min(1).max(100).default(50),
           offset: z.number().default(0),
         })
-        .optional()
+        .optional(),
     )
     .query(async ({ ctx, input }) => {
       const { partnerId, status, limit = 50, offset = 0 } = input ?? {};
@@ -58,34 +58,32 @@ export const partnerInvoiceRouter = router({
       };
     }),
 
-  pay: tenantProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      const invoice = await prisma.partnerInvoice.findFirst({
-        where: {
-          id: input.id,
-          tenantId: ctx.tenantId,
-          status: PartnerInvoiceStatus.PENDING,
-        },
+  pay: tenantProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+    const invoice = await prisma.partnerInvoice.findFirst({
+      where: {
+        id: input.id,
+        tenantId: ctx.tenantId,
+        status: PartnerInvoiceStatus.PENDING,
+      },
+    });
+
+    if (!invoice) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Conta a pagar não encontrada ou já paga",
       });
+    }
 
-      if (!invoice) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Conta a pagar não encontrada ou já paga",
-        });
-      }
+    await prisma.partnerInvoice.update({
+      where: { id: input.id },
+      data: {
+        status: PartnerInvoiceStatus.PAID,
+        paidAt: new Date(),
+      },
+    });
 
-      await prisma.partnerInvoice.update({
-        where: { id: input.id },
-        data: {
-          status: PartnerInvoiceStatus.PAID,
-          paidAt: new Date(),
-        },
-      });
-
-      return { success: true };
-    }),
+    return { success: true };
+  }),
 
   summary: tenantProcedure.query(async ({ ctx }) => {
     const [totalPending, totalOverdue, totalPaid, totalAmountPending] = await Promise.all([

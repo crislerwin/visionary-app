@@ -15,7 +15,7 @@ import { api } from "@/lib/trpc/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowDownLeft, ArrowUpRight, Plus, Receipt } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { TransactionForm } from "../../../components/transactions/TransactionForm";
 
@@ -26,12 +26,20 @@ interface TransactionRow {
   description: string;
   amount: number;
   status: "COMPLETED" | "PENDING" | "CANCELLED";
-  bankAccount: { id: string; name: string; bankName: string | null; currency: string };
+  bankAccount: {
+    id: string;
+    name: string;
+    bankName: string | null;
+    currency: string;
+  };
   category: { id: string; name: string; color: string; icon: string } | null;
 }
 
 function fmtCurrency(value: number, currency = "BRL") {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency,
+  }).format(value);
 }
 
 const columns: ColumnDef<TransactionRow>[] = [
@@ -40,7 +48,9 @@ const columns: ColumnDef<TransactionRow>[] = [
     header: "Data",
     cell: ({ row }) => (
       <span className="text-[11px] tabular-nums">
-        {format(new Date(row.original.date), "dd/MM/yyyy", { locale: ptBR })}
+        {format(new Date(row.original.date), "dd/MM/yyyy", {
+          locale: ptBR,
+        })}
       </span>
     ),
   },
@@ -122,17 +132,23 @@ export default function TransactionsPage() {
   const utils = api.useUtils();
 
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
-  const [filterType, setFilterType] = useState<"" | "INCOME" | "EXPENSE">("");
-  const [filterStatus, setFilterStatus] = useState<"" | "COMPLETED" | "PENDING" | "CANCELLED">("");
-  const [filterCategory, setFilterCategory] = useState<string>("");
+  const [pageSize, setPageSize] = useState(15);
+  const [filterType, setFilterType] = useState<"all" | "INCOME" | "EXPENSE">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "COMPLETED" | "PENDING" | "CANCELLED">(
+    "all",
+  );
+  const [filterCategory, setFilterCategory] = useState<string>("all");
   const [formOpen, setFormOpen] = useState(false);
 
-  const { data: txData } = api.transaction.list.useQuery(
+  const { data: txData, isLoading: txLoading } = api.transaction.list.useQuery(
     {
-      type: (filterType || undefined) as "INCOME" | "EXPENSE" | undefined,
-      status: (filterStatus || undefined) as "COMPLETED" | "PENDING" | "CANCELLED" | undefined,
-      categoryId: filterCategory || undefined,
+      type: (filterType !== "all" ? filterType : undefined) as "INCOME" | "EXPENSE" | undefined,
+      status: (filterStatus !== "all" ? filterStatus : undefined) as
+        | "COMPLETED"
+        | "PENDING"
+        | "CANCELLED"
+        | undefined,
+      categoryId: filterCategory !== "all" ? filterCategory : undefined,
       page,
       pageSize,
     },
@@ -150,11 +166,12 @@ export default function TransactionsPage() {
   });
 
   const rows: TransactionRow[] = useMemo(
-    () => (txData?.transactions?.map((t) => ({
-      ...t,
-      date: new Date(t.date),
-      amount: Number(t.amount),
-    })) as TransactionRow[]) ?? [],
+    () =>
+      (txData?.transactions?.map((t) => ({
+        ...t,
+        date: new Date(t.date),
+        amount: Number(t.amount),
+      })) as TransactionRow[]) ?? [],
     [txData],
   );
   const total = txData?.total ?? 0;
@@ -171,66 +188,65 @@ export default function TransactionsPage() {
   void handleDelete;
 
   return (
-    <div className="min-h-[calc(100vh-4rem)]">
-      <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
-        <div className="mx-auto flex h-12 max-w-7xl items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <Receipt className="h-4 w-4 text-muted-foreground" />
-            <h1 className="text-[13px] font-semibold">Extrato</h1>
-          </div>
-          <Button size="sm" className="h-7 gap-1 text-[11px]" onClick={() => setFormOpen(true)}>
-            <Plus className="h-3.5 w-3.5" />
-            Nova
-          </Button>
+    <div className="space-y-3">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">Extrato</h1>
+          <p className="text-sm text-muted-foreground">
+            Visualize e gerencie suas transações financeiras
+          </p>
         </div>
-      </header>
-
-      <div className="mx-auto max-w-7xl px-4 py-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <Select value={filterType} onValueChange={(v) => setFilterType(v as typeof filterType)}>
-            <SelectTrigger className="h-7 w-32 text-[11px]">
-              <SelectValue placeholder="Tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
-              <SelectItem value="INCOME">Entrada</SelectItem>
-              <SelectItem value="EXPENSE">Saída</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select
-            value={filterStatus}
-            onValueChange={(v) => setFilterStatus(v as typeof filterStatus)}
-          >
-            <SelectTrigger className="h-7 w-32 text-[11px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
-              <SelectItem value="COMPLETED">Concluído</SelectItem>
-              <SelectItem value="PENDING">Pendente</SelectItem>
-              <SelectItem value="CANCELLED">Cancelado</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={filterCategory} onValueChange={(v) => setFilterCategory(v)}>
-            <SelectTrigger className="h-7 w-36 text-[11px]">
-              <SelectValue placeholder="Categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Todas</SelectItem>
-              {categories?.categories?.map((c: { id: string; name: string }) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Button size="sm" className="h-7 gap-1 text-[11px]" onClick={() => setFormOpen(true)}>
+          <Plus className="h-3.5 w-3.5" />
+          Nova
+        </Button>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Select value={filterType} onValueChange={(v) => setFilterType(v as typeof filterType)}>
+          <SelectTrigger className="h-7 w-32 text-[11px]">
+            <SelectValue placeholder="Tipo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="INCOME">Entrada</SelectItem>
+            <SelectItem value="EXPENSE">Saída</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
+          value={filterStatus}
+          onValueChange={(v) => setFilterStatus(v as typeof filterStatus)}
+        >
+          <SelectTrigger className="h-7 w-32 text-[11px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="COMPLETED">Concluído</SelectItem>
+            <SelectItem value="PENDING">Pendente</SelectItem>
+            <SelectItem value="CANCELLED">Cancelado</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filterCategory} onValueChange={(v) => setFilterCategory(v)}>
+          <SelectTrigger className="h-7 w-36 text-[11px]">
+            <SelectValue placeholder="Categoria" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas</SelectItem>
+            {categories?.categories?.map((c: { id: string; name: string }) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
         <DataTable
           columns={columns}
           data={rows}
+          loading={txLoading}
           manualPagination
           pageCount={Math.ceil(total / pageSize)}
           pagination={{ pageIndex: page - 1, pageSize }}

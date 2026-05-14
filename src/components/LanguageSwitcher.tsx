@@ -1,6 +1,5 @@
 "use client";
 
-import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -8,17 +7,34 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { type Locale, localeNames, locales } from "@/i18n/types";
 import { Globe } from "lucide-react";
-import { locales, localeNames, type Locale } from "@/i18n/types";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export function LanguageSwitcher() {
   const { i18n, t } = useTranslation("common");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const currentLanguage = i18n.language as Locale;
 
   const handleLanguageChange = (locale: Locale) => {
     i18n.changeLanguage(locale);
   };
+
+  // Don't render until after hydration to avoid mismatch
+  if (!mounted) {
+    return (
+      <Button variant="ghost" size="icon" className="h-9 w-9">
+        <Globe className="h-4 w-4" />
+        <span className="sr-only">Select language</span>
+      </Button>
+    );
+  }
 
   return (
     <DropdownMenu>

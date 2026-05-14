@@ -1,7 +1,7 @@
 "use client";
 
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
 import type * as React from "react";
 import { useState } from "react";

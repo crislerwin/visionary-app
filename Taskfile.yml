@@ -2,298 +2,298 @@
 version: "3"
 
 vars:
-  PROJECT_NAME: visionary
-  NODE_VERSION: "22"
-  DEFAULT_PORT: "3000"
+    PROJECT_NAME: visionary
+    NODE_VERSION: "22"
+    DEFAULT_PORT: "3000"
 
 env:
-  FORCE_COLOR: "1"
+    FORCE_COLOR: "1"
 
 dotenv: [".env", ".env.local"]
 
 tasks:
-  # ============================================================
-  # SETUP
-  # ============================================================
+    # ============================================================
+    # SETUP
+    # ============================================================
 
-  install:
-    desc: "Instala dependências do projeto"
-    cmds:
-      - npm install
+    install:
+        desc: "Instala dependências do projeto"
+        cmds:
+            - bun install
 
-  setup*:
-    desc: "Setup completo padrão (SQLite)"
-    cmds:
-      - task: install
-      - ./scripts/prepare-schema.sh sqlite
-      - npx prisma generate
-      - npx prisma db push
-      - npx prisma db seed
+    setup*:
+        desc: "Setup completo padrão (SQLite)"
+        cmds:
+            - task: install
+            - ./scripts/prepare-schema.sh sqlite
+            - bunx prisma generate
+            - bunx prisma db push
+            - bunx prisma db seed
 
-  setup*sqlite:
-    desc: "Configura ambiente SQLite para desenvolvimento"
-    cmds:
-      - task: install
-      - ./scripts/prepare-schema.sh sqlite
-      - npx prisma generate
-      - npx prisma db push
-      - npx prisma db seed
+    setup*sqlite:
+        desc: "Configura ambiente SQLite para desenvolvimento"
+        cmds:
+            - task: install
+            - ./scripts/prepare-schema.sh sqlite
+            - bunx prisma generate
+            - bunx prisma db push
+            - bunx prisma db seed
 
-  setup*postgres:
-    desc: "Configura ambiente PostgreSQL com Docker"
-    cmds:
-      - task: install
-      - ./scripts/prepare-schema.sh postgresql
-      - task: docker*up
-      - task: db*wait
-      - npx prisma generate
-      - npx prisma db push
-      - npx prisma db seed
+    setup*postgres:
+        desc: "Configura ambiente PostgreSQL com Docker"
+        cmds:
+            - task: install
+            - ./scripts/prepare-schema.sh postgresql
+            - task: docker*up
+            - task: db*wait
+            - bunx prisma generate
+            - bunx prisma db push
+            - bunx prisma db seed
 
-  # ============================================================
-  # DATABASE (Prisma)
-  # ============================================================
+    # ============================================================
+    # DATABASE (Prisma)
+    # ============================================================
 
-  db*generate:
-    desc: "Gera Prisma Client"
-    cmds:
-      - npx prisma generate
+    db*generate:
+        desc: "Gera Prisma Client"
+        cmds:
+            - bunx prisma generate
 
-  db*push:
-    desc: "Sincroniza schema com o banco (dev only)"
-    cmds:
-      - npx prisma db push
+    db*push:
+        desc: "Sincroniza schema com o banco (dev only)"
+        cmds:
+            - bunx prisma db push
 
-  db*migrate:
-    desc: "Cria e aplica nova migration"
-    cmds:
-      - npx prisma migrate dev
+    db*migrate:
+        desc: "Cria e aplica nova migration"
+        cmds:
+            - bunx prisma migrate dev
 
-  db*seed:
-    desc: "Popula banco com dados demo"
-    cmds:
-      - npx prisma db seed
+    db*seed:
+        desc: "Popula banco com dados demo"
+        cmds:
+            - bunx prisma db seed
 
-  db*studio:
-    desc: "Abre Prisma Studio (GUI do banco)"
-    cmds:
-      - npx prisma studio
+    db*studio:
+        desc: "Abre Prisma Studio (GUI do banco)"
+        cmds:
+            - bunx prisma studio
 
-  db*reset:
-    desc: "Reseta banco e roda seed novamente"
-    cmds:
-      - npx prisma db push --force-reset
-      - npx prisma db seed
+    db*reset:
+        desc: "Reseta banco e roda seed novamente"
+        cmds:
+            - bunx prisma db push --force-reset
+            - bunx prisma db seed
 
-  db*wait:
-    desc: "Aguarda PostgreSQL estar pronto"
-    cmds:
-      - ./scripts/wait-for-db.sh
-      - echo "Database pronto"
+    db*wait:
+        desc: "Aguarda PostgreSQL estar pronto"
+        cmds:
+            - ./scripts/wait-for-db.sh
+            - echo "Database pronto"
 
-  # ============================================================
-  # DOCKER
-  # ============================================================
+    # ============================================================
+    # DOCKER
+    # ============================================================
 
-  docker*up:
-    desc: "Sobe containers PostgreSQL + Redis"
-    cmds:
-      - docker-compose up -d
+    docker*up:
+        desc: "Sobe containers PostgreSQL + Redis"
+        cmds:
+            - docker-compose up -d
 
-  docker*down:
-    desc: "Derruba containers"
-    cmds:
-      - docker-compose down
+    docker*down:
+        desc: "Derruba containers"
+        cmds:
+            - docker-compose down
 
-  docker*logs:
-    desc: "Logs dos containers"
-    cmds:
-      - docker-compose logs -f
+    docker*logs:
+        desc: "Logs dos containers"
+        cmds:
+            - docker-compose logs -f
 
-  docker*build:
-    desc: "Build imagem Docker de produção"
-    cmds:
-      - docker build -t {{.PROJECT_NAME}}:latest .
+    docker*build:
+        desc: "Build imagem Docker de produção"
+        cmds:
+            - docker build -t {{.PROJECT_NAME}}:latest .
 
-  docker*run:
-    desc: "Roda container Docker de produção"
-    cmds:
-      - docker run -p 3000:3000 --env-file .env {{.PROJECT_NAME}}:latest
+    docker*run:
+        desc: "Roda container Docker de produção"
+        cmds:
+            - docker run -p 3000:3000 --env-file .env {{.PROJECT_NAME}}:latest
 
-  # ============================================================
-  # DEV SERVER
-  # ============================================================
+    # ============================================================
+    # DEV SERVER
+    # ============================================================
 
-  dev:
-    desc: "Inicia servidor de desenvolvimento"
-    cmds:
-      - npm run dev
+    dev:
+        desc: "Inicia servidor de desenvolvimento"
+        cmds:
+            - bun run dev
 
-  dev*setup:
-    desc: "Setup completo e inicia dev"
-    cmds:
-      - task: setup
-      - task: dev
+    dev*setup:
+        desc: "Setup completo e inicia dev"
+        cmds:
+            - task: setup
+            - task: dev
 
-  start:
-    desc: "Inicia servidor de produção (requer build)"
-    cmds:
-      - npm run start
+    start:
+        desc: "Inicia servidor de produção (requer build)"
+        cmds:
+            - bun run start
 
-  # ============================================================
-  # BUILD
-  # ============================================================
+    # ============================================================
+    # BUILD
+    # ============================================================
 
-  build:
-    desc: "Build de produção"
-    cmds:
-      - npm run build
+    build:
+        desc: "Build de produção"
+        cmds:
+            - bun run build
 
-  build*analyze:
-    desc: "Build com análise de bundle"
-    cmds:
-      - ANALYZE=true npm run build
+    build*analyze:
+        desc: "Build com análise de bundle"
+        cmds:
+            - ANALYZE=true bun run build
 
-  # ============================================================
-  # QUALIDADE DE CÓDIGO
-  # ============================================================
+    # ============================================================
+    # QUALIDADE DE CÓDIGO
+    # ============================================================
 
-  lint:
-    desc: "Executa linter Biome"
-    cmds:
-      - npm run lint
+    lint:
+        desc: "Executa linter Biome"
+        cmds:
+            - bun run lint
 
-  lint*fix:
-    desc: "Linter e correções automáticas"
-    cmds:
-      - npm run check
+    lint*fix:
+        desc: "Linter e correções automáticas"
+        cmds:
+            - bun run check
 
-  format:
-    desc: "Formata código com Biome"
-    cmds:
-      - npm run format
+    format:
+        desc: "Formata código com Biome"
+        cmds:
+            - bun run format
 
-  check:
-    desc: "Lint + Format + Check imports"
-    cmds:
-      - npm run check
+    check:
+        desc: "Lint + Format + Check imports"
+        cmds:
+            - bun run check
 
-  typecheck:
-    desc: "Checa tipos TypeScript"
-    cmds:
-      - npm run type-check
+    typecheck:
+        desc: "Checa tipos TypeScript"
+        cmds:
+            - bun run type-check
 
-  # ============================================================
-  # TESTES
-  # ============================================================
+    # ============================================================
+    # TESTES
+    # ============================================================
 
-  test:
-    desc: "Executa testes unitários"
-    cmds:
-      - npm run test
+    test:
+        desc: "Executa testes unitários"
+        cmds:
+            - bun run test
 
-  test*ui:
-    desc: "Testes com interface gráfica"
-    cmds:
-      - npm run test:ui
+    test*ui:
+        desc: "Testes com interface gráfica"
+        cmds:
+            - bun run test:ui
 
-  test*watch:
-    desc: "Testes em watch mode"
-    cmds:
-      - npx vitest --watch
+    test*watch:
+        desc: "Testes em watch mode"
+        cmds:
+            - bunx vitest --watch
 
-  # ============================================================
-  # SWITCH AMBIENTE
-  # ============================================================
+    # ============================================================
+    # SWITCH AMBIENTE
+    # ============================================================
 
-  switch*sqlite:
-    desc: "Muda schema para SQLite"
-    cmds:
-      - ./scripts/prepare-schema.sh sqlite
-      - npx prisma generate
+    switch*sqlite:
+        desc: "Muda schema para SQLite"
+        cmds:
+            - ./scripts/prepare-schema.sh sqlite
+            - bunx prisma generate
 
-  switch*postgres:
-    desc: "Muda schema para PostgreSQL"
-    cmds:
-      - ./scripts/prepare-schema.sh postgresql
-      - npx prisma generate
+    switch*postgres:
+        desc: "Muda schema para PostgreSQL"
+        cmds:
+            - ./scripts/prepare-schema.sh postgresql
+            - bunx prisma generate
 
-  # ============================================================
-  # UTILS
-  # ============================================================
+    # ============================================================
+    # UTILS
+    # ============================================================
 
-  clean:
-    desc: "Limpa arquivos temporários"
-    cmds:
-      - rm -rf .next
-      - rm -rf node_modules/.cache
-      - echo "Cache limpo"
+    clean:
+        desc: "Limpa arquivos temporários"
+        cmds:
+            - rm -rf .next
+            - rm -rf node_modules/.cache
+            - echo "Cache limpo"
 
-  clean*all:
-    desc: "Limpa tudo (cache, node_modules, db dev)"
-    cmds:
-      - task: clean
-      - rm -rf node_modules
-      - rm -f prisma/dev.db
-      - rm -f prisma/dev.db-journal
-      - echo "Tudo limpo"
+    clean*all:
+        desc: "Limpa tudo (cache, node_modules, db dev)"
+        cmds:
+            - task: clean
+            - rm -rf node_modules
+            - rm -f prisma/dev.db
+            - rm -f prisma/dev.db-journal
+            - echo "Tudo limpo"
 
-  reset:
-    desc: "Reset completo limpa tudo e reinstala"
-    cmds:
-      - task: clean*all
-      - task: setup
+    reset:
+        desc: "Reset completo limpa tudo e reinstala"
+        cmds:
+            - task: clean*all
+            - task: setup
 
-  # ============================================================
-  # INFO
-  # ============================================================
+    # ============================================================
+    # INFO
+    # ============================================================
 
-  info:
-    desc: "Mostra informações do projeto"
-    cmds:
-      - echo "Project {{.PROJECT_NAME}}"
-      - echo "Node $(node --version)"
-      - echo "NPM $(npm --version)"
-      - npx prisma --version | head -1
-      - echo "Porta {{.DEFAULT_PORT}}"
+    info:
+        desc: "Mostra informações do projeto"
+        cmds:
+            - echo "Project {{.PROJECT_NAME}}"
+            - echo "Node $(node --version)"
+            - echo "NPM $(npm --version)"
+            - npx prisma --version | head -1
+            - echo "Porta {{.DEFAULT_PORT}}"
 
-  default:
-    desc: "Mostra ajuda"
-    silent: true
-    cmds:
-      - |-
-        echo "Visionary - Taskfile Commands"
-        echo ""
-        echo "Setup:"
-        echo "  task setup           - Setup completo SQLite (dev)"
-        echo "  task setup:sqlite    - Setup SQLite"
-        echo "  task setup:postgres   - Setup PostgreSQL + Docker"
-        echo ""
-        echo "Dev Server:"
-        echo "  task dev             - Start dev server"
-        echo "  task dev:setup       - Setup + start"
-        echo ""
-        echo "Database:"
-        echo "  task db:push         - Sincroniza schema"
-        echo "  task db:seed         - Popula dados demo"
-        echo "  task db:studio       - GUI do banco"
-        echo "  task db:reset        - Reseta e re-seed"
-        echo ""
-        echo "Testes e Qualidade:"
-        echo "  task test            - Testes"
-        echo "  task lint            - Linter"
-        echo "  task typecheck       - TypeScript check"
-        echo ""
-        echo "Ambiente:"
-        echo "  task switch:sqlite   - Muda para SQLite"
-        echo "  task switch:postgres - Muda para PostgreSQL"
-        echo ""
-        echo "Docker:"
-        echo "  task docker:up       - Sobe containers"
-        echo "  task docker:down     - Derruba containers"
-        echo "  task docker:build    - Build imagem"
-        echo ""
-        echo "Utils:"
-        echo "  task clean           - Limpa cache"
-        echo "  task reset           - Reset total"
-        echo "  task info            - Info do projeto"
+    default:
+        desc: "Mostra ajuda"
+        silent: true
+        cmds:
+            - |-
+                echo "Visionary - Taskfile Commands"
+                echo ""
+                echo "Setup:"
+                echo "  task setup           - Setup completo SQLite (dev)"
+                echo "  task setup:sqlite    - Setup SQLite"
+                echo "  task setup:postgres   - Setup PostgreSQL + Docker"
+                echo ""
+                echo "Dev Server:"
+                echo "  task dev             - Start dev server"
+                echo "  task dev:setup       - Setup + start"
+                echo ""
+                echo "Database:"
+                echo "  task db:push         - Sincroniza schema"
+                echo "  task db:seed         - Popula dados demo"
+                echo "  task db:studio       - GUI do banco"
+                echo "  task db:reset        - Reseta e re-seed"
+                echo ""
+                echo "Testes e Qualidade:"
+                echo "  task test            - Testes"
+                echo "  task lint            - Linter"
+                echo "  task typecheck       - TypeScript check"
+                echo ""
+                echo "Ambiente:"
+                echo "  task switch:sqlite   - Muda para SQLite"
+                echo "  task switch:postgres - Muda para PostgreSQL"
+                echo ""
+                echo "Docker:"
+                echo "  task docker:up       - Sobe containers"
+                echo "  task docker:down     - Derruba containers"
+                echo "  task docker:build    - Build imagem"
+                echo ""
+                echo "Utils:"
+                echo "  task clean           - Limpa cache"
+                echo "  task reset           - Reset total"
+                echo "  task info            - Info do projeto"

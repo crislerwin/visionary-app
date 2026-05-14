@@ -1,4 +1,5 @@
 import { createCallerFactory, createTRPCContext, router } from "@/lib/trpc/trpc";
+import { alertRouter } from "./alert";
 import { authRouter } from "./auth";
 import { bankAccountRouter } from "./bankAccount";
 import { categoryRouter } from "./category";
@@ -25,6 +26,7 @@ export const appRouter = router({
   pluggy: pluggyRouter,
   partner: partnerRouter,
   partnerInvoice: partnerInvoiceRouter,
+  alert: alertRouter,
 });
 
 export type AppRouter = typeof appRouter;

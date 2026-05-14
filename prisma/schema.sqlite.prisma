@@ -93,6 +93,8 @@ model Tenant {
   dataSources       DataSource[]
   partners          Partner[]
   partnerInvoices   PartnerInvoice[]
+  alertRules        AlertRule[]
+  notifications     Notification[]
 
   @@map("tenants")
 }
@@ -380,4 +382,54 @@ model PartnerInvoice {
   @@index([status])
   @@index([dueDate])
   @@map("partner_invoices")
+}
+
+// ====================
+// ALERT / NOTIFICATION MODELS
+// ====================
+
+model AlertRule {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  condition   String   // "balance_below", "invoice_overdue", "revenue_target"
+  threshold   Decimal  @default(0)
+  targetType  String?  @map("target_type") // "BANK_ACCOUNT", "PARTNER_INVOICE"
+  targetId    String?  @map("target_id")
+  priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  isActive    Boolean  @default(true) @map("is_active")
+  tenantId    String   @map("tenant_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  notifications Notification[]
+
+  @@index([tenantId])
+  @@index([isActive])
+  @@map("alert_rules")
+}
+
+model Notification {
+  id          String            @id @default(cuid())
+  alertRuleId String            @map("alert_rule_id")
+  title       String
+  message     String
+  status      String            @default("UNREAD") // UNREAD, READ, DISMISSED
+  data        String?             // snapshot data (balance, etc)
+  userId      String            @map("user_id")
+  tenantId    String            @map("tenant_id")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  readAt      DateTime?         @map("read_at")
+  dismissedAt DateTime?         @map("dismissed_at")
+
+  alertRule AlertRule @relation(fields: [alertRuleId], references: [id], onDelete: Cascade)
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([alertRuleId])
+  @@index([userId])
+  @@index([tenantId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("notifications")
 }

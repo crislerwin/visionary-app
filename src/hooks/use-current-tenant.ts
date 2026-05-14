@@ -65,8 +65,10 @@ export function useCurrentTenant(): {
   useEffect(() => {
     if (currentTenant?.id) {
       setTenantCookie(currentTenant.id);
+    } else if (tenants && tenants.length === 0 && currentTenantId) {
+      setCurrentTenant(null);
     }
-  }, [currentTenant?.id]);
+  }, [currentTenant?.id, tenants, currentTenantId, setCurrentTenant]);
 
   return {
     currentTenant,
