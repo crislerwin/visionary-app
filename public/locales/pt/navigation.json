@@ -3,8 +3,11 @@
   "finance": "Finanças",
   "relationship": "Relacionamento",
   "extract": "Extrato",
-  "dataSources": "Data Sources",
+  "dataSources": "Fontes de Dados",
   "partners": "Parceiros",
   "partnerPerformance": "Performance de Parceiros",
+  "partnerInvoices": "Contas a Pagar",
+  "alerts": "Alertas",
+  "notifications": "Notificações",
   "settings": "Configurações"
 }
