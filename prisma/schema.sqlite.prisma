@@ -93,6 +93,8 @@ model Tenant {
   dataSources       DataSource[]
   partners          Partner[]
   partnerInvoices   PartnerInvoice[]
+  alertRules        AlertRule[]
+  notifications     Notification[]
 
   @@map("tenants")
 }
@@ -422,6 +424,7 @@ model Notification {
   dismissedAt DateTime?         @map("dismissed_at")
 
   alertRule AlertRule @relation(fields: [alertRuleId], references: [id], onDelete: Cascade)
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([alertRuleId])
   @@index([userId])
