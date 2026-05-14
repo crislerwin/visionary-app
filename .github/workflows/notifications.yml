@@ -14,26 +14,26 @@ jobs:
           curl -X POST "https://n8n.reactivesoftware.com.br/webhook/github-ci-webhook-001" \
             -H "Content-Type: application/json" \
             -H "x-github-event: workflow_run" \
-            -d '{
-              "action": "${{ github.event.workflow_run.conclusion }}",
-              "repository": {
-                "full_name": "${{ github.repository }}",
-                "html_url": "${{ github.event.repository.html_url }}"
+            -d "{
+              \"action\": \"completed\",
+              \"repository\": {
+                \"full_name\": \"${{ github.repository }}\",
+                \"html_url\": \"${{ github.event.repository.html_url }}\"
               },
-              "workflow_run": {
-                "id": ${{ github.event.workflow_run.id }},
-                "name": "${{ github.event.workflow_run.name }}",
-                "head_branch": "${{ github.event.workflow_run.head_branch }}",
-                "head_commit": {
-                  "message": "${{ github.event.workflow_run.head_commit.message }}"
+              \"workflow_run\": {
+                \"id\": ${{ github.event.workflow_run.id }},
+                \"name\": \"${{ github.event.workflow_run.name }}\",
+                \"head_branch\": \"${{ github.event.workflow_run.head_branch }}\",
+                \"head_commit\": {
+                  \"message\": \"${{ github.event.workflow_run.head_commit.message }}\"
                 },
-                "actor": {
-                  "login": "${{ github.event.workflow_run.head_repository.owner.login }}",
-                  "html_url": "${{ github.event.workflow_run.head_repository.owner.html_url }}"
+                \"actor\": {
+                  \"login\": \"${{ github.actor }}\",
+                  \"html_url\": \"https://github.com/${{ github.actor }}\"
                 },
-                "conclusion": "${{ github.event.workflow_run.conclusion }}",
-                "html_url": "${{ github.event.workflow_run.html_url }}",
-                "run_started_at": "${{ github.event.workflow_run.run_started_at }}",
-                "updated_at": "${{ github.event.workflow_run.updated_at }}"
+                \"conclusion\": \"${{ github.event.workflow_run.conclusion }}\",
+                \"html_url\": \"${{ github.event.workflow_run.html_url }}\",
+                \"run_started_at\": \"${{ github.event.workflow_run.run_started_at }}\",
+                \"updated_at\": \"${{ github.event.workflow_run.updated_at }}\"
               }
-            }'
+            }"
