@@ -32,6 +32,7 @@ const transactionSchema = z.object({
   type: z.enum([TransactionType.INCOME, TransactionType.EXPENSE]),
   description: z.string().min(1, "Descrição obrigatória").max(500),
   date: z.string().min(1, "Data obrigatória"),
+  dueDate: z.string().optional(),
   bankAccountId: z.string().min(1, "Conta bancária obrigatória"),
   categoryId: z.string().optional(),
   partnerId: z.string().optional(),
@@ -53,6 +54,7 @@ interface TransactionFormProps {
     type: TransactionType;
     description: string;
     date: Date;
+    dueDate: Date | null;
     bankAccountId: string;
     categoryId: string | null;
     partnerId: string | null;
@@ -103,6 +105,9 @@ export function TransactionForm({
       date: transaction?.date
         ? new Date(transaction.date).toISOString().split("T")[0]
         : new Date().toISOString().split("T")[0],
+      dueDate: transaction?.dueDate
+        ? new Date(transaction.dueDate).toISOString().split("T")[0]
+        : undefined,
       bankAccountId: transaction?.bankAccountId ?? "",
       categoryId: transaction?.categoryId ?? "",
       partnerId: transaction?.partnerId ?? "",
@@ -154,6 +159,7 @@ export function TransactionForm({
     const submitData = {
       ...data,
       date: new Date(data.date),
+      dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
       categoryId: data.categoryId || undefined,
       partnerId: data.partnerId || undefined,
     };
@@ -228,6 +234,14 @@ export function TransactionForm({
           <div className="space-y-2">
             <Label htmlFor="date">Data</Label>
             <Input id="date" type="date" {...form.register("date")} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="dueDate">Data de Vencimento (Agendamento)</Label>
+            <Input id="dueDate" type="date" {...form.register("dueDate")} />
+            <p className="text-[11px] text-muted-foreground">
+              Opcional — define quando a transação deve impactar o saldo.
+            </p>
           </div>
 
           <div className="space-y-2">

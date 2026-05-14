@@ -1,4 +1,11 @@
-import { Database, Handshake, LayoutDashboard, type LucideIcon, Receipt } from "lucide-react";
+import {
+  Database,
+  Handshake,
+  LayoutDashboard,
+  type LucideIcon,
+  Receipt,
+  TrendingUp,
+} from "lucide-react";
 
 export interface NavItem {
   title: string;
@@ -29,6 +36,11 @@ export const sidebarNavigation: NavSection[] = [
         title: "Extrato",
         href: "/dashboard/transactions",
         icon: Receipt,
+      },
+      {
+        title: "Previsão",
+        href: "/dashboard/cashflow-forecast",
+        icon: TrendingUp,
       },
       {
         title: "Data Sources",
