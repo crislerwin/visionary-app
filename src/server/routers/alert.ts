@@ -4,9 +4,6 @@ import { prisma } from "@/lib/db";
 import { startOfMonth, endOfMonth } from "date-fns";
 
 export const alertRouter = router({
-  // ====================
-  // ALERT RULES (CRUD)
-  // ====================
   listRules: tenantProcedure.query(async ({ ctx }) => {
     return prisma.alertRule.findMany({
       where: { tenantId: ctx.tenantId },
@@ -24,11 +21,20 @@ export const alertRouter = router({
         targetType: z.enum(["BANK_ACCOUNT", "PARTNER_INVOICE"]).optional(),
         targetId: z.string().optional(),
         priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).default("MEDIUM"),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       return prisma.alertRule.create({
-        data: { ...input, tenantId: ctx.tenantId },
+        data: {
+          name: input.name,
+          description: input.description,
+          condition: input.condition,
+          threshold: input.threshold,
+          targetType: input.targetType,
+          targetId: input.targetId,
+          priority: input.priority,
+          tenantId: ctx.tenantId,
+        },
       });
     }),
 
@@ -44,13 +50,22 @@ export const alertRouter = router({
         targetId: z.string().optional().nullable(),
         priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).optional(),
         isActive: z.boolean().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
       return prisma.alertRule.updateMany({
         where: { id, tenantId: ctx.tenantId },
-        data,
+        data: {
+          ...(data.name !== undefined && { name: data.name }),
+          ...(data.description !== undefined && { description: data.description }),
+          ...(data.condition !== undefined && { condition: data.condition }),
+          ...(data.threshold !== undefined && { threshold: data.threshold }),
+          ...(data.targetType !== undefined && { targetType: data.targetType }),
+          ...(data.targetId !== undefined && { targetId: data.targetId }),
+          ...(data.priority !== undefined && { priority: data.priority }),
+          ...(data.isActive !== undefined && { isActive: data.isActive }),
+        },
       });
     }),
 
@@ -63,22 +78,24 @@ export const alertRouter = router({
       return { success: true };
     }),
 
-  // ====================
-  // CHECK & GENERATE ALERTS
-  // ====================
   check: tenantProcedure.mutation(async ({ ctx }) => {
     const rules = await prisma.alertRule.findMany({
       where: { tenantId: ctx.tenantId, isActive: true },
     });
 
     const created: string[] = [];
+    const now = new Date();
+    const userId = ctx.session?.user?.id;
+
+    if (!userId) {
+      return { created };
+    }
 
     for (const rule of rules) {
-      // Find existing unread notification for this rule
       const existing = await prisma.notification.findFirst({
         where: { alertRuleId: rule.id, status: "UNREAD", tenantId: ctx.tenantId },
       });
-      if (existing) continue; // Don't spam
+      if (existing) continue;
 
       let shouldAlert = false;
       let title = "";
@@ -95,12 +112,11 @@ export const alertRouter = router({
             if (account && Number(account.currentBalance) < threshold) {
               shouldAlert = true;
               title = `Saldo Baixo: ${account.name}`;
-              message = `Saldo atual de ${account.currency} ${account.currentBalance} está abaixo do limite de ${threshold}.`;
+              message = "Saldo atual está abaixo do limite.";
               data.balance = Number(account.currentBalance);
               data.threshold = threshold;
             }
           } else {
-            // Check ALL accounts
             const accounts = await prisma.bankAccount.findMany({
               where: { tenantId: ctx.tenantId },
             });
@@ -108,8 +124,11 @@ export const alertRouter = router({
             if (low.length > 0) {
               shouldAlert = true;
               title = `${low.length} contas com saldo baixo`;
-              message = low.map((a) => `${a.name}: ${a.currency} ${a.currentBalance}`).join(", ");
-              data.accounts = low.map((a) => ({ name: a.name, balance: Number(a.currentBalance) }));
+              message = low.map((a) => `${a.name}: R$ ${Number(a.currentBalance).toFixed(2)}`).join(", ");
+              data.accounts = low.map((a) => ({
+                name: a.name,
+                balance: Number(a.currentBalance),
+              }));
               data.threshold = threshold;
             }
           }
@@ -117,7 +136,6 @@ export const alertRouter = router({
         }
 
         case "invoice_overdue": {
-          const now = new Date();
           const overdueInvoices = await prisma.partnerInvoice.findMany({
             where: {
               tenantId: ctx.tenantId,
@@ -130,12 +148,12 @@ export const alertRouter = router({
             shouldAlert = true;
             title = `${overdueInvoices.length} conta(s) a pagar vencida(s)`;
             message = overdueInvoices
-              .map((i) => `${i.partner.name}: ${i.amount} (venc. ${i.dueDate.toLocaleDateString("pt-BR")})`)
+              .map((i) => `${i.partner.name}: R$ ${Number(i.amount).toFixed(2)}`)
               .join("; ");
             data.invoices = overdueInvoices.map((i) => ({
               partner: i.partner.name,
               amount: Number(i.amount),
-              dueDate: i.dueDate,
+              dueDate: i.dueDate.toISOString(),
             }));
           }
           break;
@@ -143,18 +161,17 @@ export const alertRouter = router({
 
         case "revenue_target": {
           const threshold = Number(rule.threshold);
-          const monthStart = startOfMonth(new Date());
-          const monthEnd = endOfMonth(new Date());
+          const monthStart = startOfMonth(now);
+          const monthEnd = endOfMonth(now);
           const incomeAgg = await prisma.transaction.aggregate({
             _sum: { amount: true },
             where: {
-              tenantId: ctx.tenantId,
               type: "INCOME",
               status: "COMPLETED",
               date: { gte: monthStart, lte: monthEnd },
             },
           });
-          const revenue = Number(incomeAgg._sum.amount ?? 0);
+          const revenue = Number(incomeAgg._sum?.amount ?? 0);
           if (revenue < threshold) {
             shouldAlert = true;
             title = "Meta de receita não atingida";
@@ -173,8 +190,8 @@ export const alertRouter = router({
             title,
             message,
             status: "UNREAD",
-            data: data as Record<string, unknown>,
-            userId: ctx.session.user.id,
+            data: JSON.stringify(data),
+            userId,
             tenantId: ctx.tenantId,
           },
         });
@@ -185,9 +202,6 @@ export const alertRouter = router({
     return { created };
   }),
 
-  // ====================
-  // NOTIFICATIONS
-  // ====================
   listNotifications: tenantProcedure
     .input(
       z
@@ -195,7 +209,7 @@ export const alertRouter = router({
           status: z.enum(["UNREAD", "READ", "DISMISSED"]).optional(),
           limit: z.number().min(1).max(100).default(50),
         })
-        .optional()
+        .optional(),
     )
     .query(async ({ ctx, input }) => {
       const { status, limit = 50 } = input ?? {};

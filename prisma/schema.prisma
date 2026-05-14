@@ -416,7 +416,7 @@ model Notification {
   title       String
   message     String
   status      String            @default("UNREAD") // UNREAD, READ, DISMISSED
-  data        Json?             // snapshot data (balance, etc)
+  data        String?           // snapshot data (JSON serialized)
   userId      String            @map("user_id")
   tenantId    String            @map("tenant_id")
   createdAt   DateTime          @default(now()) @map("created_at")
