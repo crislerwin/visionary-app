@@ -132,7 +132,7 @@ export default function TransactionsPage() {
   const utils = api.useUtils();
 
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(15);
   const [filterType, setFilterType] = useState<"all" | "INCOME" | "EXPENSE">("all");
   const [filterStatus, setFilterStatus] = useState<"all" | "COMPLETED" | "PENDING" | "CANCELLED">(
     "all",
@@ -140,7 +140,7 @@ export default function TransactionsPage() {
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [formOpen, setFormOpen] = useState(false);
 
-  const { data: txData } = api.transaction.list.useQuery(
+  const { data: txData, isLoading: txLoading } = api.transaction.list.useQuery(
     {
       type: (filterType !== "all" ? filterType : undefined) as "INCOME" | "EXPENSE" | undefined,
       status: (filterStatus !== "all" ? filterStatus : undefined) as
@@ -202,52 +202,51 @@ export default function TransactionsPage() {
         </Button>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <Select value={filterType} onValueChange={(v) => setFilterType(v as typeof filterType)}>
-            <SelectTrigger className="h-7 w-32 text-[11px]">
-              <SelectValue placeholder="Tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="INCOME">Entrada</SelectItem>
-              <SelectItem value="EXPENSE">Saída</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select
-            value={filterStatus}
-            onValueChange={(v) => setFilterStatus(v as typeof filterStatus)}
-          >
-            <SelectTrigger className="h-7 w-32 text-[11px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="COMPLETED">Concluído</SelectItem>
-              <SelectItem value="PENDING">Pendente</SelectItem>
-              <SelectItem value="CANCELLED">Cancelado</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={filterCategory} onValueChange={(v) => setFilterCategory(v)}>
-            <SelectTrigger className="h-7 w-36 text-[11px]">
-              <SelectValue placeholder="Categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
-              {categories?.categories?.map((c: { id: string; name: string }) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Select value={filterType} onValueChange={(v) => setFilterType(v as typeof filterType)}>
+          <SelectTrigger className="h-7 w-32 text-[11px]">
+            <SelectValue placeholder="Tipo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="INCOME">Entrada</SelectItem>
+            <SelectItem value="EXPENSE">Saída</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
+          value={filterStatus}
+          onValueChange={(v) => setFilterStatus(v as typeof filterStatus)}
+        >
+          <SelectTrigger className="h-7 w-32 text-[11px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="COMPLETED">Concluído</SelectItem>
+            <SelectItem value="PENDING">Pendente</SelectItem>
+            <SelectItem value="CANCELLED">Cancelado</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filterCategory} onValueChange={(v) => setFilterCategory(v)}>
+          <SelectTrigger className="h-7 w-36 text-[11px]">
+            <SelectValue placeholder="Categoria" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas</SelectItem>
+            {categories?.categories?.map((c: { id: string; name: string }) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4">
+      <div>
         <DataTable
           columns={columns}
           data={rows}
+          loading={txLoading}
           manualPagination
           pageCount={Math.ceil(total / pageSize)}
           pagination={{ pageIndex: page - 1, pageSize }}
