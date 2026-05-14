@@ -5,9 +5,11 @@ import { initReactI18next } from "react-i18next";
 import enCommon from "../../public/locales/en/common.json";
 import enNavigation from "../../public/locales/en/navigation.json";
 import enDashboard from "../../public/locales/en/dashboard.json";
+import enSettings from "../../public/locales/en/settings.json";
 import ptCommon from "../../public/locales/pt/common.json";
 import ptNavigation from "../../public/locales/pt/navigation.json";
 import ptDashboard from "../../public/locales/pt/dashboard.json";
+import ptSettings from "../../public/locales/pt/settings.json";
 
 i18n
   .use(LanguageDetector)
@@ -15,17 +17,19 @@ i18n
   .init({
     fallbackLng: "pt",
     defaultNS: "common",
-    ns: ["common", "dashboard", "navigation"],
+    ns: ["common", "dashboard", "navigation", "settings"],
     resources: {
       en: {
         common: enCommon,
         navigation: enNavigation,
         dashboard: enDashboard,
+        settings: enSettings,
       },
       pt: {
         common: ptCommon,
         navigation: ptNavigation,
         dashboard: ptDashboard,
+        settings: ptSettings,
       },
     },
     detection: {
