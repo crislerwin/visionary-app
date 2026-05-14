@@ -40,6 +40,11 @@ export const sidebarNavigation: NavSection[] = [
         icon: Receipt,
       },
       {
+        titleKey: "cashflowForecast",
+        href: "/dashboard/cashflow-forecast",
+        icon: TrendingUp,
+      },
+      {
         titleKey: "dataSources",
         href: "/dashboard/data-sources",
         icon: Database,

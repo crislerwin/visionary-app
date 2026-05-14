@@ -246,6 +246,7 @@ model Transaction {
   categoryId    String?          @map("category_id")
   partnerId     String?          @map("partner_id")
   status        TransactionStatus @default(COMPLETED)
+  dueDate       DateTime?         @map("due_date")
   createdAt     DateTime         @default(now()) @map("created_at")
   updatedAt     DateTime         @updatedAt @map("updated_at")
 
@@ -258,6 +259,7 @@ model Transaction {
   @@index([partnerId])
   @@index([date])
   @@index([status])
+  @@index([dueDate])
   @@map("transactions")
 }
 

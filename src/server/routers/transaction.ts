@@ -18,6 +18,7 @@ const createTransactionSchema = z.object({
   type: z.enum([TransactionType.INCOME, TransactionType.EXPENSE]),
   description: z.string().min(1).max(500),
   date: z.coerce.date(),
+  dueDate: z.coerce.date().optional(),
   bankAccountId: z.string(),
   categoryId: z.string().optional(),
   partnerId: z.string().optional(),
@@ -32,6 +33,7 @@ const updateTransactionSchema = z.object({
   type: z.enum([TransactionType.INCOME, TransactionType.EXPENSE]).optional(),
   description: z.string().min(1).max(500).optional(),
   date: z.coerce.date().optional(),
+  dueDate: z.coerce.date().optional(),
   bankAccountId: z.string().optional(),
   categoryId: z.string().optional().nullable(),
   status: z
@@ -193,22 +195,25 @@ export const transactionRouter = router({
           type: input.type,
           description: input.description,
           date: input.date,
+          dueDate: input.dueDate,
           bankAccountId: input.bankAccountId,
           categoryId: input.categoryId,
           status: input.status,
         },
       });
 
-      // Update bank account balance
-      const amountDelta = input.type === TransactionType.INCOME ? input.amount : -input.amount;
-      await tx.bankAccount.update({
-        where: { id: input.bankAccountId },
-        data: {
-          currentBalance: {
-            increment: amountDelta,
+      // Update bank account balance only for COMPLETED transactions
+      if (input.status === TransactionStatus.COMPLETED) {
+        const amountDelta = input.type === TransactionType.INCOME ? input.amount : -input.amount;
+        await tx.bankAccount.update({
+          where: { id: input.bankAccountId },
+          data: {
+            currentBalance: {
+              increment: amountDelta,
+            },
           },
-        },
-      });
+        });
+      }
 
       // US06: Auto-generate PartnerInvoice on INCOME transactions with partner
       if (input.partnerId && input.type === TransactionType.INCOME) {
@@ -305,20 +310,23 @@ export const transactionRouter = router({
         },
       });
 
-      // Apply new transaction values
+      // Apply new transaction values — only adjust balance for COMPLETED
       const newType = input.type ?? existingTransaction.type;
       const newAmount = input.amount ?? Number(existingTransaction.amount);
       const newBankAccountId = input.bankAccountId ?? existingTransaction.bankAccountId;
+      const newStatus = input.status ?? existingTransaction.status;
 
-      const newAmountDelta = newType === TransactionType.INCOME ? newAmount : -newAmount;
-      await tx.bankAccount.update({
-        where: { id: newBankAccountId },
-        data: {
-          currentBalance: {
-            increment: newAmountDelta,
+      if (newStatus === TransactionStatus.COMPLETED) {
+        const newAmountDelta = newType === TransactionType.INCOME ? newAmount : -newAmount;
+        await tx.bankAccount.update({
+          where: { id: newBankAccountId },
+          data: {
+            currentBalance: {
+              increment: newAmountDelta,
+            },
           },
-        },
-      });
+        });
+      }
 
       const updatedTransaction = await tx.transaction.update({
         where: { id: input.id },
@@ -327,6 +335,7 @@ export const transactionRouter = router({
           ...(input.type !== undefined && { type: input.type }),
           ...(input.description !== undefined && { description: input.description }),
           ...(input.date !== undefined && { date: input.date }),
+          ...(input.dueDate !== undefined && { dueDate: input.dueDate }),
           ...(input.bankAccountId !== undefined && { bankAccountId: input.bankAccountId }),
           ...(input.categoryId !== undefined && { categoryId: input.categoryId }),
           ...(input.status !== undefined && { status: input.status }),
@@ -542,6 +551,158 @@ export const transactionRouter = router({
       return {
         balanceSeries,
         compareSeries,
+      };
+    }),
+
+  // US04: Projeção de caixa futura — saldo projetado incluindo transações PENDING
+  projection: tenantProcedure
+    .input(
+      z.object({
+        months: z.number().min(1).max(24).default(6),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const today = new Date();
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + input.months);
+
+      // Saldo atual (só transações COMPLETED)
+      const bankAgg = await prisma.bankAccount.aggregate({
+        where: { tenantId: ctx.tenantId },
+        _sum: { currentBalance: true },
+      });
+      const currentBalance = Number(bankAgg._sum.currentBalance ?? 0);
+
+      // Busca todas as transações PENDING com dueDate no período de projeção
+      const pendingTransactions = await prisma.transaction.findMany({
+        where: {
+          bankAccount: { tenantId: ctx.tenantId },
+          status: TransactionStatus.PENDING,
+          dueDate: {
+            gte: today,
+            lte: endDate,
+          },
+        },
+        select: {
+          amount: true,
+          type: true,
+          dueDate: true,
+          description: true,
+        },
+        orderBy: { dueDate: "asc" },
+      });
+
+      // Agrupar por mês
+      const monthMap = new Map<
+        string,
+        {
+          income: number;
+          expense: number;
+          items: { description: string; amount: number; type: string }[];
+        }
+      >();
+
+      const monthsRange = eachMonthOfInterval({
+        start: startOfMonth(today),
+        end: startOfMonth(endDate),
+      });
+
+      for (const m of monthsRange) {
+        const key = format(m, "yyyy-MM");
+        monthMap.set(key, { income: 0, expense: 0, items: [] });
+      }
+
+      for (const t of pendingTransactions) {
+        if (!t.dueDate) continue;
+        const key = format(startOfMonth(t.dueDate), "yyyy-MM");
+        const bucket = monthMap.get(key);
+        if (bucket) {
+          const amount = Number(t.amount);
+          if (t.type === TransactionType.INCOME) {
+            bucket.income += amount;
+          } else {
+            bucket.expense += amount;
+          }
+          bucket.items.push({
+            description: t.description || "",
+            amount,
+            type: t.type,
+          });
+        }
+      }
+
+      // Construir série projetada
+      const sortedKeys = Array.from(monthMap.keys()).sort();
+      let projectedBalance = currentBalance;
+      const series = sortedKeys.map((key) => {
+        const m = monthMap.get(key)!;
+        projectedBalance += m.income - m.expense;
+        return {
+          month: format(parseISO(`${key}-01`), "MMM", { locale: ptBR }),
+          saldo: Math.round(projectedBalance),
+          receitas: Math.round(m.income),
+          despesas: Math.round(m.expense),
+          items: m.items,
+        };
+      });
+
+      return {
+        currentBalance: Math.round(currentBalance),
+        projectedEndBalance: Math.round(projectedBalance),
+        series,
+        pendingCount: pendingTransactions.length,
+      };
+    }),
+
+  // US04: Forecast — transações futuras pendentes listadas
+  forecast: tenantProcedure
+    .input(
+      z.object({
+        startDate: z.coerce.date().optional(),
+        endDate: z.coerce.date().optional(),
+        limit: z.number().min(1).max(100).default(50),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const startDate = input.startDate ?? new Date();
+      const endDate =
+        input.endDate ??
+        (() => {
+          const d = new Date();
+          d.setMonth(d.getMonth() + 3);
+          return d;
+        })();
+
+      const transactions = await prisma.transaction.findMany({
+        where: {
+          bankAccount: { tenantId: ctx.tenantId },
+          status: TransactionStatus.PENDING,
+          dueDate: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        include: {
+          bankAccount: { select: { id: true, name: true } },
+          category: { select: { id: true, name: true, color: true } },
+        },
+        orderBy: { dueDate: "asc" },
+        take: input.limit,
+      });
+
+      const totalIncome = transactions
+        .filter((t) => t.type === TransactionType.INCOME)
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      const totalExpense = transactions
+        .filter((t) => t.type === TransactionType.EXPENSE)
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      return {
+        transactions,
+        totalIncome: Math.round(totalIncome),
+        totalExpense: Math.round(totalExpense),
+        netChange: Math.round(totalIncome - totalExpense),
       };
     }),
 });

@@ -105,6 +105,28 @@
     "cancelledStatus": "Canceladas",
     "recordsFound": "registro(s) encontrado(s)"
   },
+  "cashflowForecast": {
+    "title": "Previsão de Caixa",
+    "description": "Projeção de saldo com transações agendadas",
+    "currentBalance": "Saldo Atual",
+    "projectedBalance": "Saldo Projetado",
+    "pendingTransactions": "Transações Pendentes",
+    "monthlyProjection": "Projeção Mensal",
+    "scheduledTransactions": "Transações Agendadas",
+    "income": "Receitas",
+    "expense": "Despesas",
+    "netChange": "Saldo",
+    "noScheduled": "Nenhuma transação agendada para o período.",
+    "noScheduledHint": "Crie transações com status \"Pendente\" e uma data de vencimento para aparecerem aqui.",
+    "table": {
+      "dueDate": "Vencimento",
+      "type": "Tipo",
+      "description": "Descrição",
+      "amount": "Valor",
+      "bankAccount": "Conta",
+      "category": "Categoria"
+    }
+  },
   "partnerPerformance": {
     "title": "Rentabilidade por Parceiro",
     "description": "Análise de desempenho financeiro dos parceiros",
