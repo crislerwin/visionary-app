@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { api } from "@/lib/api";
+import { api } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,6 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertTriangle, Bell, Clock, Pencil, Plus, RefreshCw, Trash2, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
 const CONDITIONS = [
   { value: "balance_below" as const, label: "Saldo abaixo de", icon: AlertTriangle },
@@ -53,9 +52,9 @@ export default function AlertsPage() {
       utils.alert.listRules.invalidate();
       setOpen(false);
       resetForm();
-      toast.success("Regra criada com sucesso!");
+      console.info("Regra criada com sucesso!");
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => console.error(err.message),
   });
 
   const updateRule = api.alert.updateRule.useMutation({
@@ -64,26 +63,26 @@ export default function AlertsPage() {
       setOpen(false);
       setEditing(null);
       resetForm();
-      toast.success("Regra atualizada!");
+      console.info("Regra atualizada!");
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => console.error(err.message),
   });
 
   const deleteRule = api.alert.deleteRule.useMutation({
     onSuccess: () => {
       utils.alert.listRules.invalidate();
-      toast.success("Regra removida!");
+      console.info("Regra removida!");
     },
   });
 
   const checkAlerts = api.alert.check.useMutation({
     onSuccess: (res) => {
       if (res.created.length > 0) {
-        toast.success(`${res.created.length} alerta(s) gerado(s)!`);
+        console.info(`${res.created.length} alerta(s) gerado(s)!`);
         utils.alert.listNotifications.invalidate();
         utils.alert.unreadCount.invalidate();
       } else {
-        toast.info("Nenhum alerta no momento.");
+        console.info("Nenhum alerta no momento.");
       }
     },
   });

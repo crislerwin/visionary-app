@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Bell, Check, X, AlertTriangle, Info, Clock } from "lucide-react";
-import { api } from "@/lib/api";
+import { api } from "@/lib/trpc/react";
 import { cn } from "@/lib/utils";
 import {
   Popover,

@@ -24,18 +24,18 @@ export const alertRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      return prisma.alertRule.create({
-        data: {
-          name: input.name,
-          description: input.description,
-          condition: input.condition,
-          threshold: input.threshold,
-          targetType: input.targetType,
-          targetId: input.targetId,
-          priority: input.priority,
-          tenantId: ctx.tenantId,
-        },
-      });
+        return prisma.alertRule.create({
+          data: {
+            name: input.name,
+            description: input.description,
+            condition: input.condition,
+            threshold: input.threshold,
+            ...(input.targetType && { targetType: input.targetType }),
+            ...(input.targetId && { targetId: input.targetId }),
+            priority: input.priority,
+            tenantId: ctx.tenantId,
+          },
+        });
     }),
 
   updateRule: tenantProcedure

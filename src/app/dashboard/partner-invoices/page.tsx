@@ -262,7 +262,7 @@ export default function PartnerInvoicesPage() {
       <div className="flex items-center gap-3 mb-4">
         <Select
           value={statusFilter || "all"}
-          onValueChange={(value) => setStatusFilter(value === "all" ? undefined : value)}
+          onValueChange={(value) => setStatusFilter(value === "all" ? undefined : value as "PENDING" | "PAID" | "OVERDUE")}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filtrar por status" />

@@ -394,7 +394,7 @@ model AlertRule {
   description String?
   condition   String   // "balance_below", "invoice_overdue", "revenue_target"
   threshold   Decimal  @default(0)
-  targetType  String   @map("target_type") // "BANK_ACCOUNT", "PARTNER_INVOICE"
+  targetType  String?  @map("target_type") // "BANK_ACCOUNT", "PARTNER_INVOICE"
   targetId    String?  @map("target_id")
   priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
   isActive    Boolean  @default(true) @map("is_active")
