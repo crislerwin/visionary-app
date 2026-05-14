@@ -1,6 +1,14 @@
 "use client";
 
-import { ArrowRightLeft, CreditCard, Edit2, Landmark, Link2, PiggyBank, Trash2 } from "lucide-react";
+import {
+  ArrowRightLeft,
+  CreditCard,
+  Edit2,
+  Landmark,
+  Link2,
+  PiggyBank,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";

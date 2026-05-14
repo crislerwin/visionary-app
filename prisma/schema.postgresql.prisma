@@ -91,8 +91,6 @@ model Tenant {
   categories        Category[]
   pluggyConnections PluggyConnection[]
   dataSources       DataSource[]
-  agentConfig       AgentConfig?
-  agentLogs         AgentInteractionLog[]
   partners          Partner[]
   partnerInvoices   PartnerInvoice[]
 
@@ -308,82 +306,6 @@ model WebhookCall {
 
   @@index([sourceId])
   @@map("webhook_calls")
-}
-
-// ====================
-// AI AGENT MODELS
-// ====================
-
-enum AgentTone {
-  FRIENDLY
-  PROFESSIONAL
-  CASUAL
-  FORMAL
-
-  @@map("agent_tones")
-}
-
-enum AgentInteractionStatus {
-  SUCCESS
-  ERROR
-  PENDING
-
-  @@map("agent_interaction_statuses")
-}
-
-enum AgentInteractionType {
-  ORDER_CREATE
-  ORDER_LIST
-  CONFIG_GET
-  CONFIG_UPDATE
-  UNKNOWN
-
-  @@map("agent_interaction_types")
-}
-
-model AgentConfig {
-  id              String    @id @default(cuid())
-  tenantId        String    @unique @map("tenant_id")
-  promptSystem    String    @db.Text @map("prompt_system")
-  welcomeMessage  String?   @db.Text @map("welcome_message")
-  tone            AgentTone @default(CASUAL)
-  autoConfirm     Boolean   @default(false) @map("auto_confirm")
-  workingHours    Json?     @map("working_hours")
-  webhookSecret   String?   @map("webhook_secret")
-  isActive        Boolean   @default(true) @map("is_active")
-  agentName       String?   @default("Sofia") @map("agent_name")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  logs   AgentInteractionLog[]
-
-  @@index([tenantId])
-  @@index([isActive])
-  @@map("agent_configs")
-}
-
-model AgentInteractionLog {
-  id              String               @id @default(cuid())
-  tenantId        String               @map("tenant_id")
-  agentConfigId   String               @map("agent_config_id")
-  type            AgentInteractionType @default(UNKNOWN) @map("type")
-  status          AgentInteractionStatus @default(PENDING) @map("status")
-  customerPhone   String?              @map("customer_phone")
-  input           Json?                @map("input")
-  output          Json?                @map("output")
-  error           String?              @db.Text @map("error")
-  durationMs      Int?                 @map("duration_ms")
-  ipAddress       String?              @map("ip_address")
-  createdAt       DateTime             @default(now()) @map("created_at")
-
-  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  agentConfig AgentConfig @relation(fields: [agentConfigId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([agentConfigId])
-  @@index([createdAt])
-  @@map("agent_interaction_logs")
 }
 
 // ====================
