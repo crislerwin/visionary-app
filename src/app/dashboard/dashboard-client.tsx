@@ -82,7 +82,10 @@ function useDashboardFilters() {
 
   const clear = () => setFilters({ bankAccountIds: [], partnerIds: [], categoryIds: [] });
 
-  const hasAny = filters.bankAccountIds.length > 0 || filters.partnerIds.length > 0 || filters.categoryIds.length > 0;
+  const hasAny =
+    filters.bankAccountIds.length > 0 ||
+    filters.partnerIds.length > 0 ||
+    filters.categoryIds.length > 0;
 
   return { filters, toggle, clear, hasAny };
 }
@@ -120,10 +123,10 @@ export function DashboardClient() {
   );
 
   // Balance: filtered by bank accounts if selected, otherwise global
-  const { data: filteredBalance, isLoading: balanceLoading } = api.bankAccount.getTotalBalance.useQuery(
-    undefined,
-    { enabled: tenantReady && filters.bankAccountIds.length === 0 },
-  );
+  const { data: filteredBalance, isLoading: balanceLoading } =
+    api.bankAccount.getTotalBalance.useQuery(undefined, {
+      enabled: tenantReady && filters.bankAccountIds.length === 0,
+    });
 
   const { data: accountBalances, isLoading: accountBalanceLoading } = api.bankAccount.list.useQuery(
     undefined,
@@ -131,7 +134,9 @@ export function DashboardClient() {
   );
 
   // Partner invoice summary
-  const { data: payablesSummary } = api.partnerInvoice.summary.useQuery(undefined, { enabled: tenantReady });
+  const { data: payablesSummary } = api.partnerInvoice.summary.useQuery(undefined, {
+    enabled: tenantReady,
+  });
 
   // Top partner (use performance with period filter)
   const { data: partnerPerf } = api.partner.performance.useQuery(
@@ -171,10 +176,18 @@ export function DashboardClient() {
     const totalLucro = totalReceitas - totalDespesas;
 
     const mid = Math.floor(compareSeries.length / 2);
-    const firstHalfReceitas = compareSeries.slice(0, mid).reduce((sum, m) => sum + (m.receitas ?? 0), 0);
-    const secondHalfReceitas = compareSeries.slice(mid).reduce((sum, m) => sum + (m.receitas ?? 0), 0);
-    const firstHalfDespesas = compareSeries.slice(0, mid).reduce((sum, m) => sum + (m.despesas ?? 0), 0);
-    const secondHalfDespesas = compareSeries.slice(mid).reduce((sum, m) => sum + (m.despesas ?? 0), 0);
+    const firstHalfReceitas = compareSeries
+      .slice(0, mid)
+      .reduce((sum, m) => sum + (m.receitas ?? 0), 0);
+    const secondHalfReceitas = compareSeries
+      .slice(mid)
+      .reduce((sum, m) => sum + (m.receitas ?? 0), 0);
+    const firstHalfDespesas = compareSeries
+      .slice(0, mid)
+      .reduce((sum, m) => sum + (m.despesas ?? 0), 0);
+    const secondHalfDespesas = compareSeries
+      .slice(mid)
+      .reduce((sum, m) => sum + (m.despesas ?? 0), 0);
 
     const firstHalfSaldo = balanceSeries[0]?.saldo ?? 0;
     const lastHalfSaldo = balanceSeries[balanceSeries.length - 1]?.saldo ?? 0;
@@ -294,7 +307,10 @@ export function DashboardClient() {
             return (
               <Badge key={id} variant="secondary" className="gap-1 px-2 py-0.5 text-[11px]">
                 {name}
-                <button onClick={() => toggle("bankAccountIds", id)} className="hover:text-destructive">
+                <button
+                  onClick={() => toggle("bankAccountIds", id)}
+                  className="hover:text-destructive"
+                >
                   <X className="h-3 w-3" />
                 </button>
               </Badge>
@@ -316,7 +332,10 @@ export function DashboardClient() {
             return (
               <Badge key={id} variant="secondary" className="gap-1 px-2 py-0.5 text-[11px]">
                 {name}
-                <button onClick={() => toggle("categoryIds", id)} className="hover:text-destructive">
+                <button
+                  onClick={() => toggle("categoryIds", id)}
+                  className="hover:text-destructive"
+                >
                   <X className="h-3 w-3" />
                 </button>
               </Badge>
@@ -356,7 +375,9 @@ export function DashboardClient() {
         <Card className="cursor-pointer py-2 transition-colors hover:bg-accent/50">
           <Link href="/dashboard/partner-invoices?status=PENDING" className="block">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 pb-0.5 pt-0">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{t("pendingPayables")}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {t("pendingPayables")}
+              </CardTitle>
               <div className="flex h-7 w-7 items-center justify-center rounded-md bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300">
                 <HandCoins className="h-4 w-4" />
               </div>
@@ -378,7 +399,9 @@ export function DashboardClient() {
           {topPartner ? (
             <Link href={`/dashboard/partners/performance?id=${topPartner.id}`} className="block">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 pb-0.5 pt-0">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{t("topPartner")}</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {t("topPartner")}
+                </CardTitle>
                 <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
                   <UserCheck className="h-4 w-4" />
                 </div>
@@ -388,10 +411,12 @@ export function DashboardClient() {
                   {topPartner.name}
                 </div>
                 <div className="mt-0.5 flex items-center gap-1 text-xs">
-                  <span className={cn(
-                    "font-medium",
-                    topPartner.netProfit >= 0 ? "text-emerald-600" : "text-rose-600"
-                  )}>
+                  <span
+                    className={cn(
+                      "font-medium",
+                      topPartner.netProfit >= 0 ? "text-emerald-600" : "text-rose-600",
+                    )}
+                  >
                     {currency(topPartner.netProfit)}
                   </span>
                   <span className="text-muted-foreground">lucro</span>
@@ -501,7 +526,11 @@ function FilterPopover({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className={cn("h-8 gap-1 text-[11px]", selected.length > 0 && "border-primary")}>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn("h-8 gap-1 text-[11px]", selected.length > 0 && "border-primary")}
+        >
           <Filter className="h-3 w-3" />
           {selected.length > 0 ? `${label} (${selected.length})` : label}
         </Button>
@@ -677,14 +706,18 @@ function TransactionsTable({
         <CardContent className="min-w-0 px-4 pb-3 pt-0">
           <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <h3 className="text-base font-semibold tracking-tight">{t("table.latestTransactions")}</h3>
+              <h3 className="text-base font-semibold tracking-tight">
+                {t("table.latestTransactions")}
+              </h3>
               <p className="text-sm text-muted-foreground">{t("table.recentPeriod")}</p>
             </div>
             {/* Inline table filters */}
             <div className="flex flex-wrap gap-1.5">
               <select
                 value={typeFilter ?? ""}
-                onChange={(e) => setTypeFilter(e.target.value ? (e.target.value as TransactionType) : undefined)}
+                onChange={(e) =>
+                  setTypeFilter(e.target.value ? (e.target.value as TransactionType) : undefined)
+                }
                 className="h-7 rounded border bg-background px-2 text-[11px]"
               >
                 <option value="">{t("table.allTypes")}</option>
@@ -693,7 +726,11 @@ function TransactionsTable({
               </select>
               <select
                 value={statusFilter ?? ""}
-                onChange={(e) => setStatusFilter(e.target.value ? (e.target.value as TransactionStatus) : undefined)}
+                onChange={(e) =>
+                  setStatusFilter(
+                    e.target.value ? (e.target.value as TransactionStatus) : undefined,
+                  )
+                }
                 className="h-7 rounded border bg-background px-2 text-[11px]"
               >
                 <option value="">{t("table.status")}</option>

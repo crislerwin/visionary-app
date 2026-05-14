@@ -92,6 +92,7 @@ function PartnerInvoicesPageContent() {
 
   const columns: ColumnDef<PartnerInvoiceRow>[] = [
     {
+      id: "partner",
       accessorKey: "partner.name",
       header: t("name"),
       cell: ({ row }) => (
@@ -284,7 +285,7 @@ function PartnerInvoicesPageContent() {
       <DataTable
         columns={columns}
         data={invoices}
-        searchKey="partner.name"
+        searchKey="partner"
         searchPlaceholder={`${t("search")}...`}
         title={t("partnerInvoices.title")}
         description={`${total} ${t("partnerInvoices.recordsFound")}`}
