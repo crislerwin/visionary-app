@@ -38,9 +38,9 @@ export default function PartnerPerformancePage() {
 
   if (tenantLoading || isLoading) {
     return (
-      <div className="container mx-auto p-6">
-        <Skeleton className="h-8 w-64 mb-4" />
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="space-y-3">
+        <Skeleton className="h-8 w-64" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className="h-28" />
           ))}
@@ -53,9 +53,8 @@ export default function PartnerPerformancePage() {
   const summary = data?.summary;
 
   return (
-    <div className="container mx-auto p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-3">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Link href="/dashboard/partners">
@@ -65,15 +64,15 @@ export default function PartnerPerformancePage() {
               </Button>
             </Link>
           </div>
-          <h1 className="text-2xl font-bold">Rentabilidade por Parceiro</h1>
-          <p className="text-muted-foreground text-sm">
+          <h1 className="text-xl font-bold tracking-tight">Rentabilidade por Parceiro</h1>
+          <p className="text-sm text-muted-foreground">
             Análise de desempenho financeiro dos parceiros
           </p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-6">
+      <div className="flex flex-wrap gap-3">
         <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="Período" />
@@ -99,7 +98,7 @@ export default function PartnerPerformancePage() {
 
       {/* Summary Cards */}
       {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">

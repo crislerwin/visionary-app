@@ -154,11 +154,11 @@ export default function AlertsPage() {
   const showThreshold = form.condition === "balance_below" || form.condition === "revenue_target";
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-3">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Configurar Alertas</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl font-bold tracking-tight">Configurar Alertas</h1>
+          <p className="text-sm text-muted-foreground">
             Defina regras para receber notificações importantes
           </p>
         </div>

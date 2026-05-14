@@ -70,8 +70,8 @@ export default function PartnersPage() {
 
   if (tenantLoading || isLoading) {
     return (
-      <div className="container mx-auto p-6">
-        <Skeleton className="h-8 w-48 mb-4" />
+      <div className="space-y-3">
+        <Skeleton className="h-8 w-48" />
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-24 w-full" />
@@ -82,11 +82,11 @@ export default function PartnersPage() {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-3">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Parceiros</h1>
-          <p className="text-muted-foreground text-sm">
+          <h1 className="text-xl font-bold tracking-tight">Parceiros</h1>
+          <p className="text-sm text-muted-foreground">
             Gerencie fornecedores, afiliados e outros parceiros de negócio
           </p>
         </div>
@@ -102,7 +102,7 @@ export default function PartnersPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-6">
+      <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input

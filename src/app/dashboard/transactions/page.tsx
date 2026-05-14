@@ -15,7 +15,7 @@ import { api } from "@/lib/trpc/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowDownLeft, ArrowUpRight, Plus, Receipt } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { TransactionForm } from "../../../components/transactions/TransactionForm";
 
@@ -188,19 +188,19 @@ export default function TransactionsPage() {
   void handleDelete;
 
   return (
-    <div className="min-h-[calc(100vh-4rem)]">
-      <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
-        <div className="mx-auto flex h-12 max-w-7xl items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <Receipt className="h-4 w-4 text-muted-foreground" />
-            <h1 className="text-[13px] font-semibold">Extrato</h1>
-          </div>
-          <Button size="sm" className="h-7 gap-1 text-[11px]" onClick={() => setFormOpen(true)}>
-            <Plus className="h-3.5 w-3.5" />
-            Nova
-          </Button>
+    <div className="space-y-3">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">Extrato</h1>
+          <p className="text-sm text-muted-foreground">
+            Visualize e gerencie suas transações financeiras
+          </p>
         </div>
-      </header>
+        <Button size="sm" className="h-7 gap-1 text-[11px]" onClick={() => setFormOpen(true)}>
+          <Plus className="h-3.5 w-3.5" />
+          Nova
+        </Button>
+      </div>
 
       <div className="mx-auto max-w-7xl px-4 py-3">
         <div className="flex flex-wrap items-center gap-2">

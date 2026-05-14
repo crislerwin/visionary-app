@@ -107,6 +107,18 @@ export const pluggyRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const tenantExists = await prisma.tenant.findUnique({
+        where: { id: ctx.tenantId },
+        select: { id: true },
+      });
+
+      if (!tenantExists) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Selected tenant no longer exists. Please refresh and select a valid tenant.",
+        });
+      }
+
       const connection = await prisma.pluggyConnection.upsert({
         where: {
           itemId_tenantId: {
