@@ -26,12 +26,20 @@ interface TransactionRow {
   description: string;
   amount: number;
   status: "COMPLETED" | "PENDING" | "CANCELLED";
-  bankAccount: { id: string; name: string; bankName: string | null; currency: string };
+  bankAccount: {
+    id: string;
+    name: string;
+    bankName: string | null;
+    currency: string;
+  };
   category: { id: string; name: string; color: string; icon: string } | null;
 }
 
 function fmtCurrency(value: number, currency = "BRL") {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency,
+  }).format(value);
 }
 
 const columns: ColumnDef<TransactionRow>[] = [
@@ -40,7 +48,9 @@ const columns: ColumnDef<TransactionRow>[] = [
     header: "Data",
     cell: ({ row }) => (
       <span className="text-[11px] tabular-nums">
-        {format(new Date(row.original.date), "dd/MM/yyyy", { locale: ptBR })}
+        {format(new Date(row.original.date), "dd/MM/yyyy", {
+          locale: ptBR,
+        })}
       </span>
     ),
   },
@@ -123,16 +133,22 @@ export default function TransactionsPage() {
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
-  const [filterType, setFilterType] = useState<"" | "INCOME" | "EXPENSE">("");
-  const [filterStatus, setFilterStatus] = useState<"" | "COMPLETED" | "PENDING" | "CANCELLED">("");
-  const [filterCategory, setFilterCategory] = useState<string>("");
+  const [filterType, setFilterType] = useState<"all" | "INCOME" | "EXPENSE">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "COMPLETED" | "PENDING" | "CANCELLED">(
+    "all",
+  );
+  const [filterCategory, setFilterCategory] = useState<string>("all");
   const [formOpen, setFormOpen] = useState(false);
 
   const { data: txData } = api.transaction.list.useQuery(
     {
-      type: (filterType || undefined) as "INCOME" | "EXPENSE" | undefined,
-      status: (filterStatus || undefined) as "COMPLETED" | "PENDING" | "CANCELLED" | undefined,
-      categoryId: filterCategory || undefined,
+      type: (filterType !== "all" ? filterType : undefined) as "INCOME" | "EXPENSE" | undefined,
+      status: (filterStatus !== "all" ? filterStatus : undefined) as
+        | "COMPLETED"
+        | "PENDING"
+        | "CANCELLED"
+        | undefined,
+      categoryId: filterCategory !== "all" ? filterCategory : undefined,
       page,
       pageSize,
     },
@@ -193,7 +209,7 @@ export default function TransactionsPage() {
               <SelectValue placeholder="Tipo" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="INCOME">Entrada</SelectItem>
               <SelectItem value="EXPENSE">Saída</SelectItem>
             </SelectContent>
@@ -206,7 +222,7 @@ export default function TransactionsPage() {
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="COMPLETED">Concluído</SelectItem>
               <SelectItem value="PENDING">Pendente</SelectItem>
               <SelectItem value="CANCELLED">Cancelado</SelectItem>
@@ -217,7 +233,7 @@ export default function TransactionsPage() {
               <SelectValue placeholder="Categoria" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas</SelectItem>
+              <SelectItem value="all">Todas</SelectItem>
               {categories?.categories?.map((c: { id: string; name: string }) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.name}
