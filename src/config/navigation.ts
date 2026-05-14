@@ -1,14 +1,14 @@
-import { Database, Handshake, LayoutDashboard, type LucideIcon, Receipt } from "lucide-react";
+import { Database, Handshake, LayoutDashboard, type LucideIcon, Receipt, Bell, CreditCard, TrendingUp } from "lucide-react";
 
 export interface NavItem {
-  title: string;
+  titleKey: string;
   href: string;
   icon: LucideIcon;
   disabled?: boolean;
 }
 
 export interface NavSection {
-  title?: string;
+  titleKey?: string;
   items: NavItem[];
 }
 
@@ -16,34 +16,49 @@ export const sidebarNavigation: NavSection[] = [
   {
     items: [
       {
-        title: "Dashboard",
+        titleKey: "dashboard",
         href: "/dashboard",
         icon: LayoutDashboard,
       },
     ],
   },
   {
-    title: "Finance",
+    titleKey: "finance",
     items: [
       {
-        title: "Extrato",
+        titleKey: "extract",
         href: "/dashboard/transactions",
         icon: Receipt,
       },
       {
-        title: "Data Sources",
+        titleKey: "dataSources",
         href: "/dashboard/data-sources",
         icon: Database,
+      },
+      {
+        titleKey: "alerts",
+        href: "/dashboard/alerts",
+        icon: Bell,
+      },
+      {
+        titleKey: "partnerInvoices",
+        href: "/dashboard/partner-invoices",
+        icon: CreditCard,
       },
     ],
   },
   {
-    title: "Relacionamento",
+    titleKey: "relationship",
     items: [
       {
-        title: "Parceiros",
+        titleKey: "partners",
         href: "/dashboard/partners",
         icon: Handshake,
+      },
+      {
+        titleKey: "partnerPerformance",
+        href: "/dashboard/partners/performance",
+        icon: TrendingUp,
       },
     ],
   },

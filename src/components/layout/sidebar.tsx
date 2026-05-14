@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { TenantSwitcher } from "./tenant-switcher";
 
 interface SidebarProps {
@@ -22,18 +23,20 @@ function SidebarNavSection({
   collapsed: boolean;
 }) {
   const pathname = usePathname();
+  const { t } = useTranslation("navigation");
 
   return (
     <div className="px-3 py-2">
-      {section.title && !collapsed && (
-        <h3 className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          {section.title}
+      {section.titleKey && !collapsed && (
+        <h3 suppressHydrationWarning className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          {t(section.titleKey)}
         </h3>
       )}
       <div className="space-y-1">
         {section.items.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+          const title = t(item.titleKey);
 
           return (
             <Link
@@ -46,10 +49,10 @@ function SidebarNavSection({
                 item.disabled && "pointer-events-none opacity-50",
                 collapsed && "justify-center",
               )}
-              title={collapsed ? item.title : undefined}
+              title={collapsed ? title : undefined}
             >
               <Icon className="h-5 w-5 shrink-0" />
-              {!collapsed && <span suppressHydrationWarning>{item.title}</span>}
+              {!collapsed && <span suppressHydrationWarning>{title}</span>}
             </Link>
           );
         })}
@@ -102,7 +105,7 @@ export function Sidebar({ collapsed, setCollapsed, className }: SidebarProps) {
       <div className="flex-1 overflow-y-auto py-4">
         {sidebarNavigation.map((section) => (
           <SidebarNavSection
-            key={section.title || section.items[0]?.href}
+            key={section.titleKey || section.items[0]?.href}
             section={section}
             collapsed={collapsed}
           />
