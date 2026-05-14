@@ -105,6 +105,28 @@
     "cancelledStatus": "Cancelled",
     "recordsFound": "record(s) found"
   },
+  "cashflowForecast": {
+    "title": "Cash Flow Forecast",
+    "description": "Projection of balance with scheduled transactions",
+    "currentBalance": "Current Balance",
+    "projectedBalance": "Projected Balance",
+    "pendingTransactions": "Pending Transactions",
+    "monthlyProjection": "Monthly Projection",
+    "scheduledTransactions": "Scheduled Transactions",
+    "income": "Income",
+    "expense": "Expense",
+    "netChange": "Net Change",
+    "noScheduled": "No scheduled transactions for the period.",
+    "noScheduledHint": "Create transactions with \"Pending\" status and a due date to appear here.",
+    "table": {
+      "dueDate": "Due Date",
+      "type": "Type",
+      "description": "Description",
+      "amount": "Amount",
+      "bankAccount": "Account",
+      "category": "Category"
+    }
+  },
   "partnerPerformance": {
     "title": "Partner Profitability",
     "description": "Financial performance analysis of partners",

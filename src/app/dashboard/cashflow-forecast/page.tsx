@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ArrowDownLeft, ArrowUpRight, CalendarDays, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface ForecastRow {
   id: string;
@@ -33,81 +34,88 @@ function fmtCurrency(value: number) {
   }).format(value);
 }
 
-const forecastColumns: ColumnDef<ForecastRow>[] = [
-  {
-    accessorKey: "dueDate",
-    header: "Vencimento",
-    cell: ({ row }) => (
-      <span className="text-[11px] tabular-nums">
-        {format(new Date(row.original.dueDate), "dd/MM/yyyy", { locale: ptBR })}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "type",
-    header: "Tipo",
-    cell: ({ row }) =>
-      row.original.type === "INCOME" ? (
-        <div className="flex items-center gap-1 text-emerald-600">
-          <ArrowDownLeft className="h-3 w-3" />
-          <span className="text-[11px]">Receita</span>
-        </div>
-      ) : (
-        <div className="flex items-center gap-1 text-rose-600">
-          <ArrowUpRight className="h-3 w-3" />
-          <span className="text-[11px]">Despesa</span>
-        </div>
-      ),
-  },
-  {
-    accessorKey: "description",
-    header: "Descrição",
-    cell: ({ row }) => <span className="text-[12px]">{row.original.description}</span>,
-  },
-  {
-    accessorKey: "amount",
-    header: "Valor",
-    cell: ({ row }) => (
-      <span
-        className={`text-[11px] font-medium tabular-nums ${
-          row.original.type === "INCOME" ? "text-emerald-600" : "text-rose-600"
-        }`}
-      >
-        {fmtCurrency(Number(row.original.amount))}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "bankAccount",
-    header: "Conta",
-    cell: ({ row }) => (
-      <span className="text-[11px] text-muted-foreground">{row.original.bankAccount.name}</span>
-    ),
-  },
-  {
-    accessorKey: "category",
-    header: "Categoria",
-    cell: ({ row }) =>
-      row.original.category ? (
-        <Badge
-          variant="outline"
-          style={{ borderColor: row.original.category.color, color: row.original.category.color }}
-          className="text-[10px]"
-        >
-          {row.original.category.name}
-        </Badge>
-      ) : (
-        <span className="text-[10px] text-muted-foreground">—</span>
-      ),
-  },
-];
-
 export default function CashflowForecastPage() {
+  const { t } = useTranslation("common");
   const [months, setMonths] = useState(6);
   const { data: projection, isLoading: projectionLoading } = api.transaction.projection.useQuery({
     months,
   });
   const { data: forecast, isLoading: forecastLoading } = api.transaction.forecast.useQuery({});
+
+  const forecastColumns: ColumnDef<ForecastRow>[] = useMemo(
+    () => [
+      {
+        accessorKey: "dueDate",
+        header: t("cashflowForecast.table.dueDate"),
+        cell: ({ row }) => (
+          <span className="text-[11px] tabular-nums">
+            {format(new Date(row.original.dueDate), "dd/MM/yyyy", { locale: ptBR })}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "type",
+        header: t("cashflowForecast.table.type"),
+        cell: ({ row }) =>
+          row.original.type === "INCOME" ? (
+            <div className="flex items-center gap-1 text-emerald-600">
+              <ArrowDownLeft className="h-3 w-3" />
+              <span className="text-[11px]">{t("cashflowForecast.income")}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 text-rose-600">
+              <ArrowUpRight className="h-3 w-3" />
+              <span className="text-[11px]">{t("cashflowForecast.expense")}</span>
+            </div>
+          ),
+      },
+      {
+        accessorKey: "description",
+        header: t("cashflowForecast.table.description"),
+        cell: ({ row }) => <span className="text-[12px]">{row.original.description}</span>,
+      },
+      {
+        accessorKey: "amount",
+        header: t("cashflowForecast.table.amount"),
+        cell: ({ row }) => (
+          <span
+            className={`text-[11px] font-medium tabular-nums ${
+              row.original.type === "INCOME" ? "text-emerald-600" : "text-rose-600"
+            }`}
+          >
+            {fmtCurrency(Number(row.original.amount))}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "bankAccount",
+        header: t("cashflowForecast.table.bankAccount"),
+        cell: ({ row }) => (
+          <span className="text-[11px] text-muted-foreground">{row.original.bankAccount.name}</span>
+        ),
+      },
+      {
+        accessorKey: "category",
+        header: t("cashflowForecast.table.category"),
+        cell: ({ row }) =>
+          row.original.category ? (
+            <Badge
+              variant="outline"
+              style={{
+                borderColor: row.original.category.color,
+                color: row.original.category.color,
+              }}
+              className="text-[10px]"
+            >
+              {row.original.category.name}
+            </Badge>
+          ) : (
+            <span className="text-[10px] text-muted-foreground">—</span>
+          ),
+      },
+    ],
+    [t],
+  );
 
   const chartBars = useMemo(() => {
     if (!projection?.series) return [];
@@ -124,10 +132,8 @@ export default function CashflowForecastPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[13px] font-semibold">Previsão de Caixa</h1>
-          <p className="text-[11px] text-muted-foreground">
-            Projeção de saldo com transações agendadas
-          </p>
+          <h1 className="text-[13px] font-semibold">{t("cashflowForecast.title")}</h1>
+          <p className="text-[11px] text-muted-foreground">{t("cashflowForecast.description")}</p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={months.toString()} onValueChange={(v) => setMonths(Number(v))}>
@@ -147,13 +153,17 @@ export default function CashflowForecastPage() {
       {/* Summary cards — ultra compact */}
       <div className="grid grid-cols-3 gap-2">
         <div className="rounded-md border p-2">
-          <p className="text-[10px] text-muted-foreground">Saldo Atual</p>
+          <p className="text-[10px] text-muted-foreground">
+            {t("cashflowForecast.currentBalance")}
+          </p>
           <p className="text-[13px] font-semibold tabular-nums">
             {projection ? fmtCurrency(projection.currentBalance) : "—"}
           </p>
         </div>
         <div className="rounded-md border p-2">
-          <p className="text-[10px] text-muted-foreground">Saldo Projetado</p>
+          <p className="text-[10px] text-muted-foreground">
+            {t("cashflowForecast.projectedBalance")}
+          </p>
           <p
             className={`text-[13px] font-semibold tabular-nums ${
               projection && projection.projectedEndBalance >= 0
@@ -165,7 +175,9 @@ export default function CashflowForecastPage() {
           </p>
         </div>
         <div className="rounded-md border p-2">
-          <p className="text-[10px] text-muted-foreground">Transações Pendentes</p>
+          <p className="text-[10px] text-muted-foreground">
+            {t("cashflowForecast.pendingTransactions")}
+          </p>
           <p className="text-[13px] font-semibold tabular-nums">{projection?.pendingCount ?? 0}</p>
         </div>
       </div>
@@ -177,10 +189,10 @@ export default function CashflowForecastPage() {
         </div>
       ) : chartBars.length > 0 ? (
         <div className="rounded-md border p-2">
-          <p className="text-[11px] font-medium mb-2">Projeção Mensal</p>
+          <p className="text-[11px] font-medium mb-2">{t("cashflowForecast.monthlyProjection")}</p>
           <div className="flex items-end gap-1 h-32">
-            {chartBars.map((bar) => (
-              <div key={bar.month} className="flex-1 flex flex-col items-center gap-1">
+            {chartBars.map((bar, idx) => (
+              <div key={`${bar.month}-${idx}`} className="flex-1 flex flex-col items-center gap-1">
                 <div
                   className={`w-full rounded-t-sm ${
                     bar.isNegative ? "bg-rose-500" : "bg-emerald-500"
@@ -202,22 +214,22 @@ export default function CashflowForecastPage() {
       {/* Pending transactions table */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <p className="text-[11px] font-medium">Transações Agendadas</p>
+          <p className="text-[11px] font-medium">{t("cashflowForecast.scheduledTransactions")}</p>
           <div className="flex gap-2 text-[10px] text-muted-foreground">
             <span>
-              Receitas:{" "}
+              {t("cashflowForecast.income")}:{" "}
               <strong className="text-emerald-600">
                 {forecast ? fmtCurrency(forecast.totalIncome) : "—"}
               </strong>
             </span>
             <span>
-              Despesas:{" "}
+              {t("cashflowForecast.expense")}:{" "}
               <strong className="text-rose-600">
                 {forecast ? fmtCurrency(forecast.totalExpense) : "—"}
               </strong>
             </span>
             <span>
-              Saldo:{" "}
+              {t("cashflowForecast.netChange")}:{" "}
               <strong
                 className={
                   forecast && forecast.netChange >= 0 ? "text-emerald-600" : "text-rose-600"
@@ -242,11 +254,9 @@ export default function CashflowForecastPage() {
           />
         ) : (
           <div className="rounded-md border p-4 text-center">
-            <p className="text-[12px] text-muted-foreground">
-              Nenhuma transação agendada para o período.
-            </p>
+            <p className="text-[12px] text-muted-foreground">{t("cashflowForecast.noScheduled")}</p>
             <p className="text-[11px] text-muted-foreground mt-1">
-              Crie transações com status "Pendente" e uma data de vencimento para aparecerem aqui.
+              {t("cashflowForecast.noScheduledHint")}
             </p>
           </div>
         )}
