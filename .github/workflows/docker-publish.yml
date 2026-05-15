@@ -21,7 +21,7 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: ${{ secrets.DOCKER_HUB_USER }}/meu-rango
+  IMAGE_NAME: ${{ secrets.DOCKER_HUB_USER }}/visionary
 
 jobs:
   lint:
