@@ -202,8 +202,12 @@ export default function AlertsPage() {
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold tracking-tight" suppressHydrationWarning>{t("alerts.title")}</h1>
-          <p className="text-sm text-muted-foreground" suppressHydrationWarning>{t("alerts.description")}</p>
+          <h1 className="text-xl font-bold tracking-tight" suppressHydrationWarning>
+            {t("alerts.title")}
+          </h1>
+          <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+            {t("alerts.description")}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button
