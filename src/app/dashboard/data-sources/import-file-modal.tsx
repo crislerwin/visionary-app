@@ -3,6 +3,7 @@
 import { api } from "@/lib/trpc/react";
 import { FileUp, Loader2, Upload, X } from "lucide-react";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -61,6 +62,7 @@ interface ImportFileModalProps {
 }
 
 export function ImportFileModal({ open, onOpenChange, onSuccess }: ImportFileModalProps) {
+  const { t } = useTranslation("common");
   const [file, setFile] = useState<File | null>(null);
   const [detectedBank, setDetectedBank] = useState<string | null>(null);
   const [bankAccountId, setBankAccountId] = useState<string>("");
@@ -138,7 +140,7 @@ export function ImportFileModal({ open, onOpenChange, onSuccess }: ImportFileMod
       const mockTransactions: ExtractedTransaction[] = await simulateExtraction(file, detectedBank);
 
       if (mockTransactions.length === 0) {
-        setError("Nenhuma transação encontrada no arquivo.");
+        setError(t("dataSources.importFile.noTransactions"));
         setIsProcessing(false);
         return;
       }
@@ -157,7 +159,7 @@ export function ImportFileModal({ open, onOpenChange, onSuccess }: ImportFileMod
       setError(msg);
       console.error("[ImportFile] Process error:", err);
     }
-  }, [file, bankAccountId, detectedBank, bulkCreateMutation]);
+  }, [file, bankAccountId, detectedBank, bulkCreateMutation, t]);
 
   const clearFile = useCallback(() => {
     setFile(null);
@@ -172,9 +174,9 @@ export function ImportFileModal({ open, onOpenChange, onSuccess }: ImportFileMod
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-sm">Importar Arquivo</DialogTitle>
+          <DialogTitle className="text-sm">{t("dataSources.importFile.title")}</DialogTitle>
           <DialogDescription className="text-[11px]">
-            Envie um extrato bancário em PDF ou CSV.
+            {t("dataSources.importFile.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -188,10 +190,12 @@ export function ImportFileModal({ open, onOpenChange, onSuccess }: ImportFileMod
             >
               <Upload className="h-5 w-5 text-muted-foreground" />
               <div className="flex flex-col items-center gap-1">
-                <p className="text-[11px] text-muted-foreground">Drop PDF/CSV ou</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {t("dataSources.importFile.dropHint")}
+                </p>
                 <label htmlFor="file-upload" className="cursor-pointer">
                   <span className="text-[11px] font-medium text-primary hover:underline">
-                    clique para browse
+                    {t("dataSources.importFile.browse")}
                   </span>
                 </label>
                 <Input
@@ -229,7 +233,7 @@ export function ImportFileModal({ open, onOpenChange, onSuccess }: ImportFileMod
           {/* Detected bank hint */}
           {detectedBank && (
             <p className="text-[11px] text-muted-foreground">
-              Banco detectado:{" "}
+              {t("dataSources.importFile.detectedBank")}{" "}
               <span className="font-medium capitalize text-foreground">
                 {detectedBank.replace(/_/g, " ")}
               </span>
@@ -238,10 +242,10 @@ export function ImportFileModal({ open, onOpenChange, onSuccess }: ImportFileMod
 
           {/* Bank Account Select */}
           <div className="space-y-1">
-            <Label className="text-[12px]">Conta de Destino</Label>
+            <Label className="text-[12px]">{t("dataSources.importFile.destinationAccount")}</Label>
             <Select value={bankAccountId} onValueChange={setBankAccountId}>
               <SelectTrigger className="text-[12px] h-8">
-                <SelectValue placeholder="Selecione uma conta..." />
+                <SelectValue placeholder={t("dataSources.importFile.selectAccount")} />
               </SelectTrigger>
               <SelectContent>
                 {bankAccounts?.map((account) => (
@@ -259,7 +263,7 @@ export function ImportFileModal({ open, onOpenChange, onSuccess }: ImportFileMod
           {/* Extracted count */}
           {extractedCount !== null && !isProcessing && !bulkCreateMutation.isPending && (
             <p className="text-[11px] text-green-600">
-              {extractedCount} transações importadas com sucesso.
+              {t("dataSources.importFile.importSuccess", { count: extractedCount })}
             </p>
           )}
 
@@ -273,7 +277,7 @@ export function ImportFileModal({ open, onOpenChange, onSuccess }: ImportFileMod
               onClick={() => onOpenChange(false)}
               disabled={isProcessing}
             >
-              Cancelar
+              {t("cancel")}
             </Button>
             <Button
               type="button"
@@ -283,7 +287,9 @@ export function ImportFileModal({ open, onOpenChange, onSuccess }: ImportFileMod
               disabled={!canProcess}
             >
               {isProcessing && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
-              Importar
+              {isProcessing
+                ? t("dataSources.importFile.processing")
+                : t("dataSources.importFile.import")}
             </Button>
           </div>
         </div>

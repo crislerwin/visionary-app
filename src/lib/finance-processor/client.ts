@@ -97,7 +97,7 @@ export async function ensureAvailable(): Promise<void> {
   if (!healthy) {
     throw new Error(
       "O serviço de extração de arquivos não está disponível. " +
-        "Verifique se o container 'finance-processor' está rodando."
+        "Verifique se o container 'finance-processor' está rodando.",
     );
   }
 }
