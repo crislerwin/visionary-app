@@ -3,6 +3,9 @@
   "organizeImports": {
     "enabled": true
   },
+  "files": {
+    "ignore": [".next", "node_modules", "prisma", "docker"]
+  },
   "linter": {
     "enabled": true,
     "rules": {

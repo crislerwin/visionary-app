@@ -8,8 +8,8 @@
  * Usage: npx tsx scripts/seed-database.ts
  */
 
-import { prisma } from "../src/lib/db";
 import { hash } from "bcryptjs";
+import { prisma } from "../src/lib/db";
 
 async function seed() {
   console.log("🌱 Starting database seed...\n");

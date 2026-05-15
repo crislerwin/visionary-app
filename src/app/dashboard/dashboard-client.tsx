@@ -307,7 +307,8 @@ export function DashboardClient() {
             return (
               <Badge key={id} variant="secondary" className="gap-1 px-2 py-0.5 text-[11px]">
                 {name}
-                <button type="button"
+                <button
+                  type="button"
                   onClick={() => toggle("bankAccountIds", id)}
                   className="hover:text-destructive"
                 >
@@ -321,7 +322,11 @@ export function DashboardClient() {
             return (
               <Badge key={id} variant="secondary" className="gap-1 px-2 py-0.5 text-[11px]">
                 {name}
-                <button type="button" onClick={() => toggle("partnerIds", id)} className="hover:text-destructive">
+                <button
+                  type="button"
+                  onClick={() => toggle("partnerIds", id)}
+                  className="hover:text-destructive"
+                >
                   <X className="h-3 w-3" />
                 </button>
               </Badge>
@@ -332,7 +337,8 @@ export function DashboardClient() {
             return (
               <Badge key={id} variant="secondary" className="gap-1 px-2 py-0.5 text-[11px]">
                 {name}
-                <button type="button"
+                <button
+                  type="button"
                   onClick={() => toggle("categoryIds", id)}
                   className="hover:text-destructive"
                 >

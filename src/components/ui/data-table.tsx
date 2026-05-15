@@ -163,7 +163,8 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {loading ? (
               Array.from({ length: pagination.pageSize }).map((_, i) => (
-                <TableRow key={i}>
+                // biome-ignore lint/suspicious/noArrayIndexKey: skeleton rows have no stable identity
+                <TableRow key={`skel-${i}`}>
                   {table.getVisibleLeafColumns().map((col) => (
                     <TableCell key={col.id}>
                       <Skeleton className="h-4 w-full max-w-[120px]" />
