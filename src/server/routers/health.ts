@@ -1,6 +1,7 @@
+import { prisma } from "@/lib/db";
+import { publicProcedure, router } from "@/lib/trpc/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "../trpc";
 
 interface HealthMetrics {
   status: "healthy" | "degraded" | "unhealthy";
@@ -27,23 +28,24 @@ interface HealthMetrics {
   };
 }
 
-export const healthRouter = createTRPCRouter({
+export const healthRouter = router({
   // Basic health check
-  check: publicProcedure.query(async ({ ctx }) => {
+  check: publicProcedure.query(async () => {
     const start = Date.now();
-    
+
     try {
       // Database check
-      await ctx.db.$queryRaw`SELECT 1`;
+      await prisma.$queryRaw`SELECT 1`;
       const dbResponseTime = Date.now() - start;
 
       // Memory check
       const memUsage = process.memoryUsage();
-      const memTotal = require("os").totalmem();
+      const memTotal = require("node:os").totalmem();
       const memUsed = memUsage.heapUsed;
       const memPercentage = Math.round((memUsed / memTotal) * 100);
-      
-      const memStatus = memPercentage > 90 ? "critical" : memPercentage > 70 ? "warning" : "ok";
+
+      const memStatus: "ok" | "warning" | "critical" =
+        memPercentage > 90 ? "critical" : memPercentage > 70 ? "warning" : "ok";
 
       // Overall status
       const checks = {
@@ -107,9 +109,9 @@ export const healthRouter = createTRPCRouter({
     .input(
       z.object({
         includeDatabase: z.boolean().optional().default(false),
-      })
+      }),
     )
-    .query(async ({ ctx, input }) => {
+    .query(async ({ input }) => {
       const metrics: Record<string, unknown> = {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
@@ -122,23 +124,19 @@ export const healthRouter = createTRPCRouter({
       if (input.includeDatabase) {
         try {
           const start = Date.now();
-          const [
-            userCount,
-            transactionCount,
-            organizationCount,
-          ] = await Promise.all([
-            ctx.db.user.count(),
-            ctx.db.transaction.count(),
-            ctx.db.tenant.count(),
+          const [userCount, transactionCount, tenantCount] = await Promise.all([
+            prisma.user.count(),
+            prisma.transaction.count(),
+            prisma.tenant.count(),
           ]);
-          
+
           metrics.database = {
             status: "connected",
             responseTime: Date.now() - start,
             counts: {
               users: userCount,
               transactions: transactionCount,
-              organizations: organizationCount,
+              tenants: tenantCount,
             },
           };
         } catch (error) {
@@ -153,9 +151,9 @@ export const healthRouter = createTRPCRouter({
     }),
 
   // Readiness check for Kubernetes
-  ready: publicProcedure.query(async ({ ctx }) => {
+  ready: publicProcedure.query(async () => {
     try {
-      await ctx.db.$queryRaw`SELECT 1`;
+      await prisma.$queryRaw`SELECT 1`;
       return { ready: true };
     } catch {
       throw new TRPCError({
