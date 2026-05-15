@@ -1,0 +1,120 @@
+name: CI/CD Notifications
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'CI run ID (optional)'
+        required: false
+        type: string
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build and send notification to n8n
+        env:
+          WEBHOOK_URL: "https://n8n.reactivesoftware.com.br/webhook/github-ci-webhook-001"
+        run: |
+          set -euo pipefail
+
+          CONCLUSION="${{ github.event.workflow_run.conclusion || 'unknown' }}"
+          HEAD_BRANCH="${{ github.event.workflow_run.head_branch || 'main' }}"
+          COMMIT_MSG="${{ github.event.workflow_run.head_commit.message || 'Manual trigger' }}"
+          ACTOR="${{ github.event.workflow_run.actor.login || github.actor }}"
+          RUN_URL="${{ github.event.workflow_run.html_url || github.server_url }}"
+          RUN_ID="${{ github.event.workflow_run.id || inputs.run_id }}"
+          RUN_NAME="${{ github.event.workflow_run.name || 'CI' }}"
+          REPO="${{ github.repository }}"
+          REPO_URL="${{ github.event.repository.html_url }}"
+
+          # Extract PR info if available
+          PRS='${{ toJson(github.event.workflow_run.pull_requests) }}'
+          PR_FIELD=""
+          if [ "$PRS" != "[]" ] && [ "$PRS" != "null" ]; then
+            PR_NUMBER=$(echo "$PRS" | jq -r '.[0].number')
+            PR_TITLE=$(echo "$PRS" | jq -r '.[0].title')
+            PR_URL="$REPO_URL/pull/$PR_NUMBER"
+            PR_FIELD="{ \"title\": \"PR\", \"value\": \"[#$PR_NUMBER $PR_TITLE]($PR_URL)\", \"short\": false }"
+          fi
+
+          # Build clean Mattermost payload
+          if [ -n "$PR_FIELD" ]; then
+            PAYLOAD=$(jq -n \
+              --arg conclusion "$CONCLUSION" \
+              --arg repo "$REPO" \
+              --arg repo_url "$REPO_URL" \
+              --arg run_id "$RUN_ID" \
+              --arg run_name "$RUN_NAME" \
+              --arg branch "$HEAD_BRANCH" \
+              --arg commit "$COMMIT_MSG" \
+              --arg actor "$ACTOR" \
+              --arg run_url "$RUN_URL" \
+              --arg pr_field "$PR_FIELD" \
+              '{
+                text: "CI Build **\($conclusion)** for [\($repo)](\($repo_url))",
+                attachments: [
+                  {
+                    color: (if $conclusion == "success" then "#36a64f" elif $conclusion == "failure" then "#ff0000" else "#808080" end),
+                    fields: [
+                      { title: "Workflow", value: $run_name, short: true },
+                      { title: "Branch", value: $branch, short: true },
+                      { title: "Actor", value: $actor, short: true },
+                      ($pr_field | fromjson),
+                      { title: "Run", value: "[#\($run_id)](\($run_url))", short: false },
+                      { title: "Commit", value: $commit, short: false }
+                    ]
+                  }
+                ]
+              }')
+          else
+            PAYLOAD=$(jq -n \
+              --arg conclusion "$CONCLUSION" \
+              --arg repo "$REPO" \
+              --arg repo_url "$REPO_URL" \
+              --arg run_id "$RUN_ID" \
+              --arg run_name "$RUN_NAME" \
+              --arg branch "$HEAD_BRANCH" \
+              --arg commit "$COMMIT_MSG" \
+              --arg actor "$ACTOR" \
+              --arg run_url "$RUN_URL" \
+              '{
+                text: "CI Build **\($conclusion)** for [\($repo)](\($repo_url))",
+                attachments: [
+                  {
+                    color: (if $conclusion == "success" then "#36a64f" elif $conclusion == "failure" then "#ff0000" else "#808080" end),
+                    fields: [
+                      { title: "Workflow", value: $run_name, short: true },
+                      { title: "Branch", value: $branch, short: true },
+                      { title: "Actor", value: $actor, short: true },
+                      { title: "Run", value: "[#\($run_id)](\($run_url))", short: false },
+                      { title: "Commit", value: $commit, short: false }
+                    ]
+                  }
+                ]
+              }')
+          fi
+
+          echo "--- Payload ---"
+          echo "$PAYLOAD"
+          echo "---------------"
+
+          HTTP_CODE=$(curl -s -o /tmp/response.txt -w "%{http_code}" \
+            -X POST "$WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -H "x-github-event: workflow_run" \
+            -d "$PAYLOAD" || true)
+
+          echo "HTTP response code: $HTTP_CODE"
+          echo "Response body:"
+          cat /tmp/response.txt || true
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "ERROR: Webhook returned HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+          echo "Notification sent successfully!"
