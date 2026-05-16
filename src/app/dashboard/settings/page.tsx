@@ -62,8 +62,12 @@ export default function SettingsPage() {
     <div className="space-y-4 max-w-xl">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold tracking-tight">{t("settings:title", { ns: "settings" })}</h1>
-        <p className="text-[11px] text-muted-foreground">{t("settings:description", { ns: "settings" })}</p>
+        <h1 className="text-xl font-bold tracking-tight">
+          {t("settings:title", { ns: "settings" })}
+        </h1>
+        <p className="text-[11px] text-muted-foreground">
+          {t("settings:description", { ns: "settings" })}
+        </p>
       </div>
 
       {/* Profile */}
@@ -93,8 +97,15 @@ export default function SettingsPage() {
                   className="h-8 text-[13px] flex-1"
                   autoFocus
                 />
-                <Button size="sm" className="h-8 text-[11px]" onClick={handleSaveName} disabled={updateProfile.isPending}>
-                  {updateProfile.isPending ? t("saving", { ns: "settings" }) : t("save", { ns: "common" })}
+                <Button
+                  size="sm"
+                  className="h-8 text-[11px]"
+                  onClick={handleSaveName}
+                  disabled={updateProfile.isPending}
+                >
+                  {updateProfile.isPending
+                    ? t("saving", { ns: "settings" })
+                    : t("save", { ns: "common" })}
                 </Button>
                 <Button
                   size="sm"
@@ -111,8 +122,12 @@ export default function SettingsPage() {
             ) : (
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-[13px] font-medium truncate">{profile?.name || session?.user?.name || "—"}</p>
-                  <p className="text-[11px] text-muted-foreground truncate">{profile?.email || session?.user?.email}</p>
+                  <p className="text-[13px] font-medium truncate">
+                    {profile?.name || session?.user?.name || "—"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground truncate">
+                    {profile?.email || session?.user?.email}
+                  </p>
                 </div>
                 <Button
                   size="sm"
@@ -133,12 +148,16 @@ export default function SettingsPage() {
 
       {/* Preferences */}
       <div className="rounded-lg border bg-background p-3 space-y-3">
-        <h3 className="text-[13px] font-semibold">{t("settings:preferences", { ns: "settings" })}</h3>
+        <h3 className="text-[13px] font-semibold">
+          {t("settings:preferences", { ns: "settings" })}
+        </h3>
 
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[13px]">{t("settings:darkMode", { ns: "settings" })}</p>
-            <p className="text-[11px] text-muted-foreground">{t("settings:darkModeDesc", { ns: "settings" })}</p>
+            <p className="text-[11px] text-muted-foreground">
+              {t("settings:darkModeDesc", { ns: "settings" })}
+            </p>
           </div>
           <Switch checked={theme === "dark"} onCheckedChange={handleToggleTheme} />
         </div>
@@ -146,9 +165,16 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[13px]">{t("settings:language", { ns: "settings" })}</p>
-            <p className="text-[11px] text-muted-foreground">{t("settings:languageDesc", { ns: "settings" })}</p>
+            <p className="text-[11px] text-muted-foreground">
+              {t("settings:languageDesc", { ns: "settings" })}
+            </p>
           </div>
-          <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={handleToggleLanguage}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-[11px]"
+            onClick={handleToggleLanguage}
+          >
             {currentLanguage === "pt" ? "Português" : "English"}
           </Button>
         </div>
@@ -161,9 +187,16 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[13px]">{t("settings:logout", { ns: "settings" })}</p>
-            <p className="text-[11px] text-muted-foreground">{t("settings:logoutDesc", { ns: "settings" })}</p>
+            <p className="text-[11px] text-muted-foreground">
+              {t("settings:logoutDesc", { ns: "settings" })}
+            </p>
           </div>
-          <Button size="sm" variant="destructive" className="h-7 text-[11px]" onClick={handleLogout}>
+          <Button
+            size="sm"
+            variant="destructive"
+            className="h-7 text-[11px]"
+            onClick={handleLogout}
+          >
             {t("settings:logoutBtn", { ns: "settings" })}
           </Button>
         </div>

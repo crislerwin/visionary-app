@@ -4,12 +4,12 @@ import { initReactI18next } from "react-i18next";
 
 import enCommon from "../../public/locales/en/common.json";
 import enDashboard from "../../public/locales/en/dashboard.json";
-import enSettings from "../../public/locales/en/settings.json";
 import enNavigation from "../../public/locales/en/navigation.json";
+import enSettings from "../../public/locales/en/settings.json";
 import ptCommon from "../../public/locales/pt/common.json";
 import ptDashboard from "../../public/locales/pt/dashboard.json";
-import ptSettings from "../../public/locales/pt/settings.json";
 import ptNavigation from "../../public/locales/pt/navigation.json";
+import ptSettings from "../../public/locales/pt/settings.json";
 
 i18n
   .use(LanguageDetector)
