@@ -1,0 +1,15 @@
+{
+  "title": "Configurações",
+  "description": "Gerencie suas preferências e dados da conta",
+  "profile": "Perfil",
+  "preferences": "Preferências",
+  "account": "Conta",
+  "saving": "Salvando...",
+  "darkMode": "Modo escuro",
+  "darkModeDesc": "Alternar entre tema claro e escuro",
+  "language": "Idioma",
+  "languageDesc": "Escolha o idioma da interface",
+  "logout": "Sair da conta",
+  "logoutDesc": "Encerrar sessão neste dispositivo",
+  "logoutBtn": "Sair"
+}

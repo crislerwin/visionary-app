@@ -1,0 +1,15 @@
+{
+  "title": "Settings",
+  "description": "Manage your preferences and account data",
+  "profile": "Profile",
+  "preferences": "Preferences",
+  "account": "Account",
+  "saving": "Saving...",
+  "darkMode": "Dark mode",
+  "darkModeDesc": "Toggle between light and dark theme",
+  "language": "Language",
+  "languageDesc": "Choose the interface language",
+  "logout": "Log out",
+  "logoutDesc": "End session on this device",
+  "logoutBtn": "Log out"
+}
