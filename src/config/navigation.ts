@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   type LucideIcon,
   Receipt,
+  Settings,
   TrendingUp,
 } from "lucide-react";
 
@@ -58,6 +59,11 @@ export const sidebarNavigation: NavSection[] = [
         titleKey: "partnerInvoices",
         href: "/dashboard/partner-invoices",
         icon: CreditCard,
+      },
+      {
+        titleKey: "settings",
+        href: "/dashboard/settings",
+        icon: Settings,
       },
     ],
   },

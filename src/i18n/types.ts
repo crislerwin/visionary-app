@@ -16,6 +16,7 @@ declare module "i18next" {
       common: Record<string, string>;
       dashboard: Record<string, string>;
       navigation: Record<string, string>;
+      settings: Record<string, string>;
     };
   }
 }
