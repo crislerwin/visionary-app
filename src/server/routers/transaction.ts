@@ -705,4 +705,127 @@ export const transactionRouter = router({
         netChange: Math.round(totalIncome - totalExpense),
       };
     }),
+
+  // Issue #53 — bulkCreateFromExtract: import transactions from extracted data (PDF/CSV)
+  bulkCreateFromExtract: tenantProcedure
+    .input(
+      z.object({
+        bankAccountId: z.string(),
+        skipDuplicates: z.boolean().default(true),
+        transactions: z
+          .array(
+            z.object({
+              date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+              description: z.string().min(1),
+              amount: z.number().positive(),
+              category: z.string().optional(),
+              bank: z.string().optional(),
+              transaction_type: z.enum(["income", "expense", "transfer"]).optional(),
+              raw_data: z.string().optional(),
+            }),
+          )
+          .min(1),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Verify bankAccount belongs to tenant
+      const bankAccount = await prisma.bankAccount.findFirst({
+        where: { id: input.bankAccountId, tenantId: ctx.tenantId },
+      });
+      if (!bankAccount) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Conta bancária não encontrada" });
+      }
+
+      // Pre-categorization: map finance-processor categories to prisma Category
+      const processorCategories = input.transactions
+        .map((t) => t.category)
+        .filter((c): c is string => !!c);
+
+      const uniqueCategories = [...new Set(processorCategories)];
+
+      // Upsert categories by name (income/expense type inferred from transaction_type)
+      const categoryMap = new Map<string, string>();
+
+      for (const catName of uniqueCategories) {
+        const normalized = catName.toLowerCase().trim();
+        const existing = await prisma.category.findFirst({
+          where: { name: normalized, tenantId: ctx.tenantId },
+        });
+
+        if (existing) {
+          categoryMap.set(normalized, existing.id);
+        } else {
+          const created = await prisma.category.create({
+            data: {
+              name: normalized,
+              type: normalized === "income" ? TransactionType.INCOME : TransactionType.EXPENSE,
+              tenantId: ctx.tenantId,
+            },
+          });
+          categoryMap.set(normalized, created.id);
+        }
+      }
+
+      // Check duplicates if requested (unique key: date + description + amount + bankAccountId)
+      let transactionsToCreate = input.transactions;
+
+      if (input.skipDuplicates) {
+        const existing = await prisma.transaction.findMany({
+          where: {
+            bankAccountId: input.bankAccountId,
+            date: {
+              in: input.transactions.map((t) => new Date(t.date)),
+            },
+          },
+          select: { date: true, description: true, amount: true, bankAccountId: true },
+        });
+
+        const existingSet = new Set(
+          existing.map(
+            (e) => `${e.date.toISOString().split("T")[0]}:${e.description}:${e.amount.toString()}`,
+          ),
+        );
+
+        transactionsToCreate = input.transactions.filter((t) => {
+          const key = `${t.date}:${t.description}:${t.amount.toString()}`;
+          return !existingSet.has(key);
+        });
+      }
+
+      if (transactionsToCreate.length === 0) {
+        return { created: 0, skipped: input.transactions.length };
+      }
+
+      // Batch create
+      const createdCount = transactionsToCreate.length;
+      await prisma.transaction.createMany({
+        data: transactionsToCreate.map((t) => ({
+          amount: t.amount,
+          type: t.transaction_type === "income" ? TransactionType.INCOME : TransactionType.EXPENSE,
+          description: t.description,
+          date: new Date(t.date),
+          status: TransactionStatus.COMPLETED,
+          bankAccountId: input.bankAccountId,
+          categoryId: t.category ? categoryMap.get(t.category.toLowerCase().trim()) : null,
+        })),
+      });
+
+      // Update bankAccount balance
+      const totalAmount = transactionsToCreate.reduce((sum, t) => {
+        if (t.transaction_type === "income" || t.transaction_type === "transfer") {
+          return sum + t.amount;
+        }
+        return sum - t.amount;
+      }, 0);
+
+      await prisma.bankAccount.update({
+        where: { id: input.bankAccountId },
+        data: { currentBalance: { increment: totalAmount } },
+      });
+
+      return {
+        created: createdCount,
+        skipped: input.transactions.length - transactionsToCreate.length,
+      };
+    }),
 });

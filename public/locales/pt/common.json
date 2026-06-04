@@ -143,5 +143,57 @@
     "highestProfit": "Maior lucro",
     "highestVolume": "Maior volume",
     "totalTransactions": "Total de transações no período"
+  },
+  "dataSources": {
+    "title": "Fontes de Dados",
+    "description": "Gerencie as origens dos seus dados financeiros — bancos, webhooks e arquivos.",
+    "addButton": "Adicionar",
+    "addModalTitle": "Adicionar Fonte de Dados",
+    "importFile": {
+      "title": "Importar Arquivo",
+      "description": "Envie um extrato bancário em PDF ou CSV.",
+      "dropHint": "Drop PDF/CSV ou",
+      "browse": "clique para browse",
+      "detectedBank": "Banco detectado:",
+      "destinationAccount": "Conta de Destino",
+      "selectAccount": "Selecione uma conta...",
+      "noTransactions": "Nenhuma transação encontrada no arquivo.",
+      "importSuccess": "{{count}} transações importadas com sucesso.",
+      "import": "Importar",
+      "processing": "Processando..."
+    },
+    "tab": {
+      "accounts": "Contas",
+      "connections": "Conexões",
+      "csv": "CSV",
+      "webhooks": "Webhooks",
+      "xlsx": "XLSX"
+    },
+    "tabDescription": {
+      "accounts": "Visualize contas importadas e suas transações.",
+      "connections": "Conecte contas bancárias via Open Finance.",
+      "csv": "Importe transações em lote a partir de CSV.",
+      "webhooks": "Receba transações via HTTP POST.",
+      "xlsx": "Importe transações via planilhas Excel."
+    },
+    "option": {
+      "file": {
+        "title": "Arquivo",
+        "subtitle": "PDF · CSV"
+      },
+      "pluggy": {
+        "title": "Conectar Banco",
+        "subtitle": "Open Finance"
+      },
+      "webhook": {
+        "title": "Webhook",
+        "subtitle": "Endpoint HTTP"
+      },
+      "manual": {
+        "title": "Lançamento Manual",
+        "subtitle": "Valor · Data · Categoria"
+      }
+    },
+    "soon": "Em breve."
   }
 }

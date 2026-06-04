@@ -143,5 +143,57 @@
     "highestProfit": "Highest profit",
     "highestVolume": "Highest volume",
     "totalTransactions": "Total transactions in period"
+  },
+  "dataSources": {
+    "title": "Data Sources",
+    "description": "Manage the origins of your financial data — banks, webhooks and files.",
+    "addButton": "Add",
+    "addModalTitle": "Add Data Source",
+    "tab": {
+      "accounts": "Accounts",
+      "connections": "Connections",
+      "csv": "CSV",
+      "webhooks": "Webhooks",
+      "xlsx": "XLSX"
+    },
+    "tabDescription": {
+      "accounts": "View imported accounts and their transactions.",
+      "connections": "Connect bank accounts via Open Finance.",
+      "csv": "Import transactions in bulk from CSV.",
+      "webhooks": "Receive transactions via HTTP POST.",
+      "xlsx": "Import transactions from Excel spreadsheets."
+    },
+    "option": {
+      "file": {
+        "title": "File",
+        "subtitle": "PDF · CSV"
+      },
+      "pluggy": {
+        "title": "Connect Bank",
+        "subtitle": "Open Finance"
+      },
+      "webhook": {
+        "title": "Webhook",
+        "subtitle": "HTTP Endpoint"
+      },
+      "manual": {
+        "title": "Manual Entry",
+        "subtitle": "Amount · Date · Category"
+      }
+    },
+    "soon": "Coming soon.",
+    "importFile": {
+      "title": "Import File",
+      "description": "Upload a bank statement in PDF or CSV.",
+      "dropHint": "Drop PDF/CSV or",
+      "browse": "click to browse",
+      "detectedBank": "Detected bank:",
+      "destinationAccount": "Destination Account",
+      "selectAccount": "Select an account...",
+      "noTransactions": "No transactions found in the file.",
+      "importSuccess": "{{count}} transactions imported successfully.",
+      "import": "Import",
+      "processing": "Processing..."
+    }
   }
 }
