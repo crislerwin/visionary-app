@@ -10,6 +10,31 @@
   "periodLoss": "Period Loss",
   "pendingPayables": "Pending Payables",
   "topPartner": "Top Partner",
+  "selectPeriod": "Select a period",
+  "vsPreviousHalf": "vs previous half",
+  "profitLabel": "profit",
+  "pendingCount": "{{count}} pending",
+  "new": "New",
+  "deleteConfirm": "Delete this transaction?",
+  "all": "All",
+  "allCategories": "All",
+  "transactions": {
+    "title": "Statement",
+    "description": "View and manage your financial transactions"
+  },
+  "status": {
+    "completed": "Completed",
+    "pending": "Pending",
+    "cancelled": "Cancelled"
+  },
+  "type": {
+    "income": "Income",
+    "expense": "Expense"
+  },
+  "mobileStatus": {
+    "completed": "OK",
+    "pending": "PEN"
+  },
   "filters": {
     "allAccounts": "All accounts",
     "allPartners": "All partners",
@@ -21,7 +46,11 @@
   },
   "charts": {
     "balanceEvolution": "Balance Evolution",
-    "incomeVsExpense": "Income vs Expenses"
+    "incomeVsExpense": "Income vs Expenses",
+    "selectedPeriod": "Selected period",
+    "balance": "Balance",
+    "income": "Income",
+    "expense": "Expense"
   },
   "table": {
     "latestTransactions": "Latest Transactions",
@@ -31,6 +60,13 @@
     "allTypes": "All",
     "income": "Income",
     "expense": "Expense",
-    "searchPlaceholder": "Search transaction..."
+    "searchPlaceholder": "Search transaction...",
+    "noTransactions": "No transactions found.",
+    "description": "Description",
+    "category": "Category",
+    "bank": "Bank",
+    "account": "Account",
+    "date": "Date",
+    "value": "Amount"
   }
 }
