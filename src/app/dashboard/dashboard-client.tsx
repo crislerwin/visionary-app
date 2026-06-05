@@ -890,7 +890,6 @@ function DateRangePicker({
         <PopoverContent className="w-auto p-0" align="center">
           <div className="p-3">
             <Calendar
-              key={`${range.from.toISOString()}-${range.to.toISOString()}`}
               initialFocus
               mode="range"
               defaultMonth={draft?.from ?? range.from}
