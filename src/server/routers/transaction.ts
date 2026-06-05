@@ -524,28 +524,19 @@ export const transactionRouter = router({
         };
       });
 
-      // Calculate running balance
-      const totalBalance = await prisma.bankAccount.aggregate({
-        where: {
-          tenantId: ctx.tenantId,
-          ...(input.bankAccountIds?.length && { id: { in: input.bankAccountIds } }),
-        },
-        _sum: { currentBalance: true },
-      });
-      const currentBalance = Number(totalBalance._sum.currentBalance ?? 0);
+      // Calculate running balance forward from zero within the selected period.
+      // This reflects the cumulative net result (income - expense) over the range,
+      // avoiding the incorrect assumption that currentBalance matches endDate.
+      const balanceSeries: { month: string; saldo: number }[] = [];
+      let runningBalance = 0;
 
-      // Work backwards from current balance
-      const balanceSeries = [] as { month: string; saldo: number }[];
-      let runningBalance = currentBalance;
-
-      for (let i = sortedKeys.length - 1; i >= 0; i--) {
-        const key = sortedKeys[i];
+      for (const key of sortedKeys) {
         const data = monthlyData.get(key)!;
-        balanceSeries.unshift({
+        runningBalance += data.income - data.expense;
+        balanceSeries.push({
           month: data.label.charAt(0).toUpperCase() + data.label.slice(1),
           saldo: Math.round(runningBalance),
         });
-        runningBalance -= data.income - data.expense;
       }
 
       return {
