@@ -1,7 +1,15 @@
 "use client";
 
-import { ArrowDownLeft, ArrowUpRight, Edit2, MoreHorizontal, Trash2 } from "lucide-react";
-import { useState } from "react";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Edit2,
+  Loader2,
+  MoreHorizontal,
+  Trash2,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -10,13 +18,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -28,7 +29,6 @@ import {
 import { api } from "@/lib/trpc/react";
 import { cn, formatDate } from "@/lib/utils";
 import { TransactionStatus, TransactionType } from "@prisma/client";
-import { Loader2 } from "lucide-react";
 
 interface TransactionTableProps {
   onEdit: (transaction: Transaction) => void;
@@ -92,8 +92,14 @@ const normalizeTransaction = (t: Transaction): NormalizedTransaction => ({
 });
 
 export function TransactionTable({ onEdit, onDelete, filters }: TransactionTableProps) {
+  const { t } = useTranslation("common");
   const [page, setPage] = useState(0);
   const pageSize = 20;
+
+  // Reset pagination whenever external filters change
+  useEffect(() => {
+    setPage(0);
+  }, [filters?.type, filters?.status, filters?.bankAccountId, filters?.categoryId, filters?.startDate, filters?.endDate]);
 
   const { data, isLoading } = api.transaction.list.useQuery({
     type: filters?.type,
@@ -105,10 +111,6 @@ export function TransactionTable({ onEdit, onDelete, filters }: TransactionTable
     limit: pageSize,
     offset: page * pageSize,
   });
-
-  const { data: bankAccounts } = api.bankAccount.list.useQuery(undefined);
-  const { data: categoriesData } = api.category.list.useQuery({});
-  const categories = categoriesData?.categories ?? [];
 
   const transactions = data?.transactions ?? [];
   const total = data?.total ?? 0;
@@ -124,104 +126,27 @@ export function TransactionTable({ onEdit, onDelete, filters }: TransactionTable
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2">
-        <Select
-          value={filters?.type || "all"}
-          onValueChange={(value) => {
-            // This would be handled by parent component
-            console.log("Filter type:", value);
-          }}
-        >
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="All types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            <SelectItem value={TransactionType.INCOME}>Income</SelectItem>
-            <SelectItem value={TransactionType.EXPENSE}>Expense</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={filters?.status || "all"}
-          onValueChange={(value) => {
-            console.log("Filter status:", value);
-          }}
-        >
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="All statuses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value={TransactionStatus.COMPLETED}>Completed</SelectItem>
-            <SelectItem value={TransactionStatus.PENDING}>Pending</SelectItem>
-            <SelectItem value={TransactionStatus.CANCELLED}>Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={filters?.bankAccountId || "all"}
-          onValueChange={(value) => {
-            console.log("Filter account:", value);
-          }}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All accounts" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All accounts</SelectItem>
-            {bankAccounts?.map((account) => (
-              <SelectItem key={account.id} value={account.id}>
-                {account.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={filters?.categoryId || "all"}
-          onValueChange={(value) => {
-            console.log("Filter category:", value);
-          }}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All categories" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All categories</SelectItem>
-            {categories?.map((category) => (
-              <SelectItem key={category.id} value={category.id}>
-                {category.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Table */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Account</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead className="w-[50px]" />
+              <TableHead>{t("date")}</TableHead>
+              <TableHead>{t("description")}</TableHead>
+              <TableHead>{t("type")}</TableHead>
+              <TableHead>{t("status")}</TableHead>
+              <TableHead className="text-right">{t("amount")}</TableHead>
+              <TableHead className="w-[50px]">{t("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {transactions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                  No transactions found.
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  {t("noResults")}
                 </TableCell>
               </TableRow>
             ) : (
-              transactions.map((rawTransaction) => {
+              transactions.map((rawTransaction: Transaction) => {
                 const transaction = normalizeTransaction(rawTransaction);
                 return (
                   <TableRow key={transaction.id}>
@@ -251,7 +176,6 @@ export function TransactionTable({ onEdit, onDelete, filters }: TransactionTable
                         <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
-                    <TableCell>{transaction.bankAccount.name}</TableCell>
                     <TableCell>
                       <span
                         className={cn(
@@ -285,21 +209,21 @@ export function TransactionTable({ onEdit, onDelete, filters }: TransactionTable
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
+                            <span className="sr-only">{t("actions")}</span>
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => onEdit(transaction)}>
                             <Edit2 className="mr-2 h-4 w-4" />
-                            Edit
+                            {t("edit")}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => onDelete(transaction)}
                             className="text-destructive focus:text-destructive"
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {t("delete")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -312,7 +236,6 @@ export function TransactionTable({ onEdit, onDelete, filters }: TransactionTable
         </Table>
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
@@ -326,7 +249,7 @@ export function TransactionTable({ onEdit, onDelete, filters }: TransactionTable
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={page === 0}
             >
-              Previous
+              {t("previous")}
             </Button>
             <Button
               variant="outline"
@@ -334,7 +257,7 @@ export function TransactionTable({ onEdit, onDelete, filters }: TransactionTable
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={page >= totalPages - 1}
             >
-              Next
+              {t("next")}
             </Button>
           </div>
         </div>
