@@ -118,6 +118,9 @@
     "netChange": "Net Change",
     "noScheduled": "No scheduled transactions for the period.",
     "noScheduledHint": "Create transactions with \"Pending\" status and a due date to appear here.",
+    "3months": "3 months",
+    "6months": "6 months",
+    "12months": "12 months",
     "table": {
       "dueDate": "Due Date",
       "type": "Type",

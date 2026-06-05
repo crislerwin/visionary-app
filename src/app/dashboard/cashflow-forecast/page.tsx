@@ -142,9 +142,9 @@ export default function CashflowForecastPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="3">3 meses</SelectItem>
-              <SelectItem value="6">6 meses</SelectItem>
-              <SelectItem value="12">12 meses</SelectItem>
+              <SelectItem value="3">{t("cashflowForecast.3months")}</SelectItem>
+              <SelectItem value="6">{t("cashflowForecast.6months")}</SelectItem>
+              <SelectItem value="12">{t("cashflowForecast.12months")}</SelectItem>
             </SelectContent>
           </Select>
         </div>

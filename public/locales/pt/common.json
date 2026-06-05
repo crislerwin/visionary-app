@@ -118,6 +118,9 @@
     "netChange": "Saldo",
     "noScheduled": "Nenhuma transação agendada para o período.",
     "noScheduledHint": "Crie transações com status \"Pendente\" e uma data de vencimento para aparecerem aqui.",
+    "3months": "3 meses",
+    "6months": "6 meses",
+    "12months": "12 meses",
     "table": {
       "dueDate": "Vencimento",
       "type": "Tipo",

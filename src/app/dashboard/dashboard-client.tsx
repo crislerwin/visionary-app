@@ -393,7 +393,7 @@ export function DashboardClient() {
                 {currency(payablesSummary?.totalAmountPending ?? 0)}
               </div>
               <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                <span>{payablesSummary?.totalPending ?? 0} pendentes</span>
+                <span>{t("pendingCount", { count: payablesSummary?.totalPending ?? 0 })}</span>
                 <ArrowUpRight className="h-3 w-3" />
               </div>
             </CardContent>
@@ -425,7 +425,7 @@ export function DashboardClient() {
                   >
                     {currency(topPartner.netProfit)}
                   </span>
-                  <span className="text-muted-foreground">lucro</span>
+                  <span className="text-muted-foreground">{t("profitLabel")}</span>
                 </div>
               </CardContent>
             </Link>
@@ -441,7 +441,7 @@ export function DashboardClient() {
         <Card className="min-h-0 py-2">
           <CardHeader className="px-3 pb-1 pt-0">
             <CardTitle className="text-sm">{t("charts.balanceEvolution")}</CardTitle>
-            <CardDescription className="text-xs">Período selecionado</CardDescription>
+            <CardDescription className="text-xs">{t("charts.selectedPeriod")}</CardDescription>
           </CardHeader>
           <CardContent className="px-3 pb-2 pt-0">
             <ChartContainer config={balanceChartConfig} className="h-[140px] w-full sm:h-[170px]">
@@ -478,7 +478,7 @@ export function DashboardClient() {
         <Card className="min-h-0 py-2">
           <CardHeader className="px-3 pb-1 pt-0">
             <CardTitle className="text-sm">{t("charts.incomeVsExpense")}</CardTitle>
-            <CardDescription className="text-xs">Período selecionado</CardDescription>
+            <CardDescription className="text-xs">{t("charts.selectedPeriod")}</CardDescription>
           </CardHeader>
           <CardContent className="px-3 pb-2 pt-0">
             <ChartContainer config={compareChartConfig} className="h-[140px] w-full sm:h-[170px]">
@@ -768,7 +768,7 @@ function TransactionsTable({
               />
             ) : (
               <div className="rounded-md border py-8 text-center text-sm text-muted-foreground">
-                Nenhuma transação encontrada.
+                {t("table.noTransactions")}
               </div>
             )}
           </div>
@@ -816,7 +816,7 @@ function TransactionsTable({
               ))
             ) : (
               <div className="rounded-md border py-8 text-center text-sm text-muted-foreground">
-                Nenhuma transação encontrada.
+                {t("table.noTransactions")}
               </div>
             )}
           </div>
@@ -835,6 +835,7 @@ function DateRangePicker({
   range: { from: Date; to: Date };
   onChange: (range: { from: Date; to: Date }) => void;
 }) {
+  const { t } = useTranslation(["dashboard", "common"]);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<{ from?: Date; to?: Date }>(range);
   const [months, setMonths] = useState(1);
@@ -883,7 +884,7 @@ function DateRangePicker({
                 format(range.from, "dd/MM/yyyy")
               )
             ) : (
-              <span>Selecione um período</span>
+              <span>{t("selectPeriod")}</span>
             )}
           </Button>
         </PopoverTrigger>
@@ -908,10 +909,10 @@ function DateRangePicker({
             />
             <div className="mt-3 flex items-center justify-end gap-2 border-t pt-3">
               <Button variant="ghost" size="sm" onClick={handleCancel}>
-                Cancelar
+                {t("cancel")}
               </Button>
               <Button size="sm" onClick={handleApply} disabled={!draft.from || !draft.to}>
-                Aplicar
+                {t("apply")}
               </Button>
             </div>
           </div>
@@ -934,6 +935,7 @@ function KpiCard({
   icon: React.ReactNode;
   invertDelta?: boolean;
 }) {
+  const { t } = useTranslation("dashboard");
   const isUp = delta >= 0;
   const isPositive = invertDelta ? !isUp : isUp;
   return (
@@ -957,7 +959,7 @@ function KpiCard({
             {isUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
             {Math.abs(delta).toFixed(1)}%
           </span>
-          <span className="text-muted-foreground">vs metade anterior</span>
+          <span className="text-muted-foreground">{t("vsPreviousHalf")}</span>
         </div>
       </CardContent>
     </Card>

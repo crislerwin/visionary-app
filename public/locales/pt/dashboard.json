@@ -10,6 +10,31 @@
   "periodLoss": "Prejuízo do Período",
   "pendingPayables": "Contas a Pagar",
   "topPartner": "Top Parceiro",
+  "selectPeriod": "Selecione um período",
+  "vsPreviousHalf": "vs metade anterior",
+  "profitLabel": "lucro",
+  "pendingCount": "{{count}} pendentes",
+  "new": "Nova",
+  "deleteConfirm": "Excluir esta transação?",
+  "all": "Todos",
+  "allCategories": "Todas",
+  "transactions": {
+    "title": "Extrato",
+    "description": "Visualize e gerencie suas transações financeiras"
+  },
+  "status": {
+    "completed": "Concluído",
+    "pending": "Pendente",
+    "cancelled": "Cancelado"
+  },
+  "type": {
+    "income": "Entrada",
+    "expense": "Saída"
+  },
+  "mobileStatus": {
+    "completed": "OK",
+    "pending": "PEN"
+  },
   "filters": {
     "allAccounts": "Todas as contas",
     "allPartners": "Todos os parceiros",
@@ -21,7 +46,11 @@
   },
   "charts": {
     "balanceEvolution": "Evolução do Saldo",
-    "incomeVsExpense": "Receitas vs Despesas"
+    "incomeVsExpense": "Receitas vs Despesas",
+    "selectedPeriod": "Período selecionado",
+    "balance": "Saldo",
+    "income": "Receitas",
+    "expense": "Despesas"
   },
   "table": {
     "latestTransactions": "Últimas Transações",
@@ -31,6 +60,13 @@
     "allTypes": "Todos",
     "income": "Entrada",
     "expense": "Saída",
-    "searchPlaceholder": "Buscar transação..."
+    "searchPlaceholder": "Buscar transação...",
+    "noTransactions": "Nenhuma transação encontrada.",
+    "description": "Descrição",
+    "category": "Categoria",
+    "bank": "Banco",
+    "account": "Conta",
+    "date": "Data",
+    "value": "Valor"
   }
 }
