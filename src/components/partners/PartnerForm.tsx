@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/trpc/react";
 import { CommissionType, PartnerType } from "@prisma/client";
 import { Loader2 } from "lucide-react";
@@ -54,7 +53,6 @@ export function PartnerForm({
   defaultValues,
   partnerId,
 }: PartnerFormProps) {
-  const { toast } = useToast();
   const utils = api.useUtils();
   const isEditing = !!partnerId;
 
@@ -108,34 +106,24 @@ export function PartnerForm({
 
   const createMutation = api.partner.create.useMutation({
     onSuccess: () => {
-      toast({ title: "Parceiro cadastrado com sucesso!" });
       utils.partner.list.invalidate();
       onOpenChange(false);
       onSuccess?.();
     },
     onError: (error) => {
-      toast({
-        title: "Erro ao cadastrar parceiro",
-        description: error.message,
-        variant: "destructive",
-      });
+      console.error("Erro ao cadastrar parceiro:", error.message);
     },
   });
 
   const updateMutation = api.partner.update.useMutation({
     onSuccess: () => {
-      toast({ title: "Parceiro atualizado!" });
       utils.partner.list.invalidate();
       utils.partner.byId.invalidate({ id: partnerId! });
       onOpenChange(false);
       onSuccess?.();
     },
     onError: (error) => {
-      toast({
-        title: "Erro ao atualizar",
-        description: error.message,
-        variant: "destructive",
-      });
+      console.error("Erro ao atualizar parceiro:", error.message);
     },
   });
 
