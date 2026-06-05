@@ -138,9 +138,13 @@ export function DashboardClient() {
     enabled: tenantReady,
   });
 
-  // Top partner (use performance with period filter)
+  // Top partner — respects the selected dateRange
   const { data: partnerPerf } = api.partner.performance.useQuery(
-    { period: "year", sortBy: "profit" },
+    {
+      sortBy: "profit",
+      startDate: dateRange.from,
+      endDate: dateRange.to,
+    },
     { enabled: tenantReady },
   );
 
@@ -666,12 +670,6 @@ function TransactionsTable({
   const [typeFilter, setTypeFilter] = useState<TransactionType | undefined>();
   const [statusFilter, setStatusFilter] = useState<TransactionStatus | undefined>();
 
-  // Local table filters (single-select for simplicity, matching server-side)
-  // Using the first selected from global filters or undefined
-  const bankAccountId = filters.bankAccountIds[0];
-  const categoryId = filters.categoryIds[0];
-  const partnerId = filters.partnerIds[0];
-
   const { data: transactionsData, isLoading: txLoading } = api.transaction.list.useQuery(
     {
       page: pagination.pageIndex + 1,
@@ -680,9 +678,9 @@ function TransactionsTable({
       endDate: dateRange.to,
       type: typeFilter,
       status: statusFilter,
-      bankAccountId,
-      categoryId,
-      partnerId,
+      bankAccountIds: filters.bankAccountIds,
+      categoryIds: filters.categoryIds,
+      partnerIds: filters.partnerIds,
     },
     { enabled: tenantReady },
   );

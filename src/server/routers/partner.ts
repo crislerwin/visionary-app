@@ -168,6 +168,8 @@ export const partnerRouter = router({
         .object({
           sortBy: z.enum(["volume", "profit"]).default("profit"),
           period: z.enum(["month", "quarter", "year", "all"]).default("all"),
+          startDate: z.coerce.date().optional(),
+          endDate: z.coerce.date().optional(),
           limit: z.number().min(1).max(100).default(50),
         })
         .optional(),
@@ -175,10 +177,12 @@ export const partnerRouter = router({
     .query(async ({ ctx, input }) => {
       const { sortBy = "profit", period = "all", limit = 50 } = input ?? {};
 
-      // Build date filter based on period
+      // Build date filter based on explicit range or period preset
       const now = new Date();
-      let dateFilter: { gte?: Date } = {};
-      if (period === "month") {
+      let dateFilter: { gte?: Date; lte?: Date } = {};
+      if (input?.startDate && input?.endDate) {
+        dateFilter = { gte: input.startDate, lte: input.endDate };
+      } else if (period === "month") {
         dateFilter = { gte: new Date(now.getFullYear(), now.getMonth(), 1) };
       } else if (period === "quarter") {
         const quarterStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
@@ -211,7 +215,9 @@ export const partnerRouter = router({
       }
 
       // Fetch partners with aggregated transaction data in parallel
-      const dateWhere = dateFilter.gte ? { gte: dateFilter.gte } : undefined;
+      const dateWhere: { gte?: Date; lte?: Date } = {};
+      if (dateFilter.gte) dateWhere.gte = dateFilter.gte;
+      if (dateFilter.lte) dateWhere.lte = dateFilter.lte;
 
       const [incomeAgg, expenseAgg, countAgg] = await Promise.all([
         // Total income per partner
