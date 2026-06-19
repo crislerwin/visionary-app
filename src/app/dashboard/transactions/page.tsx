@@ -16,7 +16,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ArrowDownLeft, ArrowUpRight, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TransactionForm } from "../../../components/transactions/TransactionForm";
 
 interface TransactionRow {
@@ -139,6 +139,11 @@ export default function TransactionsPage() {
   );
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [formOpen, setFormOpen] = useState(false);
+
+  // Reset pagination to page 1 whenever any filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [filterType, filterStatus, filterCategory]);
 
   const { data: txData, isLoading: txLoading } = api.transaction.list.useQuery(
     {
